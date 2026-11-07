@@ -1,6 +1,10 @@
 "use strict";
 
-/* 常量 */
+/* =========================================================
+   基础常量
+   ========================================================= */
+const STORAGE_KEY = 'customvina.state.v1';
+
 const TYPE_NAMES = {
   rect: 'Rect', solid: 'Solid', glass: 'Glass',
   text: 'Text', icon: 'Icon', image: 'Image',
@@ -22,6 +26,20 @@ const ACTIONS = [
   { value: 'pogget.action.container.toggleInlineSearch',  label: 'container.toggleInlineSearch' }
 ];
 
+const ACTION_LABELS = {
+  'pogget.action.view.toggle':                  '切换列表 / 图标视图',
+  'pogget.action.view.list':                    '切换到列表视图',
+  'pogget.action.view.grid':                    '切换到图标视图',
+  'pogget.action.container.toggleCollapse':     '折叠 / 展开收纳盒',
+  'pogget.action.container.menu':               '打开收纳盒菜单',
+  'pogget.action.container.tagMenu':            '打开颜色标签菜单',
+  'pogget.action.container.pin':                '固定 / 取消固定',
+  'pogget.action.container.personalization':    '打开个性化面板',
+  'pogget.action.container.inlineBack':         '内联视图后退',
+  'pogget.action.container.inlineHome':         '回到内联主页',
+  'pogget.action.container.toggleInlineSearch': '打开 / 关闭内联搜索'
+};
+
 const COMPONENTS = [
   { type: 'rect',   name: '矩形',   glyph: '▭' },
   { type: 'solid',  name: '实色块', glyph: '■' },
@@ -35,6 +53,9 @@ const COMPONENTS = [
 
 const ACCENT_HEX = '#5279FB';
 
+/* =========================================================
+   工具函数
+   ========================================================= */
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const round = (v, d = 2) => Number(Number(v).toFixed(d));
 
@@ -56,12 +77,15 @@ function escapeStr(s) {
   return String(s == null ? '' : s).replace(/"/g, '\\"');
 }
 
-/* 状态 */
+/* =========================================================
+   状态
+   ========================================================= */
 const state = {
   elements: [],
   selectedId: null,
   boardW: 360,
-  boardH: 480
+  boardH: 480,
+  running: false
 };
 
 const nodes = new Map();
@@ -74,15 +98,115 @@ function nextSeq(type) {
   return typeCounters[type];
 }
 
-/* DOM */
+/* =========================================================
+   DOM
+   ========================================================= */
 const board      = document.getElementById('board');
 const boardEmpty = document.getElementById('boardEmpty');
 const compList   = document.getElementById('compList');
 const inspBody   = document.getElementById('inspBody');
 const modalMask  = document.getElementById('modalMask');
 const codeOut    = document.getElementById('codeOut');
+const runBtn     = document.getElementById('runBtn');
+const runIcon    = document.getElementById('runIcon');
+const runText    = document.getElementById('runText');
 
-/* 元素工厂 */
+/* =========================================================
+   状态持久化（localStorage）
+   ========================================================= */
+let saveTimer = null;
+
+function saveState() {
+  try {
+    const data = {
+      elements: state.elements,
+      boardW: state.boardW,
+      boardH: state.boardH
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    /* 存储失败静默处理，避免雪崩 */
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 250);
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object') return;
+
+    if (Array.isArray(data.elements)) {
+      const clean = data.elements.filter(el =>
+        el && typeof el === 'object' &&
+        typeof el.id === 'string' &&
+        typeof el.type === 'string' &&
+        TYPE_NAMES[el.type]
+      );
+      state.elements = clean;
+
+      let maxId = 0;
+      const maxSeqs = {};
+      clean.forEach(el => {
+        const n = parseInt(String(el.id).replace(/^el/, ''), 10);
+        if (!isNaN(n) && n > maxId) maxId = n;
+        if (typeof el.seq === 'number') {
+          maxSeqs[el.type] = Math.max(maxSeqs[el.type] || 0, el.seq);
+        }
+      });
+      idCounter = maxId;
+      Object.keys(maxSeqs).forEach(k => { typeCounters[k] = maxSeqs[k]; });
+    }
+
+    if (typeof data.boardW === 'number') state.boardW = clamp(data.boardW, 120, 1200);
+    if (typeof data.boardH === 'number') state.boardH = clamp(data.boardH, 120, 1200);
+  } catch (e) {
+    /* 忽略损坏的缓存，走空编辑流程 */
+  }
+}
+
+/* =========================================================
+   崩溃兜底
+   ========================================================= */
+let __crashed = false;
+
+function showCrash() {
+  if (__crashed) return;
+  __crashed = true;
+
+  try { saveState(); } catch (e) {}
+
+  try {
+    document.body.classList.add('is-crashed');
+    document.title = '页面崩溃 · CustomVinaEditor';
+
+    const mask = document.createElement('div');
+    mask.className = 'crash-mask';
+    mask.innerHTML =
+      '<h1 class="crash-title">页面崩溃</h1>' +
+      '<p class="crash-desc">已经尝试保存您的编辑内容，请刷新页面</p>';
+    document.body.appendChild(mask);
+  } catch (e) {}
+}
+
+const __originalConsoleError = console.error.bind(console);
+console.error = function (...args) {
+  try { __originalConsoleError(...args); } catch (e) {}
+  showCrash();
+};
+
+window.addEventListener('error', () => { if (!__crashed) showCrash(); });
+window.addEventListener('unhandledrejection', () => { if (!__crashed) showCrash(); });
+
+/* =========================================================
+   元素工厂
+   ========================================================= */
 function makeElement(type, x, y) {
   const el = {
     id: nextId(),
@@ -168,7 +292,9 @@ function getSelected() {
   return getElement(state.selectedId);
 }
 
-/* 渲染 */
+/* =========================================================
+   渲染
+   ========================================================= */
 function ensureNode(el) {
   let node = nodes.get(el.id);
   if (node) return node;
@@ -265,8 +391,10 @@ function renderElement(el) {
   node.style.width  = el.w + 'px';
   node.style.height = el.h + 'px';
   node.style.zIndex = el.props.z != null ? el.props.z : 1;
-  node.classList.toggle('selected', state.selectedId === el.id);
+  node.classList.toggle('selected', !state.running && state.selectedId === el.id);
+  node.dataset.action = el.props.action || '';
   styleBody(node._body, el);
+  scheduleSave();
 }
 
 function renderAll() {
@@ -284,14 +412,18 @@ function removeElement(id) {
   if (state.selectedId === id) state.selectedId = null;
   updateEmptyHint();
   renderInspector();
+  saveState();
 }
 function select(id) {
+  if (state.running) return;
   state.selectedId = id;
   state.elements.forEach(renderElement);
   renderInspector();
 }
 
-/* 画板尺寸 */
+/* =========================================================
+   画板尺寸
+   ========================================================= */
 function applyBoardSize() {
   board.style.width  = state.boardW + 'px';
   board.style.height = state.boardH + 'px';
@@ -300,9 +432,12 @@ function applyBoardSize() {
     el.y = clamp(el.y, -el.h + 16, state.boardH - 16);
     renderElement(el);
   });
+  scheduleSave();
 }
 
-/* 组件库 */
+/* =========================================================
+   组件库
+   ========================================================= */
 function buildComponentList() {
   COMPONENTS.forEach(c => {
     const item = document.createElement('div');
@@ -317,6 +452,10 @@ function buildComponentList() {
        </span>`;
 
     item.addEventListener('dragstart', e => {
+      if (state.running) {
+        e.preventDefault();
+        return;
+      }
       e.dataTransfer.setData('text/plain', c.type);
       e.dataTransfer.effectAllowed = 'copy';
       item.classList.add('dragging');
@@ -333,6 +472,7 @@ function boardPos(evt) {
 }
 
 board.addEventListener('dragover', e => {
+  if (state.running) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'copy';
   board.classList.add('drag-over');
@@ -341,6 +481,7 @@ board.addEventListener('dragleave', e => {
   if (!board.contains(e.relatedTarget)) board.classList.remove('drag-over');
 });
 board.addEventListener('drop', e => {
+  if (state.running) return;
   e.preventDefault();
   board.classList.remove('drag-over');
 
@@ -357,12 +498,16 @@ board.addEventListener('drop', e => {
   renderElement(el);
   updateEmptyHint();
   select(el.id);
+  saveState();
 });
 
-/* 拖动 / 缩放 */
+/* =========================================================
+   拖动 / 缩放
+   ========================================================= */
 let drag = null;
 
 board.addEventListener('pointerdown', e => {
+  if (state.running) return;
   if (e.button !== 0) return;
 
   const node = e.target.closest('.el');
@@ -413,8 +558,18 @@ window.addEventListener('pointermove', e => {
   syncLayoutInputs(el);
 });
 
-window.addEventListener('pointerup', () => { drag = null; });
-window.addEventListener('pointercancel', () => { drag = null; });
+window.addEventListener('pointerup', () => {
+  if (drag) {
+    drag = null;
+    saveState();
+  }
+});
+window.addEventListener('pointercancel', () => {
+  if (drag) {
+    drag = null;
+    saveState();
+  }
+});
 
 function syncLayoutInputs(el) {
   const map = { x: el.x, y: el.y, w: el.w, h: el.h };
@@ -426,6 +581,7 @@ function syncLayoutInputs(el) {
 
 window.addEventListener('keydown', e => {
   if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+  if (state.running) return;
   const tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
   if (!state.selectedId) return;
@@ -433,7 +589,9 @@ window.addEventListener('keydown', e => {
   removeElement(state.selectedId);
 });
 
-/* 属性面板 */
+/* =========================================================
+   属性面板
+   ========================================================= */
 function addSection(parent, title) {
   const h = document.createElement('div');
   h.className = 'insp-section';
@@ -530,6 +688,15 @@ function selectInput(value, options, onChange) {
 }
 
 function renderInspector() {
+  if (state.running) {
+    inspBody.innerHTML =
+      `<div class="insp-empty">
+         <p>正在运行</p>
+         <span>点击右上角“停止”返回编辑模式</span>
+       </div>`;
+    return;
+  }
+
   const el = getSelected();
   inspBody.innerHTML = '';
 
@@ -623,6 +790,7 @@ function renderInspector() {
 
   addField(inspBody, 'action', selectInput(p.action || '', ACTIONS, v => {
     p.action = v || undefined;
+    renderElement(el);
   }));
 
   const del = document.createElement('button');
@@ -632,7 +800,9 @@ function renderInspector() {
   inspBody.appendChild(del);
 }
 
-/* 导出 */
+/* =========================================================
+   导出
+   ========================================================= */
 function genCode() {
   const lines = [];
   lines.push('Preset { dependsOn: "Pogget_Std" }');
@@ -741,7 +911,50 @@ function toast(msg) {
   }, 1800);
 }
 
-/* 事件绑定 */
+/* =========================================================
+   运行模式
+   ========================================================= */
+function setRunning(on) {
+  state.running = on;
+  board.classList.toggle('running', on);
+  runBtn.classList.toggle('is-running', on);
+  runText.textContent = on ? '停止' : '运行';
+  runBtn.title = on ? '停止运行，返回编辑' : '运行预设，与组件交互';
+
+  if (on) {
+    state.selectedId = null;
+    state.elements.forEach(renderElement);
+    renderInspector();
+    toast('已进入运行模式，点击带 action 的组件进行交互');
+  } else {
+    state.elements.forEach(renderElement);
+    renderInspector();
+    toast('已退出运行模式');
+  }
+}
+
+function handleAction(action) {
+  const label = ACTION_LABELS[action] || action;
+  toast(`▶ 触发：${label}`);
+}
+
+runBtn.addEventListener('click', () => setRunning(!state.running));
+
+board.addEventListener('click', e => {
+  if (!state.running) return;
+  const node = e.target.closest('.el');
+  if (!node) return;
+  const el = getElement(node.dataset.id);
+  if (!el) return;
+  const action = el.props.action;
+  if (!action) return;
+  e.stopPropagation();
+  handleAction(action);
+});
+
+/* =========================================================
+   事件绑定
+   ========================================================= */
 document.getElementById('exportBtn').addEventListener('click', openExport);
 document.getElementById('modalClose').addEventListener('click', closeExport);
 modalMask.addEventListener('click', e => { if (e.target === modalMask) closeExport(); });
@@ -764,11 +977,13 @@ const boardWInput = document.getElementById('boardWInput');
 const boardHInput = document.getElementById('boardHInput');
 
 boardWInput.addEventListener('change', () => {
+  if (state.running) return;
   state.boardW = clamp(parseInt(boardWInput.value, 10) || 360, 120, 1200);
   boardWInput.value = state.boardW;
   applyBoardSize();
 });
 boardHInput.addEventListener('change', () => {
+  if (state.running) return;
   state.boardH = clamp(parseInt(boardHInput.value, 10) || 480, 120, 1200);
   boardHInput.value = state.boardH;
   applyBoardSize();
@@ -781,7 +996,9 @@ window.addEventListener('keydown', e => {
   }
 });
 
-/* 版本信息弹窗 */
+/* =========================================================
+   版本信息弹窗
+   ========================================================= */
 const versionBadge = document.getElementById('versionBadge');
 const versionMask  = document.getElementById('versionMask');
 const versionClose = document.getElementById('versionClose');
@@ -795,13 +1012,43 @@ function closeVersion() {
 }
 
 versionBadge.addEventListener('click', openVersion);
-versionClose.addEventListener('click', closeVersion);
 versionOk.addEventListener('click', closeVersion);
 versionMask.addEventListener('click', e => {
   if (e.target === versionMask) closeVersion();
 });
 
-/* 初始化 */
+/* =========================================================
+   调试：连续点击版权文本 5 次触发崩溃
+   ========================================================= */
+(function installCrashTrigger() {
+  const el = document.getElementById('copyrightEl');
+  if (!el) return;
+
+  let clicks = 0;
+  let timer = null;
+
+  el.addEventListener('click', () => {
+    clicks++;
+    clearTimeout(timer);
+    timer = setTimeout(() => { clicks = 0; }, 1200);
+
+    if (clicks >= 5) {
+      clicks = 0;
+      /* 故意产生一次控制台错误以触发崩溃兜底 */
+      console.error('[DEBUG] Manual crash triggered via copyright click');
+    }
+  });
+})();
+
+/* =========================================================
+   输入属性变化后保存
+   ========================================================= */
+inspBody.addEventListener('input', scheduleSave);
+inspBody.addEventListener('change', scheduleSave);
+
+/* =========================================================
+   初始化
+   ========================================================= */
 (function setCopyrightYear() {
   const el = document.getElementById('copyYear');
   if (!el) return;
@@ -809,14 +1056,26 @@ versionMask.addEventListener('click', e => {
 })();
 
 function init() {
+  loadState();
+
+  boardWInput.value = state.boardW;
+  boardHInput.value = state.boardH;
+
   buildComponentList();
   applyBoardSize();
-  renderInspector();
   updateEmptyHint();
+  renderInspector();
 }
 init();
 
-/* 启动加载 */
+/* 关闭页面前做一次同步保存 */
+window.addEventListener('beforeunload', () => {
+  try { saveState(); } catch (e) {}
+});
+
+/* =========================================================
+   启动加载
+   ========================================================= */
 (function bootController() {
   const boot = document.getElementById('boot');
   const fill = document.getElementById('bootFill');
