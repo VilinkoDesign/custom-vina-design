@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CustomVinaDesign - Alpha</title>
+<title>CustomVinaDesign</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,7 +22,7 @@
 <header class="topbar">
   <div class="brand">
     CustomVina
-    <span class="brand-badge">Alpha</span>
+    <button class="brand-badge" id="versionBadge" type="button" title="查看版本信息">Alpha</button>
   </div>
   <button class="btn-primary" id="exportBtn">导出 .vina</button>
 </header>
@@ -47,7 +47,6 @@
       <div class="board-empty" id="boardEmpty">
         <div class="be-icon">⬚</div>
         <p>把左侧组件拖到这里</p>
-        <p class="be-sub">拖拽放置 · 拖动移动 · 右下角调整尺寸</p>
       </div>
     </div>
   </section>
@@ -67,7 +66,43 @@
     <pre class="code" id="codeOut"></pre>
     <div class="modal-foot">
       <button class="btn-ghost" id="copyBtn">复制代码</button>
-      <button class="btn-primary" id="downloadBtn">下载 .vina</button>
+      <button class="btn-primary" id="downloadBtn">下载文件</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="versionMask">
+  <div class="modal modal-version">
+    <div class="modal-head">
+      <h3>版本信息</h3>
+      <button class="icon-btn" id="versionClose" title="关闭">✕</button>
+    </div>
+    <div class="version-body">
+      <div class="version-name">
+        <span class="version-brand">CustomVinaDesign</span>
+      </div>
+      <p class="version-desc">Pogget 个性化预设的可视化编辑器，基于 CustomVina 规范构建。</p>
+      <dl class="version-list">
+        <div class="version-row">
+          <dt>工具版本</dt>
+          <dd>Alpha 0.1.0</dd>
+        </div>
+        <div class="version-row">
+          <dt>构建号</dt>
+          <dd>build 2026.11.07</dd>
+        </div>
+        <div class="version-row">
+          <dt>更新时间</dt>
+          <dd>2026-11-07</dd>
+        </div>
+        <div class="version-row">
+          <dt>技术支持</dt>
+          <dd>Yuyudifiesh</dd>
+        </div>
+      </dl>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-primary" id="versionOk">我知道了</button>
     </div>
   </div>
 </div>
