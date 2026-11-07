@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CustomVinaDesign - Alpha</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="boot" id="boot">
+  <div class="boot-inner">
+    <h1 class="boot-title">CustomVinaDesign</h1>
+    <p class="boot-sub">CustomVina 可视化编辑器</p>
+    <div class="boot-bar" id="bootBar">
+      <div class="boot-bar-fill" id="bootFill"></div>
+    </div>
+    <p class="boot-hint" id="bootHint">请使用宽屏设备或电脑访问</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    CustomVina
+    <span class="brand-badge">Alpha</span>
+  </div>
+  <button class="btn-primary" id="exportBtn">导出 .vina</button>
+</header>
+
+<main class="workspace">
+  <aside class="panel panel-left">
+    <div class="panel-head">组件库</div>
+    <div class="comp-list" id="compList"></div>
+    <div class="panel-foot">
+      <div class="cs-copyright">Copyright © <span id="copyYear">2026</span> Vilnko Studio</div>
+      <div class="cs-title">画板尺寸</div>
+      <div class="cs-row">
+        <input class="ctl" type="number" id="boardWInput" value="360" min="120" max="1200" step="1">
+        <span>×</span>
+        <input class="ctl" type="number" id="boardHInput" value="480" min="120" max="1200" step="1">
+      </div>
+    </div>
+  </aside>
+
+  <section class="canvas-wrap" id="canvasWrap">
+    <div class="canvas-board" id="board">
+      <div class="board-empty" id="boardEmpty">
+        <div class="be-icon">⬚</div>
+        <p>把左侧组件拖到这里</p>
+        <p class="be-sub">拖拽放置 · 拖动移动 · 右下角调整尺寸</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel panel-right">
+    <div class="panel-head">属性</div>
+    <div class="insp-body" id="inspBody"></div>
+  </aside>
+</main>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>导出 .vina</h3>
+      <button class="icon-btn" id="modalClose" title="关闭">✕</button>
+    </div>
+    <pre class="code" id="codeOut"></pre>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="copyBtn">复制代码</button>
+      <button class="btn-primary" id="downloadBtn">下载 .vina</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
