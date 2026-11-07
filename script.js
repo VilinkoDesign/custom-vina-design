@@ -775,7 +775,30 @@ boardHInput.addEventListener('change', () => {
 });
 
 window.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modalMask.classList.contains('show')) closeExport();
+  if (e.key === 'Escape') {
+    if (modalMask.classList.contains('show')) closeExport();
+    if (versionMask.classList.contains('show')) closeVersion();
+  }
+});
+
+/* 版本信息弹窗 */
+const versionBadge = document.getElementById('versionBadge');
+const versionMask  = document.getElementById('versionMask');
+const versionClose = document.getElementById('versionClose');
+const versionOk    = document.getElementById('versionOk');
+
+function openVersion() {
+  versionMask.classList.add('show');
+}
+function closeVersion() {
+  versionMask.classList.remove('show');
+}
+
+versionBadge.addEventListener('click', openVersion);
+versionClose.addEventListener('click', closeVersion);
+versionOk.addEventListener('click', closeVersion);
+versionMask.addEventListener('click', e => {
+  if (e.target === versionMask) closeVersion();
 });
 
 /* 初始化 */
