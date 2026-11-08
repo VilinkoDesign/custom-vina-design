@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CustomVinaEditor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="boot" id="boot">
+  <div class="boot-inner">
+    <h1 class="boot-title">CustomVinaEditor</h1>
+    <p class="boot-sub">CustomVina 可视化编辑器</p>
+    <div class="boot-bar" id="bootBar">
+      <div class="boot-bar-fill" id="bootFill"></div>
+    </div>
+    <p class="boot-hint" id="bootHint">请使用宽屏设备或电脑访问</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    CustomVinaEditor
+    <button class="brand-badge" id="versionBadge" type="button" title="查看版本信息">Alpha</button>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn-run" id="runBtn" type="button">
+      <span class="btn-run-text" id="runText">运行</span>
+    </button>
+    <button class="btn-primary" id="exportBtn">导出 .vina</button>
+  </div>
+</header>
+
+<main class="workspace">
+  <aside class="panel panel-left">
+    <div class="panel-head">组件库</div>
+    <div class="comp-list" id="compList"></div>
+    <div class="panel-foot">
+      <div class="cs-copyright" id="copyrightEl" title="连续点击 5 次可触发崩溃调试">Copyright © <span id="copyYear">2026</span> Vilnko Studio</div>
+      <div class="cs-title">画板尺寸</div>
+      <div class="cs-row">
+        <input class="ctl" type="number" id="boardWInput" value="360" min="120" max="1200" step="1">
+        <span>×</span>
+        <input class="ctl" type="number" id="boardHInput" value="480" min="120" max="1200" step="1">
+      </div>
+    </div>
+  </aside>
+
+  <section class="canvas-wrap" id="canvasWrap">
+    <div class="canvas-board" id="board">
+      <div class="board-empty" id="boardEmpty">
+        <div class="be-icon">⬚</div>
+        <p>把左侧组件拖到这里</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel panel-right">
+    <div class="panel-head">属性</div>
+    <div class="insp-body" id="inspBody"></div>
+  </aside>
+</main>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>导出 .vina</h3>
+      <button class="icon-btn" id="modalClose" title="关闭">✕</button>
+    </div>
+    <pre class="code" id="codeOut"></pre>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="copyBtn">复制</button>
+      <button class="btn-primary" id="downloadBtn">下载</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="versionMask">
+  <div class="modal modal-version">
+    <div class="modal-head">
+      <h3>版本信息</h3>
+    </div>
+    <div class="version-body">
+      <div class="version-name">
+        <span class="version-brand">CustomVinaEditor</span>
+      </div>
+      <p class="version-desc">Pogget 个性化预设的可视化编辑器，基于 CustomVina 规范构建。</p>
+      <dl class="version-list">
+        <div class="version-row"><dt>工具版本</dt><dd>Alpha 0.2.2</dd></div>
+        <div class="version-row"><dt>构建号</dt><dd>build20261108_rel0_alpha5</dd></div>
+        <div class="version-row"><dt>更新时间</dt><dd>2026-11-08</dd></div>
+      </dl>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-primary" id="versionOk">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
