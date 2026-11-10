@@ -1,3 +1,6 @@
+/* Copyright © 2026 Vilinko Studio */
+/* vina-touch-drag.js version 1.0 */
+
 "use strict";
 
 (function (global) {

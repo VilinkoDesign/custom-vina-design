@@ -8,9 +8,9 @@ const TYPE_NAMES = {
   button: 'Button', group: 'Group'
 };
 
-/* =========================================================
+/* 
    内部动作（62 个）
-   ========================================================= */
+    */
 const ACTIONS = [
   { value: '', label: '（无）' },
 
@@ -101,9 +101,9 @@ const COMPONENTS = [
 
 const ACCENT_HEX = '#5279FB';
 
-/* =========================================================
+/* 
    工具函数
-   ========================================================= */
+    */
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const round = (v, d = 2) => Number(Number(v).toFixed(d));
 
@@ -128,9 +128,70 @@ function msToVina(ms) {
   return `${Math.max(0, Math.round(ms))}ms`;
 }
 
-/* =========================================================
+/* 
+   主题管理
+    */
+const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+const THEME_STORAGE_KEY = 'customvina.theme';
+const THEME_MODES = ['light', 'dark', 'system'];
+const THEME_LABELS = { light: '浅色', dark: '深色', system: '跟随系统' };
+
+function getThemeMode() {
+  try {
+    const v = localStorage.getItem(THEME_STORAGE_KEY);
+    if (THEME_MODES.indexOf(v) >= 0) return v;
+  } catch (e) {}
+  return 'system';
+}
+
+function resolveTheme(mode) {
+  if (mode === 'system') return darkModeQuery.matches ? 'dark' : 'light';
+  return mode === 'dark' ? 'dark' : 'light';
+}
+
+function updateThemeButtonLabel(mode) {
+  const btn = document.getElementById('themeBtn');
+  if (!btn) return;
+  const label = THEME_LABELS[mode] || '跟随系统';
+  btn.textContent = label;
+  btn.title = '当前：' + label + '（点击切换）';
+}
+
+function applyThemeMode(mode) {
+  if (THEME_MODES.indexOf(mode) < 0) mode = 'system';
+
+  const html = document.documentElement;
+  html.setAttribute('data-theme-mode', mode);
+  html.setAttribute('data-theme', resolveTheme(mode));
+
+  updateThemeButtonLabel(mode);
+
+  if (typeof state !== 'undefined' && state.elements && state.elements.length) {
+    state.elements.forEach(renderElement);
+  }
+}
+
+function setThemeMode(mode) {
+  if (THEME_MODES.indexOf(mode) < 0) mode = 'system';
+  try { localStorage.setItem(THEME_STORAGE_KEY, mode); } catch (e) {}
+  applyThemeMode(mode);
+}
+
+function cycleThemeMode() {
+  const current = getThemeMode();
+  const idx = THEME_MODES.indexOf(current);
+  const next = THEME_MODES[(idx + 1) % THEME_MODES.length];
+  setThemeMode(next);
+}
+
+function isDarkMode() {
+  return document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+/* 
    状态
-   ========================================================= */
+    */
 const state = {
   elements: [],
   selectedId: null,
@@ -139,6 +200,9 @@ const state = {
   running: false,
   toggles: {}
 };
+
+/* 首屏应用主题（此时 state 已初始化，可安全调用） */
+applyThemeMode(getThemeMode());
 
 const nodes = new Map();
 let idCounter = 0;
@@ -150,9 +214,9 @@ function nextSeq(type) {
   return typeCounters[type];
 }
 
-/* =========================================================
+/* 
    DOM
-   ========================================================= */
+    */
 const canvasWrap = document.getElementById('canvasWrap');
 const board      = document.getElementById('board');
 const boardEmpty = document.getElementById('boardEmpty');
@@ -163,9 +227,9 @@ const codeOut    = document.getElementById('codeOut');
 const runBtn     = document.getElementById('runBtn');
 const runText    = document.getElementById('runText');
 
-/* =========================================================
+/* 
    持久化
-   ========================================================= */
+    */
 let saveTimer = null;
 
 function saveState() {
@@ -241,9 +305,9 @@ function loadState() {
   } catch (e) {}
 }
 
-/* =========================================================
+/* 
    崩溃兜底
-   ========================================================= */
+    */
 let __crashed = false;
 
 function showCrash() {
@@ -271,9 +335,9 @@ console.error = function (...args) {
 window.addEventListener('error', () => { if (!__crashed) showCrash(); });
 window.addEventListener('unhandledrejection', () => { if (!__crashed) showCrash(); });
 
-/* =========================================================
+/* 
    元素工厂
-   ========================================================= */
+    */
 function makeElement(type, x, y) {
   const el = {
     id: nextId(),
@@ -377,9 +441,9 @@ function getSelected() {
   return getElement(state.selectedId);
 }
 
-/* =========================================================
+/* 
    渲染
-   ========================================================= */
+    */
 function ensureNode(el) {
   let node = nodes.get(el.id);
   if (node) return node;
@@ -501,15 +565,15 @@ function styleBody(body, el) {
       body.style.display = 'flex';
       body.style.alignItems = 'center';
       body.style.justifyContent = 'center';
-      body.style.background = '#fafafa';
-      body.style.border = '1px dashed #b8b8b8';
-      body.style.color = '#b0b0b0';
+      body.style.background = isDarkMode() ? '#141414' : '#fafafa';
+      body.style.border = isDarkMode() ? '1px dashed #4a4a4a' : '1px dashed #b8b8b8';
+      body.style.color = isDarkMode() ? '#666666' : '#b0b0b0';
       body.style.fontSize = '20px';
       body.textContent = '▣';
       break;
     case 'group':
       body.style.background = 'transparent';
-      body.style.border = '1px dashed #9a9a9a';
+      body.style.border = isDarkMode() ? '1px dashed #4a4a4a' : '1px dashed #9a9a9a';
       if (p.clip) body.style.overflow = 'hidden';
       break;
   }
@@ -548,9 +612,9 @@ function select(id) {
   renderInspector();
 }
 
-/* =========================================================
+/* 
    画板尺寸
-   ========================================================= */
+    */
 function applyBoardSize() {
   board.style.width  = state.boardW + 'px';
   board.style.height = state.boardH + 'px';
@@ -562,9 +626,9 @@ function applyBoardSize() {
   scheduleSave();
 }
 
-/* =========================================================
+/* 
    属性面板控件
-   ========================================================= */
+    */
 function addSection(parent, title) {
   const h = document.createElement('div');
   h.className = 'insp-section';
@@ -655,9 +719,9 @@ function selectInput(value, options, onChange) {
   return sel;
 }
 
-/* =========================================================
+/* 
    属性面板
-   ========================================================= */
+    */
 function renderInspector() {
   if (state.running) {
     inspBody.innerHTML =
@@ -889,9 +953,9 @@ function renderInspector() {
   inspBody.appendChild(del);
 }
 
-/* =========================================================
+/* 
    导出
-   ========================================================= */
+    */
 function genCode() {
   const lines = [];
   lines.push('Preset { dependsOn: "Pogget_Std" }');
@@ -1066,9 +1130,9 @@ function toast(msg) {
   }, 1800);
 }
 
-/* =========================================================
+/* 
    运行模式
-   ========================================================= */
+    */
 function setRunning(on) {
   state.running = on;
   board.classList.toggle('running', on);
@@ -1078,7 +1142,7 @@ function setRunning(on) {
 
   if (on) {
     state.selectedId = null;
-    ContextMenu.close();
+    if (vinaMenu) vinaMenu.close();
     state.elements.forEach(renderElement);
     renderInspector();
     toast('已进入运行模式，点击带 action 的组件进行交互');
@@ -1108,9 +1172,122 @@ board.addEventListener('click', e => {
   handleAction(action);
 });
 
-/* =========================================================
+/* 
+   右键菜单（VinaContextMenu 通用库实例化）
+    */
+let clipboardEl = null;
+
+function copySelected() {
+  const el = getSelected();
+  if (!el) return;
+  clipboardEl = {
+    type: el.type,
+    w: el.w,
+    h: el.h,
+    props: JSON.parse(JSON.stringify(el.props))
+  };
+  toast('已复制组件');
+}
+
+function pasteFromClipboard(x, y) {
+  if (!clipboardEl) return;
+
+  const el = {
+    id: nextId(),
+    type: clipboardEl.type,
+    seq: nextSeq(clipboardEl.type),
+    x: 0, y: 0,
+    w: clipboardEl.w,
+    h: clipboardEl.h,
+    props: JSON.parse(JSON.stringify(clipboardEl.props))
+  };
+
+  el.x = Math.round(clamp(x - el.w / 2, 0, Math.max(0, state.boardW - el.w)));
+  el.y = Math.round(clamp(y - el.h / 2, 0, Math.max(0, state.boardH - el.h)));
+
+  state.elements.push(el);
+  renderElement(el);
+  updateEmptyHint();
+  select(el.id);
+  saveState();
+  toast('已粘贴组件');
+}
+
+function pasteAuto() {
+  if (!clipboardEl) return;
+  const sel = getSelected();
+  const x = sel ? sel.x + 20 : state.boardW / 2;
+  const y = sel ? sel.y + 20 : state.boardH / 2;
+  pasteFromClipboard(x, y);
+}
+
+const vinaMenu = new VinaContextMenu({
+  container: canvasWrap,
+
+  items: [
+    {
+      key: 'delete',
+      label: '删除组件',
+      shortcut: 'Del',
+      isDisabled: () => state.running || !state.selectedId,
+      onClick: () => { if (state.selectedId) removeElement(state.selectedId); }
+    },
+    {
+      key: 'copy',
+      label: '复制',
+      shortcut: 'Ctrl+C',
+      isDisabled: () => state.running || !state.selectedId,
+      onClick: copySelected
+    },
+    { separator: true },
+    {
+      key: 'paste',
+      label: '粘贴',
+      shortcut: 'Ctrl+V',
+      isDisabled: () => state.running || !clipboardEl,
+      onClick: (ctx) => {
+        const pos = TouchDrag.clientToBoard(ctx.x, ctx.y);
+        pasteFromClipboard(pos.x, pos.y);
+      }
+    }
+  ],
+
+  shortcuts: [
+    {
+      key: 'c', ctrl: true,
+      handler: () => {
+        if (state.running) return false;
+        copySelected();
+      }
+    },
+    {
+      key: 'v', ctrl: true,
+      handler: () => {
+        if (state.running) return false;
+        pasteAuto();
+      }
+    }
+  ],
+
+  onBeforeOpen: (ctx) => {
+    if (state.running) return false;
+
+    const node = ctx.target.closest('.el');
+    if (node) {
+      const el = getElement(node.dataset.id);
+      if (el) select(el.id);
+    } else {
+      select(null);
+    }
+    return true;
+  }
+});
+
+vinaMenu.attach();
+
+/* 
    事件绑定
-   ========================================================= */
+    */
 document.getElementById('exportBtn').addEventListener('click', openExport);
 document.getElementById('modalClose').addEventListener('click', closeExport);
 modalMask.addEventListener('click', e => { if (e.target === modalMask) closeExport(); });
@@ -1152,9 +1329,9 @@ window.addEventListener('keydown', e => {
   }
 });
 
-/* =========================================================
+/* 
    版本信息
-   ========================================================= */
+    */
 const versionBadge = document.getElementById('versionBadge');
 const versionMask  = document.getElementById('versionMask');
 const versionOk    = document.getElementById('versionOk');
@@ -1168,9 +1345,9 @@ if (versionMask) versionMask.addEventListener('click', e => {
   if (e.target === versionMask) closeVersion();
 });
 
-/* =========================================================
+/* 
    调试：连续点击版权 5 次触发崩溃
-   ========================================================= */
+    */
 (function installCrashTrigger() {
   const el = document.getElementById('copyrightEl');
   if (!el) return;
@@ -1189,15 +1366,15 @@ if (versionMask) versionMask.addEventListener('click', e => {
   });
 })();
 
-/* =========================================================
+/* 
    输入保存
-   ========================================================= */
+    */
 inspBody.addEventListener('input', scheduleSave);
 inspBody.addEventListener('change', scheduleSave);
 
-/* =========================================================
+/* 
    初始化
-   ========================================================= */
+    */
 (function setCopyrightYear() {
   const el = document.getElementById('copyYear');
   if (!el) return;
@@ -1205,6 +1382,24 @@ inspBody.addEventListener('change', scheduleSave);
 })();
 
 function init() {
+  /* 主题按钮绑定 */
+  const themeBtn = document.getElementById('themeBtn');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', cycleThemeMode);
+  }
+
+  /* 系统主题变化时：仅 system 模式重新计算 data-theme */
+  const onSystemSchemeChange = () => {
+    if (getThemeMode() === 'system') {
+      applyThemeMode('system');
+    }
+  };
+  if (typeof darkModeQuery.addEventListener === 'function') {
+    darkModeQuery.addEventListener('change', onSystemSchemeChange);
+  } else if (typeof darkModeQuery.addListener === 'function') {
+    darkModeQuery.addListener(onSystemSchemeChange);
+  }
+
   loadState();
 
   boardWInput.value = state.boardW;
@@ -1231,25 +1426,6 @@ function init() {
     saveState: saveState
   });
 
-  /* 初始化 ContextMenu（右键 / Ctrl+C / Ctrl+V） */
-  ContextMenu.init({
-    state: state,
-    board: board,
-    canvasWrap: canvasWrap,
-    clamp: clamp,
-    getElement: getElement,
-    getSelected: getSelected,
-    removeElement: removeElement,
-    select: select,
-    renderElement: renderElement,
-    updateEmptyHint: updateEmptyHint,
-    saveState: saveState,
-    nextId: nextId,
-    nextSeq: nextSeq,
-    toast: toast,
-    clientToBoard: function (x, y) { return TouchDrag.clientToBoard(x, y); }
-  });
-
   updateEmptyHint();
   renderInspector();
 }
@@ -1259,9 +1435,9 @@ window.addEventListener('beforeunload', () => {
   try { saveState(); } catch (e) {}
 });
 
-/* =========================================================
+/* 
    启动加载
-   ========================================================= */
+    */
 (function bootController() {
   const boot = document.getElementById('boot');
   const fill = document.getElementById('bootFill');
