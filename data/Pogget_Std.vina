@@ -1,0 +1,2015 @@
+// Pogget standard personalization. UTF-8. Geometry is in device-independent pixels.
+// Native labels and interaction actions are the only host-specific symbols.
+Panel {
+  width: 400,
+  height: 630,
+  top: 140,
+  globalTop: 64,
+  footer: 70,
+  margin: 20,
+  padding: 16,
+  header: 52,
+  gap: 12,
+  bodyTop: 14,
+  bodyBottom: 16,
+  contentTop: 15,
+  contentBottom: 50,
+  labelHeight: 18,
+  labelSize: 12,
+  labelFade: 45,
+  optionY: 20,
+  optionHeight: 36,
+  optionSize: 14,
+  optionGap: 65,
+  sliderHeight: 32,
+  sliderGap: 50,
+  sliderFade: 50,
+  toggleWidth: 40,
+  toggleHeight: 22,
+  toggleTextX: 54,
+  toggleGap: 40,
+  colorY: 22,
+  colorHeight: 34,
+  colorGap: 70,
+  editorHeight: 200,
+  editorGap: 210,
+  groupOpacity: 0.35,
+  groupHoverOpacity: 0.45,
+  background: ${pogget.theme.darknight},
+  groupBackground: ${pogget.theme.midnight}
+}
+
+Background {
+  label: pogget.label.bgSectionTitle,
+  description: pogget.label.bgSectionSubtitle,
+  icon: "\uf576",
+  ui {
+    RenderStyle {
+      label: pogget.label.renderStyleTitle,
+      type: "number",
+      control: "choice",
+      bind: "CompatibleLayer",
+      min: 0,
+      max: 4,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.renderStyleDefault,
+        c1: pogget.label.renderStyleStatic,
+        c2: pogget.label.renderStyleBlur,
+        c3: pogget.label.renderStyleTransparent,
+        c4: pogget.label.renderStyleExtended
+      },
+      notice: pogget.label.renderStyleNotice,
+      noticeHeight: 50,
+      noticeGap: 58
+    },
+    BackgroundColor {
+      label: pogget.label.backgroundColorTitle,
+      type: "number",
+      control: "color",
+      bind: "BackgroundColor",
+      min: 0,
+      max: 16777215,
+      step: 1,
+      default: 0
+    },
+    BackgroundOpacity {
+      label: pogget.label.bgOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "bgAlpha",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 1,
+      visible: (${pogget.mode} > 0)
+    },
+    DwmCorner {
+      label: pogget.label.dwmCornerTitle,
+      type: "number",
+      control: "choice",
+      bind: "DwmCornerPreference",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: 0,
+      visible: (${pogget.mode} <= 2),
+      choices {
+        c0: pogget.label.dwmCornerSmall,
+        c1: pogget.label.dwmCornerNormal
+      }
+    },
+    CornerRadius {
+      label: pogget.label.windowCornerRadiusPrefix,
+      type: "number",
+      control: "slider",
+      bind: "cornerRad",
+      min: 0,
+      max: 20,
+      step: 1,
+      default: 16,
+      offsetY: -5,
+      visible: (${pogget.mode} == 4 || (${pogget.mode} == 3 && ${pogget.frame} != 2))
+    },
+    StaticLayer {
+      label: pogget.label.enableStaticLayerText,
+      type: "boolean",
+      control: "switch",
+      bind: "EnableStaticMaterialLayerForD3D11",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: false,
+      visible: (${pogget.mode} >= 3)
+    },
+    ShadowBlur {
+      label: pogget.label.shadowBlurPrefix,
+      type: "number",
+      control: "slider",
+      bind: "shadowBlur",
+      min: 0,
+      max: 32,
+      step: 1,
+      default: 16,
+      visible: (${pogget.mode} == 4)
+    },
+    ShadowOpacity {
+      label: pogget.label.shadowOpacityPrefix,
+      type: "number",
+      control: "slider",
+      bind: "shadowAlpha",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 0.2,
+      visible: (${pogget.mode} == 4)
+    },
+    ShadowX {
+      label: pogget.label.shadowOffsetXPrefix,
+      type: "number",
+      control: "slider",
+      bind: "shadowOffsetX",
+      min: -32,
+      max: 32,
+      step: 1,
+      default: 0,
+      visible: (${pogget.mode} == 4)
+    },
+    ShadowY {
+      label: pogget.label.shadowOffsetYPrefix,
+      type: "number",
+      control: "slider",
+      bind: "shadowOffsetY",
+      min: -32,
+      max: 32,
+      step: 1,
+      default: 4,
+      visible: (${pogget.mode} == 4)
+    },
+    WindowBorder {
+      label: pogget.label.windowBorderTitle,
+      type: "number",
+      control: "choice",
+      bind: "TransparentFrameMode",
+      min: 0,
+      max: 3,
+      step: 1,
+      default: 0,
+      visible: (${pogget.mode} >= 3),
+      choices {
+        c0: pogget.label.borderNone,
+        c1: pogget.label.borderCanvas,
+        c2: pogget.label.borderNative,
+        c3: pogget.label.borderHighlight
+      }
+    },
+    BorderColor {
+      label: pogget.label.borderColorTitle,
+      type: "number",
+      control: "color",
+      bind: "BorderColor",
+      min: 0,
+      max: 16777215,
+      step: 1,
+      default: 0,
+      visible: (${pogget.mode} >= 3 && (${pogget.frame} == 1 || ${pogget.frame} == 3))
+    },
+    BorderOpacity {
+      label: pogget.label.borderOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "BorderOpacity",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 1,
+      visible: (${pogget.mode} >= 3 && (${pogget.frame} == 1 || ${pogget.frame} == 3))
+    }
+  },
+  view {
+    type: "pogget.native.Background",
+    interaction: "background",
+    CompatibleLayer: ${ui.RenderStyle.value},
+    backgroundAlpha: ${ui.BackgroundOpacity.value},
+    DwmCornerPreference: ${ui.DwmCorner.value},
+    cornerRad: ${ui.CornerRadius.value},
+    EnableStaticMaterialLayerForD3D11: ${ui.StaticLayer.value},
+    shadowBlur: ${ui.ShadowBlur.value},
+    shadowAlpha: ${ui.ShadowOpacity.value},
+    shadowOffsetX: ${ui.ShadowX.value},
+    shadowOffsetY: ${ui.ShadowY.value},
+    TransparentFrameMode: ${ui.WindowBorder.value},
+    BorderOpacity: ${ui.BorderOpacity.value}
+  }
+}
+
+Tag {
+  label: pogget.label.tagSectionTitle,
+  description: pogget.label.tagSectionSubtitle,
+  icon: "\uf02b",
+  ui {
+    TitleStyle {
+      label: pogget.label.titleBarStyleTitle,
+      type: "number",
+      control: "choice",
+      bind: "TitleType",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.titleClassic,
+        c1: pogget.label.titleFloating,
+        c2: pogget.label.titleCapsule
+      }
+    },
+    TitleColor {
+      label: pogget.label.titleBarColorTitle,
+      type: "number",
+      control: "color",
+      bind: "TitleBarColor",
+      min: 0,
+      max: 16777215,
+      step: 1,
+      default: 0
+    },
+    TitleOpacity {
+      label: pogget.label.titleOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "titleAlpha",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 1
+    },
+    TitleBlur {
+      label: pogget.label.titleBlurRadiusTitle,
+      type: "number",
+      control: "slider",
+      bind: "TitleBlurRadius",
+      min: 0,
+      max: 32,
+      step: 1,
+      default: -1,
+      effectiveDefault: (${pogget.mode} >= 2 ? 5 : 14),
+      visible: (${pogget.mode} <= 2 || ${pogget.staticMaterial})
+    },
+    TagOpacity {
+      label: pogget.label.tagOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "tagAlpha",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 1
+    },
+    TagTextOpacity {
+      label: pogget.label.tagTextOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "tagTextAlpha",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 1
+    },
+    TagStyle {
+      label: pogget.label.colorTagStyleTitle,
+      type: "number",
+      control: "choice",
+      bind: "TagStyle",
+      min: 0,
+      max: 4,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.tagSticker,
+        c1: pogget.label.tagOutline,
+        c2: pogget.label.tagHighlighter,
+        c3: pogget.label.tagPlain,
+        c4: pogget.label.tagText
+      }
+    },
+    TagFont {
+      label: pogget.label.tagFontSelectionTitle,
+      type: "text",
+      control: "font",
+      bind: "tagFontFamily",
+      min: 0,
+      max: 0,
+      step: 1,
+      default: "Segoe UI"
+    }
+  },
+  view {
+    type: "pogget.native.Tag",
+    interaction: "title",
+    TitleType: ${ui.TitleStyle.value},
+    titleAlpha: ${ui.TitleOpacity.value},
+    TitleBlurRadius: ${ui.TitleBlur.value},
+    tagAlpha: ${ui.TagOpacity.value},
+    tagTextAlpha: ${ui.TagTextOpacity.value},
+    TagStyle: ${ui.TagStyle.value},
+    tagFontFamily: ${ui.TagFont.value}
+  }
+}
+
+VinaIcon {
+  label: pogget.label.iconSectionTitle,
+  description: pogget.label.iconSectionSubtitle,
+  icon: "\uf61f",
+  ui {
+    FolderView {
+      label: pogget.label.folderViewTitle,
+      type: "boolean",
+      control: "choice",
+      bind: "ShowDefaultFolderIcon",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: false,
+      choices {
+        c0: pogget.label.folderPreview,
+        c1: pogget.label.folderSystem
+      }
+    },
+    TextPreview {
+      label: pogget.label.textPreviewTitle,
+      type: "boolean",
+      control: "choice",
+      bind: "ShowTextPreview",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: true,
+      invert: true,
+      choices {
+        c0: pogget.label.textPreviewShow,
+        c1: pogget.label.textPreviewSystem
+      }
+    },
+    MediaPreview {
+      label: pogget.label.mediaPreviewTitle,
+      type: "boolean",
+      control: "choice",
+      bind: "ShowMediaPreview",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: true,
+      invert: true,
+      choices {
+        c0: pogget.label.mediaPreviewShow,
+        c1: pogget.label.mediaPreviewSystem
+      }
+    },
+    FileName {
+      label: pogget.label.fileNameTitle,
+      type: "number",
+      control: "choice",
+      bind: "HideFileExtension",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.fileNameShowExt,
+        c1: pogget.label.fileNameHideExt,
+        c2: pogget.label.fileNameHideAll
+      }
+    },
+    FileNameColor {
+      label: pogget.label.fileNameColorTitle,
+      type: "number",
+      control: "choice",
+      bind: "FileNameColorMode",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.colorTheme,
+        c1: pogget.label.colorWhite,
+        c2: pogget.label.colorBlack
+      }
+    },
+    TextShadow {
+      label: pogget.label.textShadowTitle,
+      type: "number",
+      control: "choice",
+      bind: "TextRenderMode",
+      min: 0,
+      max: 3,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.shadowNone,
+        c1: pogget.label.shadowThick,
+        c2: pogget.label.shadowLight,
+        c3: pogget.label.shadowTheme
+      }
+    },
+    ListDetails {
+      label: pogget.label.listDetailsTitle,
+      type: "number",
+      control: "choice",
+      bind: "ListDetailType",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.detailSize,
+        c1: pogget.label.detailNone,
+        c2: pogget.label.detailDate
+      }
+    },
+    Font {
+      label: pogget.label.fontSelectionTitle,
+      type: "text",
+      control: "font",
+      bind: "fontFamily",
+      min: 0,
+      max: 0,
+      step: 1,
+      default: "Segoe UI"
+    },
+    TextSize {
+      label: pogget.label.textSizeDefault,
+      type: "number",
+      control: "slider",
+      bind: "textSize",
+      min: 6,
+      max: 18,
+      step: 0.5,
+      default: 10
+    },
+    TextOmit {
+      label: pogget.label.textOmitDefault,
+      type: "number",
+      control: "slider",
+      bind: "TextOmitOffset",
+      min: -6,
+      max: 6,
+      step: 1,
+      default: 0
+    },
+    TextOverflow {
+      label: pogget.label.allowTextWrapOverflow,
+      type: "boolean",
+      control: "switch",
+      bind: "AllowTextWrapOverflow",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: false
+    },
+    FadeTransition {
+      label: pogget.label.fadeTransitionTitle,
+      type: "boolean",
+      control: "choice",
+      bind: "FadeOutSwitch",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: false,
+      choices {
+        c0: pogget.label.fadeDisabled,
+        c1: pogget.label.fadeEnabled
+      }
+    },
+    IconBackground {
+      label: pogget.label.iconBackgroundTitle,
+      type: "boolean",
+      control: "switch",
+      bind: "",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: false
+    },
+    IconBackgroundColor {
+      label: pogget.label.iconBackgroundColorTitle,
+      type: "number",
+      control: "color",
+      bind: "",
+      min: 0,
+      max: 16777215,
+      step: 1,
+      default: ${pogget.theme.midnight},
+      visible: (${ui.IconBackground.value})
+    },
+    IconBackgroundOpacity {
+      label: pogget.label.iconBackgroundOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 0.16,
+      visible: (${ui.IconBackground.value})
+    },
+    IconBackgroundHoverOpacity {
+      label: pogget.label.iconBackgroundHoverOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 0.24,
+      visible: (${ui.IconBackground.value})
+    },
+    IconBackgroundRadius {
+      label: pogget.label.iconBackgroundRadiusTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 128,
+      step: 1,
+      default: 8,
+      visible: (${ui.IconBackground.value})
+    },
+    // Hidden legacy fallback: saved scalar values and old dependency overrides feed both axes.
+    IconBackgroundExpand {
+      label: pogget.label.iconBackgroundExpandTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 64,
+      step: 1,
+      default: 4,
+      visible: false
+    },
+    IconBackgroundExpandX {
+      label: pogget.label.iconBackgroundExpandXTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 64,
+      step: 1,
+      default: ${VinaIcon.view.IconBackgroundExpand},
+      visible: (${ui.IconBackground.value} || ${ui.IconBorder.value})
+    },
+    IconBackgroundExpandY {
+      label: pogget.label.iconBackgroundExpandYTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 64,
+      step: 1,
+      default: ${VinaIcon.view.IconBackgroundExpand},
+      visible: (${ui.IconBackground.value} || ${ui.IconBorder.value})
+    },
+    IconBackgroundOffsetY {
+      label: pogget.label.iconBackgroundOffsetYTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: -64,
+      max: 64,
+      step: 1,
+      default: 0,
+      visible: (${ui.IconBackground.value} || ${ui.IconBorder.value})
+    },
+    IconBorder {
+      label: pogget.label.iconBorderTitle,
+      type: "boolean",
+      control: "switch",
+      bind: "",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: false
+    },
+    IconBorderColor {
+      label: pogget.label.iconBorderColorTitle,
+      type: "number",
+      control: "color",
+      bind: "",
+      min: 0,
+      max: 16777215,
+      step: 1,
+      default: ${pogget.theme.white},
+      visible: (${ui.IconBorder.value})
+    },
+    IconBorderWidth {
+      label: pogget.label.iconBorderWidthTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 8,
+      step: 1,
+      default: 0,
+      visible: (${ui.IconBorder.value})
+    },
+    IconBorderOpacity {
+      label: pogget.label.iconBorderOpacityTitle,
+      type: "number",
+      control: "slider",
+      bind: "",
+      min: 0,
+      max: 1,
+      step: 0.01,
+      default: 0.18,
+      visible: (${ui.IconBorder.value})
+    }
+  },
+  view {
+    type: "pogget.native.VinaIcon",
+    interaction: "icon",
+    ShowDefaultFolderIcon: ${ui.FolderView.value},
+    ShowTextPreview: ${ui.TextPreview.value},
+    ShowMediaPreview: ${ui.MediaPreview.value},
+    HideFileExtension: ${ui.FileName.value},
+    TextRenderMode: ${ui.TextShadow.value},
+    ListDetailType: ${ui.ListDetails.value},
+    fontFamily: ${ui.Font.value},
+    textSize: ${ui.TextSize.value},
+    TextOmitOffset: ${ui.TextOmit.value},
+    AllowTextWrapOverflow: ${ui.TextOverflow.value},
+    FadeOutSwitch: ${ui.FadeTransition.value},
+    IconBackground: ${ui.IconBackground.value},
+    IconBackgroundColor: ${ui.IconBackgroundColor.value},
+    IconBackgroundOpacity: ${ui.IconBackgroundOpacity.value},
+    IconBackgroundHoverOpacity: ${ui.IconBackgroundHoverOpacity.value},
+    IconBackgroundRadius: ${ui.IconBackgroundRadius.value},
+    IconBackgroundExpand: ${ui.IconBackgroundExpand.value},
+    IconBackgroundExpandX: ${ui.IconBackgroundExpandX.value},
+    IconBackgroundExpandY: ${ui.IconBackgroundExpandY.value},
+    IconBackgroundOffsetY: ${ui.IconBackgroundOffsetY.value},
+    IconBorder: ${ui.IconBorder.value},
+    IconBorderColor: ${ui.IconBorderColor.value},
+    IconBorderWidth: ${ui.IconBorderWidth.value},
+    IconBorderOpacity: ${ui.IconBorderOpacity.value}
+  }
+}
+
+Behavior {
+  label: pogget.label.behaviorSectionTitle,
+  description: pogget.label.behaviorSectionSubtitle,
+  icon: "\uf245",
+  ui {
+    AutoHideTitle {
+      label: pogget.label.autoHideTitleBarTitle,
+      type: "number",
+      control: "choice",
+      bind: "AutoHideTitleBar",
+      min: 0,
+      max: 3,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.ahAutoShow,
+        c1: pogget.label.ahHideReflow,
+        c2: pogget.label.ahHideOnly,
+        c3: pogget.label.ahAlwaysShow
+      }
+    },
+    QuickCollapse {
+      label: pogget.label.quickCollapseExpandTitle,
+      type: "number",
+      control: "choice",
+      bind: "QuickExpandCollapse",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 1,
+      choices {
+        c0: pogget.label.qceNone,
+        c1: pogget.label.qceDoubleClick,
+        c2: pogget.label.qceSingleClick
+      }
+    },
+    CollapseDirection {
+      label: pogget.label.collapseDirectionTitle,
+      type: "number",
+      control: "choice",
+      bind: "CollapseDirection",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.collapseDirectionAuto,
+        c1: pogget.label.collapseDirectionUp,
+        c2: pogget.label.collapseDirectionDown
+      }
+    },
+    AutoHide {
+      label: pogget.label.autoHideBehaviorTitle,
+      type: "number",
+      control: "choice",
+      bind: "AutoFade",
+      min: 0,
+      max: 2,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.ahbDisabled,
+        c1: pogget.label.ahbFadeOut,
+        c2: pogget.label.ahbCollapse
+      }
+    },
+    InlineViewer {
+      label: pogget.label.inlineDocumentViewerTitle,
+      type: "number",
+      control: "choice",
+      bind: "FolderOpenMode",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: 0,
+      choices {
+        c0: pogget.label.inlineDisabled,
+        c1: pogget.label.inlineEnabled
+      },
+      notice: pogget.label.inlineDocumentViewerNotice,
+      noticeHeight: 50,
+      noticeGap: 58
+    },
+    SwipeSearch {
+      label: pogget.label.swipeUpSearchTitle,
+      type: "boolean",
+      control: "choice",
+      bind: "SwipeUpSearchEnabled",
+      min: 0,
+      max: 1,
+      step: 1,
+      default: true,
+      choices {
+        c0: pogget.label.susDisabled,
+        c1: pogget.label.susEnabled
+      }
+    }
+  },
+  view {
+    type: "pogget.native.Behavior",
+    interaction: "behavior",
+    AutoHideTitleBar: ${ui.AutoHideTitle.value},
+    QuickExpandCollapse: ${ui.QuickCollapse.value},
+    CollapseDirection: ${ui.CollapseDirection.value},
+    AutoFade: ${ui.AutoHide.value},
+    FolderOpenMode: ${ui.InlineViewer.value},
+    SwipeUpSearchEnabled: ${ui.SwipeSearch.value}
+  }
+}
+
+// These are editable Vina shapes, including their collapsed presentation.
+// The host supplies window state and animation progress, not style geometry.
+// Final whole-container frame. The host supplies client pixels and native state;
+// ordinary Vina primitives own the geometry, stroke, pointer highlight and tint.
+ContainerFrame {
+  vars {
+    scale: max(0.001, ${pogget.containerFrame.scale}),
+    floatScale: f32(${vars.scale}),
+    lightEffectWidth: f32(${pogget.containerFrame.widthPixels} / ${vars.floatScale}),
+    lightEffectHeight: f32(${pogget.containerFrame.heightPixels} / ${vars.floatScale}),
+    pointerX: f32(${pogget.containerFrame.pointerX}), pointerY: f32(${pogget.containerFrame.pointerY}),
+    tagY: ${pogget.containerFrame.upward} ? ${vars.lightEffectHeight} : 0,
+    distance: f32(hypot(${vars.pointerX}, f32(${vars.pointerY} - ${vars.tagY}))),
+    tint: clamp(f32(1 - f32(${vars.distance} / 250)), 0, 1),
+    tintAmount: f32(f32(${vars.tint} * ${vars.tint}) * f32(3 - f32(2 * ${vars.tint})))
+  },
+  view {
+    type: "group", slot: "containerFrame", width: ${pogget.containerFrame.widthPixels} / ${vars.scale}, height: ${pogget.containerFrame.heightPixels} / ${vars.scale},
+    visible: (${pogget.containerFrame.mode} == 3 || ${pogget.containerFrame.mode} == 4) && ${pogget.containerFrame.scale} > 0,
+    Flat {
+      type: "rect", width: ${ContainerFrame.view.width}, height: ${ContainerFrame.view.height},
+      visible: ${pogget.containerFrame.frame} == 1, background: ${pogget.containerFrame.background}, fillOpacity: 0, borderOnly: true,
+      radius: min(f32(${pogget.containerFrame.nativeRadius} * ceil(${vars.scale}) / ${vars.scale}), f32(${ContainerFrame.view.height} / 2)),
+      border: 2.5, borderColor: ${pogget.containerFrame.customBorder} ? ${pogget.containerFrame.borderColor} : fade(${pogget.theme.midnightplus}, 20),
+      borderOpacity: f32(f32(0.8) * ${pogget.containerFrame.borderOpacity})
+    },
+    LightEffect {
+      type: "glass", glassRenderer: "lightEffect", width: ${vars.lightEffectWidth}, height: ${vars.lightEffectHeight},
+      visible: ${pogget.containerFrame.frame} == 3, background: ${pogget.containerFrame.background},
+      radius: f32(f32(${pogget.containerFrame.nativeRadius} * ceil(${vars.floatScale})) / ${vars.floatScale}),
+      glassBorder: 1, glassOpacity: ${pogget.containerFrame.spotlight}, borderOpacity: ${pogget.containerFrame.borderOpacity},
+      glassPointerX: ${vars.pointerX}, glassPointerY: ${vars.pointerY},
+      glassTintEnabled: ${pogget.containerFrame.tag}, glassTintColor: ${pogget.containerFrame.tagColor}, glassTintAmount: ${pogget.containerFrame.tag} ? ${vars.tintAmount} : 0,
+      glassCustomEdge: ${pogget.containerFrame.customBorder}, borderColor: ${pogget.containerFrame.borderColor}
+    }
+  }
+}
+
+TitleSurface {
+  vars {
+    style: ${Tag.ui.TitleStyle.value},
+    layoutRadOffset: (${pogget.mode} == 4 || (${pogget.mode} == 3 && ${pogget.frame} != 2)) && ${pogget.cornerRadius} > 12 && ${vars.style} != 2 ? (${pogget.cornerRadius} - 12) * 0.2 : 0,
+    titleHeight: 40 + ${vars.layoutRadOffset},
+    progress: ${pogget.titleProgress},
+    collapsedStyle: ${pogget.height} < ${pogget.collapsedHeight} + 45,
+    flat: ${vars.style} != 0 && ${vars.progress} < 0.01,
+    baseX: ${vars.style} == 1 ? 8 : (${vars.style} == 2 ? 10 : 0),
+    baseY: ${vars.baseX},
+    offsetX: ${pogget.titleTransitioning} ? (${vars.collapsedStyle} ? 0 : ${vars.baseX}) : (${vars.flat} ? 0 : f32(${vars.baseX} * ${vars.progress})),
+    offsetY: ${pogget.titleTransitioning} ? (${vars.collapsedStyle} ? 0 : ${vars.baseY}) : (${vars.flat} ? 0 : f32(${vars.baseY} * ${vars.progress})),
+    directionY: ${pogget.upward} ? -${vars.offsetY} : ${vars.offsetY},
+    alpha: ${pogget.mode} == 0 ? 0.5 : f32(${Tag.ui.TitleOpacity.value}),
+    dividerAlpha: ${pogget.mode} == 0 ? 1 : f32(${Tag.ui.TitleOpacity.value}),
+    highlight: ${pogget.frame} != 3 ? 0 : (${vars.alpha} > 0.25 ? f32(f32(0.7) + f32(f32(f32(${vars.alpha} - 0.25) / 0.75) * f32(0.3))) : f32(f32(${vars.alpha} / 0.25) * f32(0.7))),
+    extension: ${vars.style} == 1 && !${vars.flat} ? ${pogget.titleExtension} * ${vars.progress} : (${vars.style} == 0 ? ${pogget.titleExtension} : 0),
+    x: ${vars.style} == 1 ? ${vars.offsetX} : (${vars.style} == 2 && !${vars.flat} ? (${pogget.width} - 95) * ${vars.progress} : 0),
+    y: ${pogget.titleY} + ${vars.directionY} - (${pogget.upward} ? ${vars.extension} : 0),
+    width: ${vars.flat} ? ${pogget.width} : (${vars.style} == 1 ? ${pogget.width} - ${vars.offsetX} * 2 : (${vars.style} == 2 ? ${pogget.width} + (85 - ${pogget.width}) * ${vars.progress} : ${pogget.width})),
+    height: ${vars.flat} ? ${pogget.collapsedHeight} : (${vars.style} == 2 ? ${pogget.collapsedHeight} + (40 - ${pogget.collapsedHeight}) * ${vars.progress} : ${pogget.titleHeight} + ${vars.extension}),
+    radius: ${vars.flat} || ${vars.style} == 0 ? 0 : (${vars.style} == 2 ? 20 : (${pogget.mode} >= 3 ? max(6, ${pogget.cornerRadius} - 3) : 6.5)) * ${vars.progress},
+    blur: ${vars.style} == 0 && ${pogget.searching} ? 0 : max(0, ${Tag.ui.TitleBlur.value}),
+    shadow: ${vars.flat} || ${vars.style} == 0 ? 0 : f32(f32(${vars.alpha} / 45) * ${vars.progress}),
+    border: ${vars.style} == 2 && !${vars.flat} ? 1 : 0,
+    borderAlpha: ${vars.style} == 2 && !${vars.flat} ? f32(f32(0.2) * ${vars.progress}) : 0
+  },
+  // A stable host animation controller interpolates these Vina targets with
+  // the established spring curves; presets remain in charge of every target.
+  motion {
+    enabled: ${vars.style} != 0 && !${pogget.titleHidden},
+    targetProgress: ${vars.collapsedStyle} ? 0 : 1,
+    duration: 400ms,
+    transitionDuration: 400ms, searchDuration: 400ms, searchFrom: -4, searchTo: 0,
+    targetX: ${pogget.titleVariant} == 1 && !${vars.collapsedStyle} ? 8 : (${pogget.titleVariant} == 2 && !${vars.collapsedStyle} ? ${pogget.width} - 95 : 0),
+    targetY: ${pogget.titleY} + (${pogget.titleVariant} != 0 && !${vars.collapsedStyle} ? (${pogget.upward} ? -1 : 1) * ((${pogget.titleVariant} == 1 ? 8 : 10) + (${pogget.searching} ? 10 : 0)) : 0) - (${pogget.upward} && ${pogget.titleVariant} != 2 && !(${pogget.titleVariant} != 0 && ${vars.collapsedStyle}) ? ${pogget.titleExtension} : 0),
+    targetWidth: ${pogget.titleVariant} != 0 && ${vars.collapsedStyle} ? ${pogget.width} : (${pogget.titleVariant} == 1 ? ${pogget.width} - 16 : (${pogget.titleVariant} == 2 ? 85 : ${pogget.width})),
+    targetHeight: ${pogget.titleVariant} != 0 && ${vars.collapsedStyle} ? ${pogget.collapsedHeight} : (${pogget.titleVariant} == 2 ? 40 : ${pogget.titleHeight} + ${pogget.titleExtension}),
+    targetRadius: ${pogget.titleVariant} == 0 || ${vars.collapsedStyle} ? 0.1 : (${pogget.titleVariant} == 2 ? 20 : (${pogget.mode} >= 3 ? max(6, ${pogget.cornerRadius} - 3) : 6.5)),
+    targetShadowY: ${pogget.titleVariant} == 0 || ${vars.collapsedStyle} ? 0 : 2,
+    targetShadowAlpha: ${pogget.titleVariant} == 0 || ${vars.collapsedStyle} ? 0 : ${vars.alpha} / 45,
+    targetBorderAlpha: ${pogget.titleVariant} == 2 && !${vars.collapsedStyle} ? 0.2 : 0
+  },
+  view {
+    type: "group", slot: "titleSurface", visible: !${pogget.titleHidden},
+    width: ${pogget.width}, height: ${pogget.height},
+    Backdrop {
+      type: "group",
+      x: ${pogget.titleTransitioning} ? ${pogget.titleFluidX} : ${vars.x},
+      y: ${pogget.titleTransitioning} ? ${pogget.titleFluidY} : ${vars.y},
+      width: ${pogget.titleTransitioning} ? max(0, ${pogget.titleFluidWidth}) : max(0, ${vars.width}),
+      height: ${pogget.titleTransitioning} ? max(0, ${pogget.titleFluidHeight}) : max(0, ${vars.height}),
+      radius: ${pogget.titleTransitioning} ? max(0, ${pogget.titleFluidRadius}) : ${vars.radius},
+      blur: ${pogget.titleTransitioning} ? max(0, ${Tag.ui.TitleBlur.value}) : ${vars.blur}
+    },
+    Surface {
+      type: ${pogget.titleTransitioning} || !(${vars.flat} || ${vars.style} == 0) ? "rect" : "solid",
+      x: ${TitleSurface.view.Backdrop.x}, y: ${TitleSurface.view.Backdrop.y}, width: ${TitleSurface.view.Backdrop.width}, height: ${TitleSurface.view.Backdrop.height}, radius: ${TitleSurface.view.Backdrop.radius},
+      background: ${pogget.titleColor}, fillOpacity: ${vars.style} == 0 && ${pogget.searching} && !${pogget.titleTransitioning} ? 1 : ${vars.alpha},
+      shadowOpacity: ${pogget.titleTransitioning} ? (${pogget.titleFluidShadowAlpha} > 0.001 ? clamp(${pogget.titleFluidShadowAlpha}, 0, 1) : 0) : ${vars.shadow},
+      shadowY: ${pogget.titleTransitioning} ? ${pogget.titleFluidShadowY} : 2,
+      shadowBlur: 10, shadowQuality: 5, shadowColor: ${pogget.theme.white},
+      border: ${pogget.titleTransitioning} ? (${pogget.titleFluidBorderAlpha} > 0.01 ? 1 : 0) : ${vars.border},
+      borderColor: ${pogget.titleBorderColor}, borderOpacity: ${pogget.titleTransitioning} ? clamp(${pogget.titleFluidBorderAlpha}, 0, 1) : ${vars.borderAlpha}
+    },
+    Highlight {
+      type: "glass", visible: !${pogget.titleTransitioning} && (${vars.style} != 0 || ${pogget.frame} >= 3),
+      x: ${TitleSurface.view.Backdrop.x}, y: ${TitleSurface.view.Backdrop.y}, width: ${TitleSurface.view.Backdrop.width}, height: ${TitleSurface.view.Backdrop.height}, radius: ${TitleSurface.view.Backdrop.radius},
+      background: ${pogget.titleColor}, fillOpacity: ${vars.alpha},
+      glassOpacity: ${vars.style} == 0 && (${pogget.searching} || ${pogget.mode} == 0) ? 1 : ${vars.highlight},
+      glassActive: ${pogget.frame} == 3
+    },
+    Divider {
+      type: "solid", visible: ${vars.style} == 0 && !${pogget.titleTransitioning},
+      x: 0, y: ${pogget.upward} ? ${vars.y} : ${vars.y} + ${vars.height}, width: ${pogget.width}, height: 1.5,
+      background: ${pogget.theme.midnightplus}, opacity: ${vars.dividerAlpha}
+    }
+  }
+}
+
+TitleButtons {
+  vars {
+    style: ${Tag.ui.TitleStyle.value},
+    controlY: ${pogget.upward} ? 0 : ${TitleSurface.vars.layoutRadOffset},
+    // Match the native host's float intermediates before integer hit geometry.
+    rawCloseX: f32(${pogget.width} - 32 - f32(${TitleSurface.vars.offsetX})),
+    rawCloseY: f32(f32(f32(f32(${pogget.titleY} + 19) + f32(${TitleSurface.vars.directionY})) + f32(${vars.controlY})) - (${vars.style} == 0 ? 0 : 1)),
+    closeX: trunc(${vars.rawCloseX}), closeY: trunc(${vars.rawCloseY}),
+    folded: ${pogget.hoverCollapsed} ? !${pogget.hoverExpanded} : ${pogget.collapsed},
+    glyph: ${pogget.temporaryTopmost} ? "\uf00d" : (${pogget.upward} ? (${vars.folded} ? "\uf077" : "\u2304") : (${vars.folded} ? "\u2304" : "\uf077")),
+    closeScale: ${pogget.titleCollapse.pressScale} * ${pogget.titleCollapse.holdScale},
+    moreScale: ${pogget.titleMore.pressScale},
+    pinScale: ${pogget.titlePin.pressScale},
+    closeHover: ${pogget.titleCollapse.hover} > 0.01 ? 0.5 * (pow(${pogget.titleCollapse.hover} / 10 - 1, 3) + 1) : 0,
+    moreHover: ${pogget.titleMore.hover} > 0.01 ? 0.5 * (pow(${pogget.titleMore.hover} / 10 - 1, 3) + 1) : 0,
+    pinHover: ${pogget.titlePin.hover} > 0.01 ? 0.5 * (pow(${pogget.titlePin.hover} / 10 - 1, 3) + 1) : 0,
+    factor: average(${pogget.buttonColor}) > 128 ? -2 : 1,
+    closeColor: rgb((trunc(min(255, red(${pogget.buttonColor}) + ${vars.closeHover} * 20 * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.buttonColor}) + ${vars.closeHover} * 20 * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.buttonColor}) + ${vars.closeHover} * 20 * ${vars.factor})) + 256) % 256),
+    moreColor: rgb((trunc(min(255, red(${pogget.buttonColor}) + ${vars.moreHover} * 20 * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.buttonColor}) + ${vars.moreHover} * 20 * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.buttonColor}) + ${vars.moreHover} * 20 * ${vars.factor})) + 256) % 256),
+    pinColor: rgb((trunc(min(255, red(${pogget.buttonColor}) + ${vars.pinHover} * 20 * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.buttonColor}) + ${vars.pinHover} * 20 * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.buttonColor}) + ${vars.pinHover} * 20 * ${vars.factor})) + 256) % 256)
+  },
+  view {
+    type: "group", width: ${pogget.width}, height: ${pogget.height}, visible: !${pogget.titleHidden},
+    PinBackground {
+      type: "rect", slot: "titlePinBackground", x: ${TitleButtons.view.Collapse.x} + ${vars.rawCloseX} - ${vars.closeX} - 12,
+      y: ${TitleButtons.view.Collapse.y} + ${vars.rawCloseY} - ${vars.closeY} - 12 - (${pogget.upward} ? 24 * ${TitleButtons.view.PinHotzone.hoverProgress} : 0),
+      width: 38, height: 38 + 24 * ${TitleButtons.view.PinHotzone.hoverProgress}, radius: 19,
+      visible: !${pogget.temporaryTopmost} && ${TitleButtons.view.PinHotzone.hoverProgress} > 0.001,
+      background: fade(${pogget.titleColor}, average(${pogget.titleColor}) > 128 ? -25 : 25), fillOpacity: ${TitleButtons.view.PinHotzone.hoverProgress},
+      shadowOpacity: ${pogget.hoverCollapsed} && ${pogget.hoverExpanded} ? 0.05 * ${TitleButtons.view.PinHotzone.hoverProgress} : 0,
+      shadowY: 0, shadowBlur: 5, shadowQuality: 3, shadowColor: ${pogget.theme.white},
+      border: ${pogget.hoverCollapsed} && ${pogget.hoverExpanded} ? 0 : 1,
+      borderColor: fade(${pogget.buttonColor}, 30), borderOpacity: 0.25 * ${TitleButtons.view.PinHotzone.hoverProgress}
+    },
+    PinHotzone {
+      type: "group", slot: "titlePinHotzone", x: ${TitleButtons.view.Collapse.x} + ${vars.rawCloseX} - ${vars.closeX} - 12,
+      y: ${TitleButtons.view.Collapse.y} + ${vars.rawCloseY} - ${vars.closeY} - 12 - (${pogget.upward} ? 24 : 0), width: 38, height: 62,
+      transition: 200ms, unhoverTransition: 150ms,
+      hoverRegion {
+        x: ${TitleButtons.view.Collapse.x}, y: ${TitleButtons.view.Collapse.y},
+        width: ${TitleButtons.view.Collapse.width}, height: ${TitleButtons.view.Collapse.height},
+        retainX: ${TitleButtons.view.PinHotzone.x}, retainY: ${TitleButtons.view.PinHotzone.y},
+        retainWidth: ${TitleButtons.view.PinHotzone.width}, retainHeight: ${TitleButtons.view.PinHotzone.height},
+        enabled: !${pogget.temporaryTopmost} && ${pogget.hoverCollapsed} && ${pogget.hoverExpanded} && !${pogget.hoverExpandingAnimation}
+      }
+    },
+    Collapse {
+      type: "group", slot: "titleCollapse", x: ${vars.closeX}, y: ${vars.closeY}, width: 14, height: 14,
+      legacyX: "collapseX", legacyY: "collapseY", legacyOriginY: ${pogget.titleY} + ${TitleSurface.vars.directionY},
+      hitPaddingX: 8, hitPaddingY: 8, action: ${pogget.temporaryTopmost} ? pogget.action.container.endTemporarySession : pogget.action.container.toggleCollapse,
+      holdAction: ${pogget.temporaryTopmost} ? pogget.action.container.endTemporarySession : pogget.action.container.hoverCollapse,
+      transition: 200ms, pressDuration: 150ms, releaseDuration: 300ms, pressScale: 0.85,
+      holdDelay: 400ms, holdDuration: 300ms, holdScale: 0.9, holdOffset: ${pogget.upward} ? -5 : 5,
+      Glyph {
+        type: "icon", x: (14 - 14 * ${vars.closeScale}) / 2, y: -${pogget.titleCollapse.holdY} + 7 - 14 / 1.5 + (14 - 14 * ${vars.closeScale}) / 2,
+        width: 14, height: 14, textY: 0, textSize: 14 * ${vars.closeScale}, icon: ${vars.glyph},
+        font: "Font Awesome 6 Free Solid", textRenderer: "glyph", color: ${vars.closeColor}, opacity: ${pogget.titleCollapse.opacity}
+      }
+    },
+    More {
+      type: "group", slot: "titleMore", x: trunc(${pogget.width} - 65 - ${TitleSurface.vars.offsetX}),
+      y: trunc(f32(f32(f32(f32(${pogget.titleY} + 18) + f32(${TitleSurface.vars.directionY})) + f32(${vars.controlY})) - (${vars.style} == 0 ? 0 : 1))),
+      width: 14, height: 14, hitPaddingX: 8, hitPaddingY: 8, action: pogget.action.container.menu,
+      legacyX: "moreX", legacyY: "moreY", legacyOriginY: ${pogget.titleY} + ${TitleSurface.vars.directionY},
+      Glyph {
+        type: "icon", x: (14 - 14 * ${vars.moreScale}) / 2, y: 7 - 14 / 1.5 + (14 - 14 * ${vars.moreScale}) / 2,
+        width: 14, height: 14, textY: 0, textSize: 14 * ${vars.moreScale}, icon: "\uf141",
+        font: "Font Awesome 6 Free Solid", textRenderer: "glyph", color: ${vars.moreColor}, opacity: ${pogget.titleMore.opacity}
+      }
+    },
+    Pin {
+      type: "group", slot: "titlePin", x: ${vars.closeX} + (${pogget.hoverCollapsed} && ${pogget.hoverExpanded} ? 1 : 0),
+      y: trunc(f32(${TitleButtons.view.Collapse.y} + ${vars.rawCloseY} - ${vars.closeY} + (${pogget.upward} ? -24 : 24) * ${TitleButtons.view.PinHotzone.hoverProgress})), width: 14, height: 14,
+      visible: !${pogget.temporaryTopmost} && ${TitleButtons.view.PinHotzone.hoverProgress} > 0.001, action: pogget.action.container.pin,
+      Glyph {
+        type: "icon", x: (14 - 14 * ${vars.pinScale}) / 2, y: 7 - 14 / 1.5 + (14 - 14 * ${vars.pinScale}) / 2,
+        width: 14, height: 14, textY: 0, textSize: 14 * ${vars.pinScale}, icon: "\uf08d",
+        font: "Font Awesome 6 Free Solid", textRenderer: "glyph", color: ${vars.pinColor}, opacity: ${pogget.titlePin.opacity}
+      }
+    }
+  }
+}
+
+// Native input controllers publish state only. All five tag presentations,
+// including the collapsed capsule, are ordinary shapes in the same view tree.
+TitleTag {
+  vars {
+    style: ${Tag.ui.TitleStyle.value}, tag: ${Tag.ui.TagStyle.value},
+    capsule: ${vars.style} == 2 && !${TitleSurface.vars.collapsedStyle},
+    padded: ${pogget.shadowPadding} || ${pogget.mode} == 3,
+    tagHeight: 28 + ((${pogget.mode} == 4 || (${pogget.mode} == 3 && ${pogget.frame} != 2)) && ${vars.style} != 2 && ${pogget.cornerRadius} > 15 ? (${pogget.cornerRadius} - 15) * 0.5 : 0),
+    paddingY: (${pogget.mode} == 4 || (${pogget.mode} == 3 && ${pogget.frame} != 2)) && ${vars.style} != 2 ? (${TitleSurface.vars.titleHeight} - ${vars.tagHeight}) / 2 : 6,
+    y: ${pogget.titleY} + ${TitleSurface.vars.directionY} + (${vars.capsule} ? 0 : ${vars.paddingY} + (${pogget.upward} ? 0 : ${TitleSurface.vars.layoutRadOffset} * 0.30 - (${vars.paddingY} - 6))),
+    width: 30 + ${pogget.titleTextWidth} - (${vars.tag} >= 1 && ${vars.tag} <= 4 ? (${vars.capsule} ? 25 : 26) : 0),
+    alpha: clamp(${Tag.ui.TagOpacity.value}, 0, 1), textAlpha: clamp(${Tag.ui.TagTextOpacity.value}, 0, 1),
+    bgAlpha: ((${pogget.collapsed} || (${pogget.hoverCollapsed} && !${pogget.hoverExpanded})) && ${pogget.mode} >= 3 ? 0 : 1) * ${vars.alpha},
+    base: ${pogget.titleCustomColor} ? ${pogget.titleColor} : (${vars.capsule} ? fade(${pogget.theme.darknight}, -10) : ${pogget.theme.midnight}),
+    bgBase: ${pogget.theme.monochrome} ? fade(${vars.base}, 15) : ${vars.base},
+    expansion: max(0, ${pogget.tag.hover} * 2 - ${pogget.tag.push}),
+    bright: rgb(red(${vars.bgBase}) + ${vars.expansion} * 2.5 + 20, green(${vars.bgBase}) + ${vars.expansion} * 2.5 + 20, blue(${vars.bgBase}) + ${vars.expansion} * 2.5 + 20),
+    plainBright: rgb(red(${vars.base}) + ${vars.expansion} * 2.5 + 20, green(${vars.base}) + ${vars.expansion} * 2.5 + 20, blue(${vars.base}) + ${vars.expansion} * 2.5 + 20),
+    outlined: ${vars.tag} == 1 && ${pogget.tag.color} != rgb(242, 242, 242),
+    radius: ${vars.padded} && (${vars.style} == 0 || (${vars.style} == 2 && ${TitleSurface.vars.collapsedStyle} && ${vars.tag} == 0)) ? min(max(6, ${pogget.nativeCornerRadius} - 4), ${TitleTag.view.height} / 2) : (${vars.padded} && ${vars.style} == 1 ? max(6, ${pogget.nativeCornerRadius} - 8) : (${vars.capsule} ? 20 : 6)),
+    innerRadius: ${vars.padded} && (${vars.style} != 2 || (${TitleSurface.vars.collapsedStyle} && ${vars.tag} == 0)) ? max(3, ${vars.radius} - 3) : ${vars.radius} / 2,
+    markerPaddingY: f32(${TitleTag.view.height} * f32(0.214)),
+    markerSize: min(f32(${TitleTag.view.height} - f32(${vars.markerPaddingY} * 2)), 22),
+    textX: (${vars.tag} >= 1 && ${vars.tag} <= 4 ? 8 : 16 + ${vars.markerSize}) + (${vars.tag} == 3 && ${vars.style} == 2 ? 8 : 0) + (${vars.tag} == 1 || ${vars.tag} == 4 ? 6 : 0),
+    textY: ${TitleTag.view.height} / 2 - 14 / 1.5,
+    textOriginX: f32(${TitleTag.view.x} + f32(${vars.textX})),
+    textOriginY: f32(f32(${TitleTag.view.y} + f32(${TitleTag.view.height} / 2)) - f32(14 / 1.5)),
+    textColor: ${vars.tag} == 4 && !${pogget.titleCustomColor} ? ${pogget.tag.color} : ${pogget.buttonColor},
+    effectiveTextColor: ${pogget.tag.active} ? ${vars.textColor} : fade(${vars.textColor}, 80),
+    hoverAlpha: ${pogget.tag.hover} * (1 - ${pogget.tag.push}),
+    animated: ${pogget.tag.textProgress} < 1,
+    textHeight: max(0, ${TitleTag.view.height} - (${vars.animated} ? 20 : 0)),
+    direction: ${pogget.tag.direction} == 0 ? 1 : -1,
+    // The retained native clip callback receives integer panel coordinates.
+    animatedX: ${vars.animated} ? trunc(${vars.textOriginX}) - ${vars.textOriginX} : 0,
+    oldY: f32(trunc(${vars.textOriginY}) + ${vars.direction} * f32(21 * f32(${pogget.tag.textProgress}))) - ${vars.textOriginY},
+    currentY: ${vars.animated} ? f32(trunc(${vars.textOriginY}) - ${vars.direction} * f32(21 * f32(1 - ${pogget.tag.textProgress}))) - ${vars.textOriginY} : 0,
+    shadowAlpha: ${pogget.tag.active} ? 0.35 : 0.15
+  },
+  view {
+    type: "group", slot: "titleTag", visible: !${pogget.titleHidden}, enabled: ${pogget.tag.active},
+    x: trunc(${vars.capsule} ? 10 : 8 + ${TitleSurface.vars.offsetX}), y: trunc(${vars.y}),
+    width: max(0, trunc(${vars.width}) + (${vars.tag} >= 1 && ${vars.tag} <= 4 ? 10 : 0) + (${vars.style} == 2 ? 10 : 0)),
+    height: trunc(${vars.capsule} ? 40 : ${vars.tagHeight}), action: pogget.action.container.tagMenu,
+    legacyX: "tagX", legacyY: "tagY", legacyWidth: "tagWidth", legacyHeight: "tagHeight",
+    legacyAlignX: "tagAlign", legacyCenterWidth: ${vars.width},
+    legacyExtraWidth: (${vars.tag} >= 1 && ${vars.tag} <= 4 ? 10 : 0) + (${vars.style} == 2 ? 10 : 0),
+    legacyOriginY: ${pogget.titleY} + ${TitleSurface.vars.directionY},
+    Backdrop {
+      type: "group", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius},
+      visible: ${vars.capsule} && ${vars.tag} != 2 && ${vars.bgAlpha} > 0.01, blur: max(0, ${Tag.ui.TitleBlur.value})
+    },
+    Shadow {
+      type: "group", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius},
+      visible: ${vars.capsule} && ${vars.bgAlpha} > 0.01 && ${vars.tag} != 2,
+      shadowOpacity: 0.02 * ${vars.alpha} * (${vars.tag} == 3 ? ${TitleSurface.vars.alpha} : 1),
+      shadowY: 2, shadowBlur: 10, shadowQuality: 5, shadowColor: ${pogget.theme.white}
+    },
+    Idle {
+      type: "rect", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius},
+      visible: ${vars.tag} != 2 && ${vars.tag} != 3 && ${vars.bgAlpha} > 0.01,
+      background: ${pogget.tag.active} ? fade(${vars.bright}, 20) : ${vars.bright},
+      fillOpacity: ${vars.bgAlpha} * (${pogget.tag.active} && ${vars.capsule} && !${vars.outlined} ? 0.95 : 1),
+      border: ${vars.outlined} ? 2 : (${pogget.tag.active} && ${vars.capsule} ? 1 : 0),
+      borderColor: ${vars.outlined} ? ${pogget.tag.color} : fade(${pogget.theme.midnight}, 40),
+      borderOpacity: ${vars.bgAlpha} * (${vars.outlined} ? 1 : 0.5)
+    },
+    Hover {
+      type: "rect", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius}, texture: 0,
+      visible: ${pogget.tag.active} && ${vars.tag} != 2 && ${vars.tag} != 3 && ${vars.bgAlpha} > 0.01 && ${vars.hoverAlpha} > 0.001,
+      background: ${vars.bright}, opacity: ${vars.hoverAlpha} * ${vars.bgAlpha}
+    },
+    HoverBorder {
+      type: "rect", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius},
+      visible: ${TitleTag.view.Hover.visible} && ${vars.outlined}, background: 0, fillOpacity: 0,
+      borderOnly: true, border: 2, borderColor: ${pogget.tag.color}, borderOpacity: ${vars.hoverAlpha} * ${vars.bgAlpha}
+    },
+    Push {
+      type: "rect", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius},
+      visible: ${pogget.tag.active} && ${vars.tag} != 2 && ${vars.tag} != 3 && ${vars.bgAlpha} > 0.01 && ${pogget.tag.push} > 0.001,
+      background: ${vars.bright}, opacity: ${pogget.tag.push} * ${vars.bgAlpha},
+      border: ${vars.outlined} ? 2 : 0, borderColor: ${pogget.tag.color}, borderOpacity: 1
+    },
+    Plain {
+      type: "rect", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius},
+      visible: ${vars.tag} == 3 && ${vars.style} == 2 && ${vars.bgAlpha} > 0.01,
+      background: ${vars.plainBright}, fillOpacity: ${TitleSurface.vars.alpha} * ${vars.bgAlpha},
+      border: ${vars.bgAlpha}, borderColor: fade(${pogget.theme.midnight}, 40), borderOpacity: 0.2 * ${TitleSurface.vars.alpha} * ${vars.bgAlpha}
+    },
+    Highlight {
+      type: "glass", width: ${TitleTag.view.width}, height: ${TitleTag.view.height}, radius: ${vars.radius}, background: ${vars.bgBase},
+      visible: ${vars.bgAlpha} > 0.01 && (${vars.tag} == 3 ? ${vars.style} == 2 : (${vars.tag} != 2 && ${pogget.frame} == 3)),
+      glassOpacity: ${vars.bgAlpha} * (${vars.tag} == 3 ? ${TitleSurface.vars.highlight} : 1),
+      fillOpacity: ${vars.bgAlpha}, glassActive: ${pogget.frame} == 3
+    },
+    Marker {
+      type: "rect", visible: ${vars.alpha} > 0.001 && (${vars.tag} < 1 || ${vars.tag} > 4),
+      x: 7.5, y: f32(f32(${TitleTag.view.y} + ${vars.markerPaddingY}) - 0.5) - ${TitleTag.view.y}, width: ${vars.markerSize} + 1, height: ${vars.markerSize} + 1,
+      radius: ${vars.innerRadius} + 1, background: ${pogget.tag.color}, texture: 1.5, opacity: ${vars.alpha}
+    },
+    Text {
+      type: "group", x: ${vars.textOriginX} - ${TitleTag.view.x}, y: ${vars.textOriginY} - ${TitleTag.view.y}, width: ${TitleTag.view.width}, height: ${vars.textHeight},
+      clip: ${vars.animated}, clipLayer: true, opacity: ${vars.textAlpha} * (${vars.animated} && ${vars.tag} == 4 ? ${vars.textAlpha} : 1), visible: ${vars.textAlpha} > 0.001,
+      OldShadow {
+        type: "text", visible: ${vars.animated} && ${vars.tag} == 4, x: ${vars.animatedX}, y: ${vars.oldY}, width: ${TitleTag.view.width}, height: ${vars.textHeight},
+        label: ${pogget.tag.oldText}, textLiteral: true, textY: 0, textSize: 14, font: ${Tag.ui.TagFont.value}, align: "left", emphasized: ${pogget.tag.emphasized},
+        textShadowOnly: true, textShadowOpacity: ${vars.shadowAlpha}, textShadowColor: fade(${pogget.tag.color}, 50), textShadowScaleX: 0
+      },
+      CurrentShadow {
+        type: "text", visible: ${vars.tag} == 4, x: ${vars.animatedX}, y: ${vars.currentY}, width: ${TitleTag.view.width}, height: ${vars.textHeight},
+        label: ${pogget.tag.text}, textLiteral: true, textY: 0, textSize: 14, font: ${Tag.ui.TagFont.value}, align: "left", emphasized: ${pogget.tag.emphasized},
+        textShadowOnly: true, textShadowOpacity: ${vars.shadowAlpha}, textShadowColor: fade(${pogget.tag.color}, 50), textShadowScaleX: ${vars.animated} ? 0 : 1
+      },
+      Old {
+        type: "text", visible: ${vars.animated}, x: ${vars.animatedX}, y: ${vars.oldY}, width: ${TitleTag.view.width}, height: ${vars.textHeight},
+        label: ${pogget.tag.oldText}, textLiteral: true, textY: 0, textSize: 14, color: ${vars.effectiveTextColor}, font: ${Tag.ui.TagFont.value}, align: "left", emphasized: ${pogget.tag.emphasized}
+      },
+      Current {
+        type: "text", x: ${vars.animatedX}, y: ${vars.currentY}, width: ${TitleTag.view.width}, height: ${vars.textHeight},
+        label: ${pogget.tag.text}, textLiteral: true, textY: 0, textSize: 14, color: ${vars.effectiveTextColor}, font: ${Tag.ui.TagFont.value}, align: "left", emphasized: ${pogget.tag.emphasized}
+      }
+    },
+    Underline {
+      type: "rect", visible: ${vars.tag} == 2 && ${vars.alpha} > 0.001,
+      x: ${vars.textX} + 6, y: min(${vars.textY} + 16, ${TitleTag.view.height} - 4) + 3,
+      width: max(0, ${pogget.tag.measuredWidth} - 12), height: 4,
+      radius: ${vars.alpha}, background: ${pogget.tag.active} ? ${pogget.tag.color} : fade(${pogget.tag.color}, 50), opacity: 0.75 * ${vars.alpha}
+    }
+  }
+}
+
+// Repeated native tabs share this declaration. The host supplies member order,
+// text and gesture progress; all sizing, material and animation timing is here.
+TitleTabs {
+  vars {
+    style: ${Tag.ui.TitleStyle.value},
+    extension: f32(${pogget.titleExtension} * (${vars.style} == 1 ? clamp(${pogget.titleProgress}, 0, 1) : 1)),
+    islandX: ${vars.style} == 2 ? 10 : (${vars.style} == 1 ? f32(${TitleSurface.vars.offsetX}) : 0),
+    islandY: ${vars.style} == 2 ? f32(f32(${pogget.titleY} + f32(${TitleSurface.vars.directionY})) + (${pogget.upward} ? -29 : 47)) : f32(f32(${pogget.titleY} + (${vars.style} == 1 ? f32(${TitleSurface.vars.directionY}) : 0)) - (${pogget.upward} ? ${vars.extension} : 0)),
+    islandWidth: ${vars.style} == 0 ? ${pogget.width} : max(1, f32(${pogget.width} - ${vars.islandX} * 2)),
+    islandHeight: ${vars.style} == 2 ? 37 : f32(${pogget.titleHeight} + ${vars.extension}),
+    radius: ${vars.style} == 2 ? 18.5 : (${vars.style} == 1 ? (${pogget.mode} >= 3 ? max(6, ${pogget.cornerRadius} - 3) : 6.5) : 0),
+    inset: ${vars.style} == 2 ? 2 : (${vars.style} == 1 ? 4 : 8),
+    stripX: f32(${vars.islandX} + ${vars.inset}),
+    stripY: ${vars.style} == 2 ? ${vars.islandY} : (${pogget.upward} ? f32(${vars.islandY} + 2) : f32(f32(${vars.islandY} + ${pogget.titleHeight}) + 2)),
+    stripWidth: max(1, f32(${vars.islandWidth} - ${vars.inset} * 2)),
+    stripHeight: ${vars.style} == 2 ? ${vars.islandHeight} : 34,
+    minimumWidth: 44, activeWeight: f32(1.35),
+    weight: ${pogget.tab.selected} ? ${vars.activeWeight} : 1,
+    minimumTotal: f32(${vars.minimumWidth} * ${pogget.tab.count}),
+    width: ${vars.stripWidth} <= ${vars.minimumTotal} ? f32(f32(${vars.stripWidth} * ${vars.weight}) / max(1, ${pogget.tab.totalWeight})) : f32(${vars.minimumWidth} + f32(f32(f32(${vars.stripWidth} - ${vars.minimumTotal}) * ${vars.weight}) / max(1, ${pogget.tab.totalWeight}))),
+    left: ${pogget.tab.index} == 0 ? ${vars.stripX} : ${pogget.tab.cursor},
+    right: ${pogget.tab.index} + 1 == ${pogget.tab.count} ? f32(${vars.stripX} + ${vars.stripWidth}) : f32(${vars.left} + ${vars.width}),
+    drawIsland: ${vars.style} == 2 && ${pogget.tab.drawIsland},
+    visual: max(${pogget.tab.selection}, f32(${pogget.tab.hover} * f32(0.72))),
+    insetX: 2 + (${pogget.tab.pressed} ? 1 : 0), insetY: 3 + (${pogget.tab.pressed} ? 1 : 0),
+    clipX: max(${vars.islandX}, ${pogget.tab.x}), clipY: max(${vars.islandY}, ${pogget.tab.y}),
+    clipWidth: max(0, min(${vars.islandX} + ${vars.islandWidth}, ${pogget.tab.x} + ${pogget.tab.width}) - ${vars.clipX}),
+    clipHeight: max(0, min(${vars.islandY} + ${vars.islandHeight}, ${pogget.tab.y} + ${pogget.tab.height}) - ${vars.clipY}),
+    textSize: 13, textHeight: f32(13 * f32(1.35)), textWidth: max(1, ${pogget.tab.width} - 14),
+    widthUnits: max(1, floor(${vars.textWidth} / 7))
+  },
+  view {
+    type: "group", slot: "titleTab", width: ${pogget.width}, height: ${pogget.height},
+    motion {
+      x: round(${vars.left}), y: round(${vars.stripY}), width: max(1, round(${vars.right}) - round(${vars.left})), height: trunc(${vars.stripHeight}),
+      nextX: ${vars.right}, weight: ${vars.weight}, stripX: ${vars.stripX}, stripWidth: ${vars.stripWidth},
+      islandX: ${vars.islandX}, islandY: ${vars.islandY}, islandWidth: ${vars.islandWidth}, islandHeight: ${vars.islandHeight}, islandRadius: ${vars.radius},
+      contentReserve: 42, titleExtension: ${vars.style} == 2 ? 0 : 38, minimumHeight: ${TitleSurface.vars.titleHeight} + 50, collapsedGap: 5,
+      hoverDuration: 220ms, unhoverDuration: 160ms, selectionDuration: 240ms, deselectionDuration: 180ms, layoutDuration: 180ms
+    },
+    IslandShadow {
+      type: "group", visible: ${vars.drawIsland}, x: ${vars.islandX}, y: ${vars.islandY}, width: ${vars.islandWidth}, height: ${vars.islandHeight}, radius: ${vars.radius},
+      shadowOpacity: ${TitleSurface.vars.alpha} / 45, shadowX: 0, shadowY: 2, shadowBlur: 10, shadowQuality: 5, shadowColor: ${pogget.theme.white}
+    },
+    DragShadow {
+      type: "group", visible: ${pogget.tab.dragging}, x: ${pogget.tab.x} + 2, y: ${pogget.tab.y} + 3,
+      width: max(1, ${pogget.tab.width} - 4), height: max(1, ${pogget.tab.height} - 4), radius: 8,
+      shadowOpacity: 0.22, shadowX: 0, shadowY: 2, shadowBlur: 9, shadowQuality: 4, shadowColor: ${pogget.theme.midnight}
+    },
+    Island {
+      type: "group", x: ${vars.islandX}, y: ${vars.islandY}, width: ${vars.islandWidth}, height: ${vars.islandHeight},
+      clip: true, clipLayer: true, clipRadius: ${vars.radius},
+      Surface {
+        type: "rect", visible: ${vars.drawIsland}, width: ${vars.islandWidth}, height: ${vars.islandHeight}, radius: ${vars.radius},
+        background: ${pogget.titleColor}, fillOpacity: ${TitleSurface.vars.alpha}, border: 1, borderColor: fade(${pogget.theme.midnight}, 40), borderOpacity: 0.2
+      },
+      Glass {
+        type: "glass", visible: ${vars.drawIsland} && ${pogget.frame} >= 3, width: ${vars.islandWidth}, height: ${vars.islandHeight}, radius: ${vars.radius},
+        background: ${pogget.titleColor}, glassBorder: 1, glassActive: ${pogget.frame} == 3, glassOpacity: ${TitleSurface.vars.alpha}, fillOpacity: ${TitleSurface.vars.alpha}
+      },
+      TabClip {
+        type: "group", x: ${vars.clipX} - ${vars.islandX}, y: ${vars.clipY} - ${vars.islandY}, width: ${vars.clipWidth}, height: ${vars.clipHeight}, clip: true,
+        Selection {
+          type: "rect", visible: ${vars.visual} > 0.001 && ${pogget.tab.width} - ${vars.insetX} * 2 > 1 && ${pogget.tab.height} - ${vars.insetY} * 2 > 1,
+          x: ${pogget.tab.x} + ${vars.insetX} - ${vars.clipX}, y: ${pogget.tab.y} + ${vars.insetY} - ${vars.clipY},
+          width: max(0, ${pogget.tab.width} - ${vars.insetX} * 2), height: max(0, ${pogget.tab.height} - ${vars.insetY} * 2),
+          radius: min(max(4, ${vars.radius} - 2) + ${vars.visual} * 3, max(4, (${pogget.tab.height} - ${vars.insetY} * 2) / 2)),
+          background: ${pogget.tab.selection} > 0.001 ? fade(${pogget.tab.accent}, -18) : fade(${pogget.titleColor}, 28),
+          fillOpacity: 0.22 + ${vars.visual} * 0.58, border: ${pogget.tab.selection}, borderColor: ${pogget.tab.accent}, borderOpacity: ${pogget.tab.selection} * 0.62
+        },
+        Text {
+          type: "text", x: ${pogget.tab.x} + 7 - ${vars.clipX}, y: ${pogget.tab.y} + (${pogget.tab.height} - ${vars.textHeight}) / 2 - ${vars.clipY},
+          width: ${vars.textWidth}, height: ${vars.textHeight}, textY: 0, textSize: ${vars.textSize}, label: ${pogget.tab.text}, textLiteral: true, color: ${pogget.tab.textColor},
+          opacity: 0.82 + ${pogget.tab.selection} * 0.18, textFloatPosition: true,
+          textOmitUnits: ${pogget.tab.displayUnits} <= ${vars.widthUnits} ? 0 : max(1, ${vars.widthUnits} - 3)
+        }
+      }
+    }
+  }
+}
+
+TitleSearch {
+  vars {
+    style: ${Tag.ui.TitleStyle.value}, floating: ${vars.style} != 0,
+    offsetY: ${TitleSurface.vars.baseY} + (${vars.floating} ? 10 : 0),
+    inputY: ${pogget.upward} ? 25 : max(10, 55 + ${vars.offsetY} - ${pogget.titleOffsetAnim} + ${TitleButtons.vars.controlY}),
+    cardY: (${pogget.upward} ? 25 : max(10, 55 + ${vars.offsetY} - ${pogget.titleOffsetAnim})) - 8,
+    height: ${vars.floating} ? 51 + ${pogget.searchExpand} * 2 : (${pogget.upward} ? 80 : max(55, 105 - ${pogget.titleOffsetAnim})),
+    radius: ${vars.style} == 2 ? 25.5 : (${pogget.mode} >= 3 ? max(6, ${pogget.cornerRadius} - 3) : 10),
+    editRadius: ${vars.style} == 2 ? 17.5 : (${vars.style} == 1 ? (${pogget.mode} >= 3 ? max(6, ${pogget.cornerRadius} - 8) : 10) : 8),
+    editAlpha: ${vars.style} == 2 ? 0.3 : (${vars.style} == 1 ? 0.4 : 1),
+    editBorderAlpha: ${vars.style} == 2 ? 0.2 : (${vars.style} == 1 ? 0.3 : 1),
+    editDrawX: f32(${TitleSearch.view.Input.editor.padding} - ${pogget.editor.scroll}),
+    editDrawY: f32((${pogget.editor.height} - ${TitleSearch.view.Input.editor.textSize}) / 2),
+    inlineWidth: max(1, f32(${pogget.width})),
+    inlineStartY: ${pogget.upward} || ${pogget.layoutHidden} ? 10 : 70,
+    inlineMargin: ${vars.inlineWidth} >= 120 ? 20 : max(0, min(8, f32(f32(${vars.inlineWidth} - 60) * 0.5))),
+    inlineSurfaceSize: max(30, min(38, f32(f32(${vars.inlineWidth} - f32(${vars.inlineMargin} * 2)) * 0.5))),
+    inlineInset: max(0, f32(f32(${vars.inlineSurfaceSize} - 30) * 0.5)),
+    inlineCancelX: max(f32(${vars.inlineMargin} + ${vars.inlineSurfaceSize}), f32(f32(${vars.inlineWidth} - ${vars.inlineMargin}) - ${vars.inlineSurfaceSize})),
+    inlineSurfaceY: f32(${vars.inlineStartY} - 5), inlineButtonY: f32(${vars.inlineSurfaceY} + 4),
+    inlineSingleX: f32(f32(${vars.inlineMargin} + ${vars.inlineSurfaceSize}) + 8),
+    inlineSingleWidth: f32(f32(${vars.inlineCancelX} - 8) - ${vars.inlineSingleX}),
+    inlineSecondRow: ${vars.inlineSingleWidth} < 72,
+    inlineInputX: ${vars.inlineSecondRow} ? ${vars.inlineMargin} : ${vars.inlineSingleX},
+    inlineInputY: f32(${vars.inlineSurfaceY} + (${vars.inlineSecondRow} ? 46 : 1.5)),
+    inlineInputWidth: ${vars.inlineSecondRow} ? max(1, f32(${vars.inlineWidth} - f32(${vars.inlineMargin} * 2))) : ${vars.inlineSingleWidth},
+    inlineTextSize: max(0.001, f32(15 * ${pogget.inlineAlpha})),
+    inlineBackHover: f32(${pogget.inlineSearchBack.hover} * 0.5), inlineCancelHover: f32(${pogget.inlineSearchCancel.hover} * 0.5),
+    inlineColorFactor: ${pogget.inlineColor} == ${pogget.theme.darknight} ? -1 : 1,
+    inlineBackColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.inlineBackHover} * 20) * ${vars.inlineColorFactor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.inlineBackHover} * 20) * ${vars.inlineColorFactor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.inlineBackHover} * 20) * ${vars.inlineColorFactor})) + 256) % 256),
+    inlineCancelColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.inlineCancelHover} * 20) * ${vars.inlineColorFactor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.inlineCancelHover} * 20) * ${vars.inlineColorFactor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.inlineCancelHover} * 20) * ${vars.inlineColorFactor})) + 256) % 256),
+    hover: ${pogget.titleSearchOptions.hover} > 0.01 ? 0.5 * (pow(${pogget.titleSearchOptions.hover} / 10 - 1, 3) + 1) : 0,
+    color: rgb((trunc(min(255, red(${pogget.buttonColor}) + ${vars.hover} * 20 * ${TitleButtons.vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.buttonColor}) + ${vars.hover} * 20 * ${TitleButtons.vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.buttonColor}) + ${vars.hover} * 20 * ${TitleButtons.vars.factor})) + 256) % 256)
+  },
+  view {
+    type: "group", width: ${pogget.width}, height: ${pogget.height},
+    Surface {
+      type: ${vars.floating} ? "rect" : "solid", slot: "titleSearchSurface",
+      x: ${vars.floating} ? ${TitleSurface.vars.baseX} - ${pogget.searchExpand} : 0,
+      y: ${vars.floating} ? ${vars.cardY} - ${pogget.searchExpand} : 0,
+      width: max(0, ${pogget.width} - (${vars.floating} ? ${TitleSurface.vars.baseX} * 2 - ${pogget.searchExpand} * 2 : 0)), height: max(0, ${vars.height}),
+      radius: ${vars.floating} ? ${vars.radius} : 0, blur: max(0, ${Tag.ui.TitleBlur.value}),
+      background: ${pogget.titleColor}, fillOpacity: ${vars.floating} ? 0.8 : 0.5,
+      shadowOpacity: ${vars.floating} ? 0.02 : 0, shadowY: 2, shadowBlur: 10, shadowQuality: 5, shadowColor: ${pogget.theme.white},
+      border: ${vars.floating} ? 1 : 0, borderColor: ${pogget.theme.midnightplus}, borderOpacity: 0.8
+    },
+    Divider {
+      type: "solid", slot: "titleSearchSurface", visible: !${vars.floating},
+      x: 0, y: ${vars.height}, width: ${pogget.width}, height: 1, background: ${pogget.theme.midnightplus}
+    },
+    Input {
+      type: "group", slot: "titleSearchInput", x: ${pogget.inlineSearch} ? ${vars.inlineInputX} : 20,
+      y: ${pogget.inlineSearch} ? ${vars.inlineInputY} : ${vars.inputY}, width: ${pogget.inlineSearch} ? ${vars.inlineInputWidth} : max(1, ${pogget.width} - 40), height: 35, visible: true, enabled: true, opacity: 1,
+      editor { padding: 30, textSize: 14, font: "Segoe UI", caretDuration: f32(600ms) },
+      Frame {
+        type: "group", x: ${pogget.editor.x} - ${TitleSearch.view.Input.x}, y: ${pogget.editor.y} - ${TitleSearch.view.Input.y},
+        width: ${pogget.editor.width}, height: ${pogget.editor.height},
+        Surface {
+          type: "rect", width: ${pogget.editor.width}, height: ${pogget.editor.height}, radius: ${vars.editRadius},
+          background: ${pogget.buttonColor} == ${pogget.theme.darken} ? rgb(255, 255, 255) : ${pogget.theme.midnightplus},
+          fillOpacity: ${vars.editAlpha}, border: 1, borderColor: ${pogget.theme.midnightplus}, borderOpacity: ${vars.editBorderAlpha},
+          innerShadowOpacity: f32(f32(0.1) * f32(${vars.editAlpha})), innerShadowInset: 0.5, innerShadowDepth: 2
+        },
+        Content {
+          type: "group", x: 2, y: 2, width: max(0.1, ${pogget.editor.width} - 4), height: max(0.1, ${pogget.editor.height} - 4),
+          clip: true, clipLayer: true, clipRadius: max(4, ${vars.editRadius} - 2),
+          Selection {
+            type: "solid", visible: ${pogget.editor.selection}, x: ${vars.editDrawX} + ${pogget.editor.selectionStart} - 2, y: 2,
+            width: max(0, ${pogget.editor.selectionEnd} - ${pogget.editor.selectionStart}), height: max(0, ${pogget.editor.height} - 8),
+            background: ${pogget.theme.accent}, opacity: 0.25
+          },
+          Placeholder {
+            type: "text", visible: ${pogget.editor.text} == "", x: ${TitleSearch.view.Input.editor.padding} - 2, y: ${vars.editDrawY} - 2,
+            width: max(0, ${pogget.editor.width} - ${TitleSearch.view.Input.editor.padding}), height: max(0, ${pogget.editor.height} - ${vars.editDrawY}),
+            label: ${pogget.editor.placeholder}, textLiteral: true, textY: 0, textSize: ${TitleSearch.view.Input.editor.textSize}, font: ${TitleSearch.view.Input.editor.font},
+            textRenderer: "direct", align: "left", color: ${pogget.buttonColor}, opacity: 0.5
+          },
+          Text {
+            type: "text", visible: ${pogget.editor.text} != "", x: ${vars.editDrawX} - 2, y: ${vars.editDrawY} - 2,
+            width: ${pogget.editor.textWidth} + 100, height: max(0, ${pogget.editor.height} - ${vars.editDrawY}),
+            label: ${pogget.editor.text}, textLiteral: true, textY: 0, textSize: ${TitleSearch.view.Input.editor.textSize}, font: ${TitleSearch.view.Input.editor.font},
+            textRenderer: "direct", align: "left", textColorFont: true, color: ${pogget.buttonColor}
+          },
+          Icon {
+            type: "icon", x: 8, y: (${pogget.editor.height} - 14) / 2, width: 20, height: 20,
+            icon: "\uf002", textY: 0, textSize: 14, font: "Font Awesome 6 Free Solid", textRenderer: "direct", align: "left", textAppFonts: true,
+            color: ${pogget.buttonColor}, opacity: 0.5
+          },
+          Caret {
+            type: "solid", visible: ${pogget.editor.focused}, x: ${vars.editDrawX} + ${pogget.editor.cursor} - 2, y: ${pogget.editor.height} / 2 - 10,
+            width: ${pogget.editor.selection} ? f32(1.8) : f32(1.2), height: 18, opacity: ${pogget.editor.caretAlpha},
+            background: ${pogget.editor.selection} ? ${pogget.theme.accent} : ${pogget.buttonColor}
+          }
+        }
+      }
+    },
+    InlineChrome {
+      type: "group", slot: "inlineSearchSurface", width: ${pogget.width}, height: ${pogget.height},
+      visible: ${pogget.inlineSearch} && !${pogget.inlinePendingExit} && ${pogget.inlineAlpha} > f32(0.05),
+      motion {
+        backSurfaceX: ${vars.inlineMargin}, cancelSurfaceX: ${vars.inlineCancelX}, surfaceY: ${vars.inlineSurfaceY}, surfaceWidth: ${vars.inlineSurfaceSize},
+        backButtonX: f32(${vars.inlineMargin} + ${vars.inlineInset}), cancelButtonX: f32(${vars.inlineCancelX} + ${vars.inlineInset}), buttonY: ${vars.inlineButtonY},
+        searchX: ${vars.inlineInputX}, searchY: ${vars.inlineInputY}, searchWidth: ${vars.inlineInputWidth},
+        resultsExtraY: ${vars.inlineSecondRow} ? 46 : 0, usesSecondRow: ${vars.inlineSecondRow}
+      },
+      BackSurface { type: "rect", x: ${vars.inlineMargin}, y: ${vars.inlineSurfaceY}, width: ${vars.inlineSurfaceSize}, height: 38, radius: 19, background: ${pogget.inlineColor}, opacity: ${pogget.inlineAlpha} },
+      CancelSurface { type: "rect", x: ${vars.inlineCancelX}, y: ${vars.inlineSurfaceY}, width: ${vars.inlineSurfaceSize}, height: 38, radius: 19, background: ${pogget.inlineColor}, opacity: ${pogget.inlineAlpha} }
+    },
+    InlineBack {
+      type: "group", slot: "inlineSearchBack", x: trunc(f32(${vars.inlineMargin} + ${vars.inlineInset})), y: trunc(${vars.inlineButtonY}), width: 30, height: 30,
+      visible: ${pogget.inlineSearch} && !${pogget.inlinePendingExit} && ${pogget.inlineAlpha} > f32(0.05), enabled: ${pogget.inlineAvailable},
+      action: pogget.action.container.inlineBack, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.inlineBackHover}, y: -${vars.inlineBackHover}, width: 30 + ${vars.inlineBackHover} * 2, height: 30 + ${vars.inlineBackHover} * 2, radius: 6, background: ${vars.inlineBackColor}, border: 1, borderColor: ${vars.inlineBackColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${TitleSearch.view.InlineBack.y} + 15 - ${vars.inlineTextSize} / 1.5) + 3 - ${TitleSearch.view.InlineBack.y}, label: ":\uf053:", textLiteral: true, textSize: ${vars.inlineTextSize}, color: ${pogget.theme.white}, align: "center" }
+    },
+    InlineCancel {
+      type: "group", slot: "inlineSearchCancel", x: trunc(f32(${vars.inlineCancelX} + ${vars.inlineInset})), y: trunc(${vars.inlineButtonY}), width: 30, height: 30,
+      visible: ${pogget.inlineSearch} && !${pogget.inlinePendingExit} && ${pogget.inlineAlpha} > f32(0.05), enabled: ${pogget.inlineAvailable},
+      action: pogget.action.container.exitInlineSearch, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.inlineCancelHover}, y: -${vars.inlineCancelHover}, width: 30 + ${vars.inlineCancelHover} * 2, height: 30 + ${vars.inlineCancelHover} * 2, radius: 6, background: ${vars.inlineCancelColor}, border: 1, borderColor: ${vars.inlineCancelColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${TitleSearch.view.InlineCancel.y} + 15 - ${vars.inlineTextSize} / 1.5) + 3 - ${TitleSearch.view.InlineCancel.y}, label: ":\uf00d:", textLiteral: true, textSize: ${vars.inlineTextSize}, color: ${pogget.theme.white}, align: "center" }
+    },
+    Options {
+      type: "group", slot: "titleSearchOptions", x: trunc(f32(f32(${TitleSearch.view.Input.x} + ${TitleSearch.view.Input.width}) - 26)),
+      y: trunc(f32(${TitleSearch.view.Input.y} + 12)), width: 22, height: 16, action: pogget.action.container.searchMenu,
+      Glyph {
+        type: "icon", x: (16 - 16 * ${pogget.titleSearchOptions.pressScale}) / 2,
+        y: 8 - 16 / 1.5 + (16 - 16 * ${pogget.titleSearchOptions.pressScale}) / 2,
+        width: 22, height: 16, textY: 0, textSize: 16 * ${pogget.titleSearchOptions.pressScale}, icon: "\uf0d7",
+        font: "Font Awesome 6 Free Solid", textRenderer: "glyph", color: ${vars.color}, opacity: ${pogget.titleSearchOptions.opacity}
+      }
+    }
+  }
+}
+
+// Repeated file-icon surfaces use ordinary Scene primitives. The controller
+// supplies placement, measurement and animation facts for each icon.
+FileIconSurface {
+  vars {
+    list: ${pogget.fileIcon.list}, txt: ${pogget.fileIcon.textPreview},
+    wrap: !${vars.list} && !${vars.txt} && ${pogget.fileIcon.wrap},
+    expandX: ${vars.list} ? 0 : (${pogget.fileIcon.spacing} == 1 ? 8 : (${pogget.fileIcon.spacing} == 2 ? 18 : 0)),
+    expandY: ${vars.list} ? (${pogget.fileIcon.spacing} == 1 ? 6 : (${pogget.fileIcon.spacing} == 2 ? 14 : 0)) : (${pogget.fileIcon.spacing} == 1 ? 10 : (${pogget.fileIcon.spacing} == 2 ? 22 : 0)),
+    extraHeight: ${pogget.fileIcon.textSize} > 12 && ${pogget.fileIcon.textSize} < 100 ? f32(f32(${pogget.fileIcon.textSize} - 12) * 8) : 0,
+    width: ${vars.list} ? f32(${pogget.fileIcon.viewportWidth} - ${pogget.fileIcon.padding} * 2 - ${pogget.fileIcon.x} - 20) : (${pogget.fileIcon.customWidth} > 0 ? ${pogget.fileIcon.customWidth} : (${vars.txt} ? f32(${pogget.fileIcon.size} * 2 + 12) : ${pogget.fileIcon.size})),
+    height: ${vars.list} ? f32(${pogget.fileIcon.size} / 2 + 6) : f32(${pogget.fileIcon.height} + (${vars.txt} ? ${vars.extraHeight} : 0)),
+    iconSize: ${vars.list} ? f32(${pogget.fileIcon.size} / 2) : ${pogget.fileIcon.size},
+    iconY: ${vars.list} ? f32(f32(${vars.height} - ${vars.iconSize}) / 2) : 0,
+    overflow: ${vars.wrap} ? ${pogget.fileIcon.wrapOverflow} : 0,
+    topGuard: ${vars.wrap} ? 3 : 0,
+    rawX: f32(${pogget.fileIcon.x} - 5 - ${vars.expandX}),
+    rawY: f32(${pogget.fileIcon.y} - (${vars.list} ? 2 : 5) - ${vars.expandY} + ${vars.topGuard}),
+    rawWidth: f32(${vars.width} + 10 + ${vars.expandX} * 2),
+    padding: f32((${vars.txt} ? 14 : 20) + ${vars.overflow}),
+    selectedHeight: f32(${vars.height} + (${vars.list} ? 4 : ${vars.padding}) + ${vars.expandY} * 2 - ${vars.topGuard}),
+    hoverHeight: f32(${vars.height} + (${vars.list} ? 5 : f32(${vars.padding} + (${vars.txt} ? 0 : 1))) + ${vars.expandY} * 2 - ${vars.topGuard}),
+    left: ${pogget.fileIcon.clip} ? max(${vars.rawX}, f32(${pogget.fileIcon.x} + ${pogget.fileIcon.clipLeft})) : ${vars.rawX},
+    top: ${pogget.fileIcon.clip} ? max(${vars.rawY}, f32(${pogget.fileIcon.y} + ${pogget.fileIcon.clipTop})) : ${vars.rawY},
+    right: ${pogget.fileIcon.clip} ? min(f32(${vars.rawX} + ${vars.rawWidth}), f32(${pogget.fileIcon.x} + ${pogget.fileIcon.clipRight})) : f32(${vars.rawX} + ${vars.rawWidth}),
+    clipBottom: f32(f32(${pogget.fileIcon.y} + ${pogget.fileIcon.clipBottom}) + max(0, ${vars.overflow})),
+    selectedBottom: ${pogget.fileIcon.clip} ? min(f32(${vars.rawY} + ${vars.selectedHeight}), ${vars.clipBottom}) : f32(${vars.rawY} + ${vars.selectedHeight}),
+    hoverBottom: ${pogget.fileIcon.clip} ? min(f32(${vars.rawY} + ${vars.hoverHeight}), ${vars.clipBottom}) : f32(${vars.rawY} + ${vars.hoverHeight}),
+    finalWidth: max(0, ${pogget.fileIcon.clip} ? f32(${vars.right} - ${vars.left}) : ${vars.rawWidth}),
+    finalSelectedHeight: max(0, ${pogget.fileIcon.clip} ? f32(${vars.selectedBottom} - ${vars.top}) : ${vars.selectedHeight}),
+    finalHoverHeight: max(0, ${pogget.fileIcon.clip} ? f32(${vars.hoverBottom} - ${vars.top}) : ${vars.hoverHeight}),
+    backgroundExpandX: f32(max(0, ${VinaIcon.view.IconBackgroundExpandX})),
+    backgroundExpandY: f32(max(0, ${VinaIcon.view.IconBackgroundExpandY})),
+    backgroundOffsetY: f32(${VinaIcon.view.IconBackgroundOffsetY}),
+    surfaceWidth: max(0, f32(${vars.iconSize} + ${vars.backgroundExpandX} * 2)),
+    surfaceHeight: max(0, f32(${vars.iconSize} + ${vars.backgroundExpandY} * 2)),
+    // Keep the rounding bias outside f32: white (0xffffff) must not carry
+    // into bit 24 and wrap to black. Valid COLORREF integers stay exact.
+    backgroundColor: trunc(f32(${VinaIcon.view.IconBackgroundColor}) + 0.5),
+    borderColor: trunc(f32(${VinaIcon.view.IconBorderColor}) + 0.5),
+    backgroundAlpha: ${VinaIcon.view.IconBackground} ? f32(f32(f32(f32(1 - ${pogget.fileIcon.hover}) * f32(${VinaIcon.view.IconBackgroundOpacity})) + f32(${pogget.fileIcon.hover} * f32(${VinaIcon.view.IconBackgroundHoverOpacity}))) * ${pogget.fileIcon.alpha}) : 0,
+    borderAlpha: ${VinaIcon.view.IconBorder} ? f32(f32(${VinaIcon.view.IconBorderOpacity}) * ${pogget.fileIcon.alpha}) : 0,
+    ordinary: ${pogget.fileIcon.previewMode} != 1 && ${pogget.fileIcon.previewMode} != 2,
+    showHover: ${vars.ordinary} && !${pogget.fileIcon.selected} && !${VinaIcon.view.IconBackground} && ((${pogget.fileIcon.hovered} && !${pogget.fileIcon.dimmed}) || f32(${pogget.fileIcon.hover} / 4) > f32(0.1))
+  },
+  view {
+    type: "group", slot: "fileIconSurface", width: 0, height: 0,
+    Surface {
+      type: "rect", visible: ${VinaIcon.view.IconBackground} || (${VinaIcon.view.IconBorder} && ${VinaIcon.view.IconBorderWidth} > 0),
+      x: f32(${pogget.fileIcon.drawX} - ${vars.backgroundExpandX}), y: f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.iconY}) - ${vars.backgroundExpandY}) + ${vars.backgroundOffsetY}),
+      width: ${vars.surfaceWidth}, height: ${vars.surfaceHeight}, radius: min(f32(${VinaIcon.view.IconBackgroundRadius}), f32(min(${vars.surfaceWidth}, ${vars.surfaceHeight}) * 0.5)),
+      background: ${vars.backgroundColor}, fillOpacity: ${vars.backgroundAlpha}, borderOnly: !${VinaIcon.view.IconBackground},
+      border: ${VinaIcon.view.IconBorder} ? f32(${VinaIcon.view.IconBorderWidth}) : 0, borderColor: ${vars.borderColor}, borderOpacity: ${vars.borderAlpha}
+    },
+    Selected {
+      type: "rect", visible: ${vars.ordinary} && ${pogget.fileIcon.selected}, x: ${vars.left}, y: ${vars.top},
+      width: ${vars.finalWidth}, height: ${vars.finalSelectedHeight}, radius: 8, background: ${pogget.theme.midnightplus},
+      opacity: ${pogget.fileIcon.alpha}, border: 1.5, borderColor: ${pogget.theme.accent}, borderStyle: "dash", borderOnly: true
+    },
+    Hover {
+      type: "group", visible: ${vars.showHover}, x: ${vars.left}, y: ${vars.top}, width: ${vars.finalWidth}, height: ${vars.finalHoverHeight},
+      Fill {
+        type: "rect", width: ${FileIconSurface.view.Hover.width}, height: ${FileIconSurface.view.Hover.height}, radius: 8,
+        background: ${pogget.theme.midnightplus}, fillOpacity: f32(f32(${pogget.fileIcon.hover} / 4) * ${pogget.fileIcon.globalAlpha}),
+        border: 1, borderColor: ${pogget.theme.white}, borderOpacity: f32(f32(${pogget.fileIcon.hover} / 12) * ${pogget.fileIcon.globalAlpha})
+      },
+      Border {
+        type: "rect", width: ${FileIconSurface.view.Hover.width}, height: ${FileIconSurface.view.Hover.height}, radius: 8,
+        background: ${pogget.theme.midnightplus}, fillOpacity: f32(f32(${pogget.fileIcon.hover} / 4) * ${pogget.fileIcon.globalAlpha}),
+        border: 1, borderColor: ${pogget.theme.white}, borderOpacity: f32(f32(${pogget.fileIcon.hover} / 10) * ${pogget.fileIcon.globalAlpha}), borderOnly: true
+      }
+    }
+  }
+}
+
+
+// Native resources are borrowed for this paint pass. Geometry and layering
+// use the same image/rect/text primitives available to user components.
+FileIconContent {
+  vars {
+    list: ${pogget.fileIcon.list}, folder: ${pogget.fileIcon.folder},
+    drop: ${pogget.fileIcon.previewMode} == 1, multiple: ${pogget.fileIcon.draggedCount} > 1,
+    ordinary: ${pogget.fileIcon.previewMode} != 1 && ${pogget.fileIcon.previewMode} != 2,
+    media: ${pogget.fileIcon.media},
+    distance: abs(f32(sqrt(f32(f32(${pogget.fileIcon.dragX} * ${pogget.fileIcon.dragX}) + f32(${pogget.fileIcon.dragY} * ${pogget.fileIcon.dragY}))))),
+    size: max(0, f32(f32(f32(${FileIconSurface.vars.iconSize} + f32(${pogget.fileIcon.hover} * 1.5)) - 6) - ${vars.distance})),
+    x: f32(f32(${pogget.fileIcon.drawX} - f32(${pogget.fileIcon.hover} / 2)) + 3),
+    y: f32(f32(f32(${pogget.fileIcon.drawY} - f32(${pogget.fileIcon.hover} / 2)) + 3) + ${FileIconSurface.vars.iconY}),
+    folderSize: f32(f32(${FileIconSurface.vars.iconSize} + f32(${pogget.fileIcon.hover} * 1.5)) - 6),
+    subSize: f32(${vars.folderSize} / 2),
+    coverSize: f32(f32(${vars.size} * f32(0.42)) + 3),
+    coverX: f32(f32(f32(${vars.x} + ${vars.size}) - ${vars.coverSize}) - 0.5),
+    coverY: f32(f32(f32(${vars.y} + ${vars.size}) - ${vars.coverSize}) - 0.5),
+    playSize: ${vars.list} ? 18 : 32, playIconSize: ${vars.list} ? 8 : 14,
+    playX: f32(f32(f32(${vars.x} + f32(${vars.size} / 2)) - f32(${vars.playSize} / 2)) + 1),
+    playY: f32(f32(f32(${vars.y} + f32(${vars.size} / 2)) - f32(${vars.playSize} / 2)) + f32(f32(${vars.playSize} - ${vars.playIconSize}) / 2))
+  },
+  view {
+    type: "group", slot: "fileIconContent", x: ${vars.x}, y: ${vars.y}, width: ${vars.size}, height: ${vars.size},
+    Drop {
+      type: "group", visible: ${vars.drop}, width: 0, height: 0,
+      Back {
+        type: "rect", visible: ${vars.multiple}, x: f32(${pogget.fileIcon.drawX} + 5) - ${vars.x}, y: f32(${pogget.fileIcon.drawY} + 5) - ${vars.y},
+        width: max(0, f32(${FileIconSurface.vars.width} - 3)), height: max(0, f32(${FileIconSurface.vars.height} - 3)), radius: 11.5,
+        background: ${pogget.theme.midnightplus}, fillOpacity: 0.6 * ${pogget.fileIcon.alpha}, border: 1, borderColor: ${pogget.theme.white}, borderOpacity: 0.2 * ${pogget.fileIcon.alpha}
+      },
+      FarBack {
+        type: "rect", visible: ${vars.multiple}, x: f32(${pogget.fileIcon.drawX} + 10) - ${vars.x}, y: f32(${pogget.fileIcon.drawY} + 10) - ${vars.y},
+        width: max(0, f32(${FileIconSurface.vars.width} - 6)), height: max(0, f32(${FileIconSurface.vars.height} - 6)), radius: 11,
+        background: ${pogget.theme.midnightplus}, fillOpacity: 0.3 * ${pogget.fileIcon.alpha}, border: 1, borderColor: ${pogget.theme.white}, borderOpacity: 0.15 * ${pogget.fileIcon.alpha}
+      },
+      Front {
+        type: "rect", x: ${pogget.fileIcon.drawX} - ${vars.x}, y: ${pogget.fileIcon.drawY} - ${vars.y},
+        width: max(0, ${FileIconSurface.vars.width}), height: max(0, ${FileIconSurface.vars.height}), radius: 12,
+        background: ${pogget.theme.midnightplus}, fillOpacity: (${vars.multiple} ? 1 : 0.1) * ${pogget.fileIcon.alpha}, border: 1, borderColor: ${pogget.theme.white}, borderOpacity: 0.1 * ${pogget.fileIcon.alpha}
+      },
+      Icon {
+        type: "image", imageRenderer: "shell", source: ${pogget.fileIcon.path},
+        x: f32(${pogget.fileIcon.drawX} + 4) - ${vars.x}, y: f32(f32(${pogget.fileIcon.drawY} + 4) + ${FileIconSurface.vars.iconY}) - ${vars.y},
+        width: max(0, f32(${FileIconSurface.vars.iconSize} - 8)), height: max(0, f32(${FileIconSurface.vars.iconSize} - 8)), opacity: (${vars.multiple} ? 0.8 : 0.5) * ${pogget.fileIcon.alpha}
+      }
+    },
+    Folder {
+      type: "group", visible: ${vars.ordinary} && ${vars.folder}, width: 0, height: 0,
+      Surface {
+        type: "rect", x: ${pogget.fileIcon.drawX} - ${vars.x}, y: f32(${pogget.fileIcon.drawY} + ${FileIconSurface.vars.iconY}) - ${vars.y},
+        width: ${FileIconSurface.vars.iconSize}, height: ${FileIconSurface.vars.iconSize}, radius: 8, background: ${pogget.theme.midnightplus},
+        fillOpacity: f32(f32(0.2) * ${pogget.fileIcon.alpha}), border: 1, borderColor: ${pogget.theme.white}, borderOpacity: f32(f32(0.1) * ${pogget.fileIcon.alpha})
+      },
+      Item0 {
+        type: "image", imageRenderer: "shell", source: ${pogget.fileIcon.folder0},
+        x: f32(f32(${vars.x} + 0 * ${vars.subSize}) + 1) - ${vars.x}, y: f32(f32(${vars.y} + 0 * ${vars.subSize}) + 1) - ${vars.y},
+        width: max(0, f32(${vars.subSize} - 2)), height: max(0, f32(${vars.subSize} - 2)), opacity: ${pogget.fileIcon.alpha}
+      },
+      Item1 {
+        type: "image", imageRenderer: "shell", source: ${pogget.fileIcon.folder1},
+        x: f32(f32(${vars.x} + 1 * ${vars.subSize}) + 1) - ${vars.x}, y: f32(f32(${vars.y} + 0 * ${vars.subSize}) + 1) - ${vars.y},
+        width: max(0, f32(${vars.subSize} - 2)), height: max(0, f32(${vars.subSize} - 2)), opacity: ${pogget.fileIcon.alpha}
+      },
+      Item2 {
+        type: "image", imageRenderer: "shell", source: ${pogget.fileIcon.folder2},
+        x: f32(f32(${vars.x} + 0 * ${vars.subSize}) + 1) - ${vars.x}, y: f32(f32(${vars.y} + 1 * ${vars.subSize}) + 1) - ${vars.y},
+        width: max(0, f32(${vars.subSize} - 2)), height: max(0, f32(${vars.subSize} - 2)), opacity: ${pogget.fileIcon.alpha}
+      },
+      Item3 {
+        type: "image", imageRenderer: "shell", source: ${pogget.fileIcon.folder3},
+        x: f32(f32(${vars.x} + 1 * ${vars.subSize}) + 1) - ${vars.x}, y: f32(f32(${vars.y} + 1 * ${vars.subSize}) + 1) - ${vars.y},
+        width: max(0, f32(${vars.subSize} - 2)), height: max(0, f32(${vars.subSize} - 2)), opacity: ${pogget.fileIcon.alpha}
+      }
+    },
+    Shell {
+      type: "image", imageRenderer: "shell", imageFit: "stretch", source: ${pogget.fileIcon.path},
+      visible: ${vars.ordinary} && !${vars.folder} && (!${pogget.fileIcon.textPreview} || ${vars.list}) && (${vars.media} == 0 || (${pogget.fileIcon.thumbnailVisible} && (${vars.media} == 3 || !${pogget.fileIcon.thumbnail}))),
+      width: ${vars.size}, height: ${vars.size}, opacity: ${pogget.fileIcon.alpha}
+    },
+    Thumbnail {
+      type: "image", imageRenderer: "resource", source: "thumbnail", imageFit: "contain",
+      visible: ${vars.ordinary} && !${vars.folder} && (${vars.media} == 1 || ${vars.media} == 2) && ${pogget.fileIcon.thumbnail},
+      width: ${vars.size}, height: ${vars.size}, radius: ${vars.list} ? 2 : 3, opacity: ${pogget.fileIcon.alpha}
+    },
+    Play {
+      type: "group", visible: ${vars.ordinary} && !${vars.folder} && ${vars.media} == 2 && ${pogget.fileIcon.thumbnail}, width: 0, height: 0,
+      Shadow {
+        type: "text", x: ${vars.playX} - ${vars.x}, y: f32(${vars.playY} + (${vars.list} ? 1 : 2)) - ${vars.y},
+        width: ${vars.playSize}, height: ${vars.playSize}, label: ":\uf04b:", textLiteral: true, textSize: ${vars.playIconSize}, textY: 0, color: 0, align: "center", opacity: f32(f32(0.20) * ${pogget.fileIcon.alpha})
+      },
+      Glyph {
+        type: "text", x: ${vars.playX} - ${vars.x}, y: ${vars.playY} - ${vars.y},
+        width: ${vars.playSize}, height: ${vars.playSize}, label: ":\uf04b:", textLiteral: true, textSize: ${vars.playIconSize}, textY: 0, color: rgb(244,244,244), align: "center", opacity: f32(f32(0.85) * ${pogget.fileIcon.alpha})
+      }
+    },
+    Audio {
+      type: "group", visible: ${vars.ordinary} && !${vars.folder} && ${vars.media} == 3 && ${pogget.fileIcon.thumbnail}, width: 0, height: 0,
+      Back {
+        type: "rect", x: ${vars.coverX} - ${vars.x}, y: f32(${vars.coverY} + 1.5) - ${vars.y}, width: ${vars.coverSize}, height: ${vars.coverSize}, radius: 4,
+        background: ${pogget.theme.white}, fillOpacity: f32(f32(0.5) * ${pogget.fileIcon.alpha})
+      },
+      Cover {
+        type: "image", imageRenderer: "resource", source: "thumbnail", x: ${vars.coverX} - ${vars.x}, y: ${vars.coverY} - ${vars.y},
+        width: ${vars.coverSize}, height: ${vars.coverSize}, radius: 4, opacity: ${pogget.fileIcon.alpha}
+      }
+    }
+  }
+}
+
+
+// Text measurement consumes this declaration; ordinary text primitives draw it.
+FileIconText {
+  vars {
+    list: ${pogget.fileIcon.list}, inline: ${pogget.fileIcon.inlineView},
+    twoLine: f32(f32(${pogget.fileIcon.size} / 2) + 6) >= 38,
+    scale: f32(${pogget.fileIcon.textSize} / 10),
+    columnScale: clamp(${vars.scale}, f32(0.6), f32(1.8)),
+    detailWidth: ${vars.twoLine} ? 0 : (${pogget.fileIcon.detailType} == 0 ? f32(95 * ${vars.columnScale}) : (${pogget.fileIcon.detailType} == 2 ? f32(165 * ${vars.columnScale}) : 0)),
+    left: f32(f32(${pogget.fileIcon.drawX} + ${FileIconSurface.vars.iconSize}) + 15),
+    right: f32(f32(f32(${pogget.fileIcon.drawX} + ${FileIconSurface.vars.width}) - ${vars.detailWidth}) - 15),
+    titleY: f32(f32(${pogget.fileIcon.drawY} + f32(${FileIconSurface.vars.height} / 2)) - (${vars.twoLine} ? 16 : 8)),
+    bottom: f32(${pogget.fileIcon.drawY} + ${FileIconSurface.vars.height}),
+    titleWidth: max(0, f32(${vars.right} - ${vars.left})),
+    titleHeight: max(0, f32(${vars.bottom} - ${vars.titleY})),
+    detailRight: f32(f32(${pogget.fileIcon.drawX} + ${FileIconSurface.vars.width}) - 10),
+    detailLeft: ${vars.twoLine} ? ${vars.left} : f32(f32(${pogget.fileIcon.drawX} + ${FileIconSurface.vars.width}) - ${vars.detailWidth}),
+    detailY: f32(f32(${pogget.fileIcon.drawY} + f32(${FileIconSurface.vars.height} / 2)) + (${vars.twoLine} ? 2 : -8)),
+    detailHeight: max(0, f32(${vars.bottom} - ${vars.detailY})),
+    detailDrawX: ${vars.twoLine} ? ${vars.detailLeft} : f32(f32(${vars.detailRight} - max(0, ${pogget.fileIcon.detailMeasuredWidth})) - 1),
+    detailDrawWidth: ${vars.twoLine} ? max(0, f32(${vars.detailRight} - ${vars.detailLeft})) : max(1, f32(${pogget.fileIcon.detailMeasuredWidth} + 8)),
+    titleRawSize: f32(14 * ${vars.scale}), detailRawSize: f32((${vars.twoLine} ? 12 : 14) * ${vars.scale}),
+    gridRawSize: f32(10 * ${vars.scale}),
+    gridWidth: f32(f32(${pogget.fileIcon.size} + (${pogget.fileIcon.ghost} ? 8 : (${pogget.fileIcon.media} == 0 ? 10 : 8))) + f32(${FileIconSurface.vars.expandX} * 2)),
+    searchHitLeft: f32(f32(${FileIconText.view.SearchClip.x} + ${pogget.fileIcon.hitX}) - 1),
+    searchHitTop: f32(f32(${FileIconText.view.SearchClip.y} + ${pogget.fileIcon.hitY}) + 1),
+    searchHitWidth: max(0, f32(f32(${vars.searchHitLeft} + ${pogget.fileIcon.hitWidth}) + 2) - ${vars.searchHitLeft}),
+    shadow: !${vars.inline} && (!${pogget.fileIcon.textPreview} || ${pogget.fileIcon.network}) && (${pogget.fileIcon.renderMode} == 1 || ${pogget.fileIcon.renderMode} == 2 || ${pogget.fileIcon.renderMode} == 3),
+    shadowOpacity: ${vars.shadow} ? (${pogget.fileIcon.renderMode} == 1 ? f32(0.16) : f32(0.08)) : 0,
+    baseTitleColor: ${pogget.fileIcon.colorMode} == 1 ? rgb(244,244,244) : (${pogget.fileIcon.colorMode} == 2 ? ${pogget.theme.darken} : ${pogget.theme.white}),
+    background: ${pogget.theme.monochrome} ? ${pogget.theme.midnight} : ${pogget.theme.darknight},
+    lightBackground: 0.299 * red(${vars.background}) + 0.587 * green(${vars.background}) + 0.114 * blue(${vars.background}) >= 150,
+    titleBright: 0.299 * red(${vars.baseTitleColor}) + 0.587 * green(${vars.baseTitleColor}) + 0.114 * blue(${vars.baseTitleColor}) >= 120,
+    detailBright: 0.299 * red(${pogget.theme.white}) + 0.587 * green(${pogget.theme.white}) + 0.114 * blue(${pogget.theme.white}) >= 120,
+    titleColor: ${vars.inline} ? (${vars.lightBackground} ? (${vars.titleBright} ? ${pogget.theme.darken} : ${vars.baseTitleColor}) : (${vars.titleBright} ? ${vars.baseTitleColor} : rgb(244,244,244))) : ${vars.baseTitleColor},
+    detailColor: ${vars.inline} ? (${vars.lightBackground} ? (${vars.detailBright} ? ${pogget.theme.darken} : ${pogget.theme.white}) : (${vars.detailBright} ? ${pogget.theme.white} : rgb(244,244,244))) : ${pogget.theme.white},
+    titleShadow: f32(f32(f32(f32(0.299) * red(${vars.titleColor})) + f32(f32(0.587) * green(${vars.titleColor}))) + f32(f32(0.114) * blue(${vars.titleColor}))) < 128 ? rgb(255,255,255) : 0,
+    detailShadow: f32(f32(f32(f32(0.299) * red(${vars.detailColor})) + f32(f32(0.587) * green(${vars.detailColor}))) + f32(f32(0.114) * blue(${vars.detailColor}))) < 128 ? rgb(255,255,255) : 0
+  },
+  view {
+    type: "group", slot: "fileIconText", width: 0, height: 0,
+    textLayout {
+      titleWidth: ${FileIconText.view.TitleClip.width}, titleSize: max(1, ${vars.titleRawSize}), detailSize: max(1, ${vars.detailRawSize}),
+      omitOffset: ${pogget.fileIcon.omitOffset}, omitScale: max(0.001, ${vars.scale}), font: ${pogget.fileIcon.font},
+      measureDetail: !${vars.twoLine} && ${pogget.fileIcon.detail} != ""
+    },
+    gridLayout {
+      width: ${pogget.fileIcon.searchActive} ? ${FileIconText.view.SearchClip.width} : ${FileIconText.view.GridTitle.width},
+      textSize: max(1, ${pogget.fileIcon.searchActive} ? ${FileIconText.view.SearchClip.Text.textSize} : ${FileIconText.view.GridTitle.textSize}),
+      font: ${pogget.fileIcon.searchActive} ? ${FileIconText.view.SearchClip.Text.font} : ${FileIconText.view.GridTitle.font},
+      centered: (${pogget.fileIcon.searchActive} ? ${FileIconText.view.SearchClip.Text.align} : ${FileIconText.view.GridTitle.align}) == "center",
+      wrap: ${pogget.fileIcon.gridWrap},
+      interactionWidth: max(0, f32(${FileIconText.view.GridTitle.width} - (${pogget.fileIcon.media} == 0 ? 2 : 0))),
+      interactionTextSize: ${vars.shadow} && ${pogget.fileIcon.textSize} == 10 ? 11.5 : max(1, ${pogget.fileIcon.textSize}),
+      searchHeight: ${FileIconText.view.SearchClip.height}
+    },
+    GridTitle {
+      type: "text", slot: "fileGridTitle", x: f32(f32(${pogget.fileIcon.drawX} - 4) - ${FileIconSurface.vars.expandX}),
+      y: f32(${pogget.fileIcon.drawY} + ${pogget.fileIcon.height}), width: ${vars.gridWidth}, height: max(14, ${pogget.fileIcon.gridMeasuredHeight}),
+      visible: !${pogget.fileIcon.searchLayout} && !${vars.list} && !${pogget.fileIcon.textPreview} && (!${pogget.fileIcon.ghost} || ${pogget.fileIcon.folder} || ${pogget.fileIcon.media} == 1 || ${pogget.fileIcon.media} == 2) && ${pogget.fileIcon.previewMode} == 0 && ${pogget.fileIcon.title} != "" && ${pogget.fileIcon.title} != "vui!BLANK",
+      label: ${pogget.fileIcon.drawTitle}, textLiteral: true, textRenderer: "dwrite2", textNoWrap: true, textY: 0,
+      textSize: ${vars.shadow} && ${vars.gridRawSize} == 10 ? 11.5 : max(0.001, ${vars.gridRawSize}), font: ${FileIconText.view.textLayout.font}, align: "center",
+      color: ${vars.titleColor}, opacity: f32(f32(0.8) * ${pogget.fileIcon.alpha}),
+      textShadowOpacity: ${vars.shadowOpacity}, textShadowColor: ${vars.titleShadow}, textShadowY: f32(1.2), textShadowBlur: 4, textShadowQuality: 4, textShadowRingOpacity: f32(0.6)
+    },
+    SearchClip {
+      type: "group", x: ${FileIconText.view.GridTitle.x}, y: ${FileIconText.view.GridTitle.y}, width: ${vars.gridWidth},
+      height: ${pogget.fileIcon.searchExpanded} ? max(0, ${pogget.fileIcon.searchMaxHeight}) : 14,
+      visible: ${pogget.fileIcon.searchLayout} && !${vars.list} && !${pogget.fileIcon.textPreview} && ${pogget.fileIcon.previewMode} == 0,
+      clip: true, clipAntialias: "perPrimitive",
+      Hit {
+        type: "rect", slot: "fileSearchHighlight", x: ${vars.searchHitLeft} - ${FileIconText.view.SearchClip.x}, y: ${vars.searchHitTop} - ${FileIconText.view.SearchClip.y},
+        width: ${vars.searchHitWidth}, height: max(1, f32(${pogget.fileIcon.hitHeight} - 2)),
+        background: ${pogget.theme.accent}, radius: 3, opacity: f32(f32(f32(0.8) * ${pogget.fileIcon.alpha}) * f32(0.32))
+      },
+      Text {
+        type: "text", slot: "fileSearchTitle", x: 0, y: 0, width: ${FileIconText.view.SearchClip.width}, height: ${FileIconText.view.SearchClip.height},
+        source: "fileTitle", textRenderer: "resource", textClip: true, textY: 0,
+        font: ${FileIconText.view.GridTitle.font}, align: "center", textSize: ${FileIconText.view.GridTitle.textSize},
+        color: ${vars.titleColor}, opacity: f32(f32(0.8) * ${pogget.fileIcon.alpha})
+      }
+    },
+    TitleClip {
+      type: "group", slot: "fileIconTitle", x: ${vars.left}, y: f32(${vars.titleY} - 6),
+      width: ${vars.titleWidth}, height: max(0, f32(f32(${vars.bottom} + 6) - f32(${vars.titleY} - 6))),
+      visible: ${vars.list} && ${pogget.fileIcon.previewMode} != 2 && ${vars.titleWidth} > 0 && ${vars.titleHeight} > 0,
+      clip: true, clipAntialias: "aliased",
+      Text {
+        type: "text", x: 0, y: ${vars.titleY} - f32(${vars.titleY} - 6), width: ${vars.titleWidth}, height: ${vars.titleHeight},
+        label: ${pogget.fileIcon.drawTitle}, textLiteral: true, textRenderer: "dwrite2", textNoWrap: true, textY: 0,
+        textSize: ${vars.shadow} && ${vars.titleRawSize} == 10 ? 11.5 : max(0.001, ${vars.titleRawSize}), font: ${FileIconText.view.textLayout.font}, align: "left", color: ${vars.titleColor}, opacity: ${pogget.fileIcon.alpha},
+        textShadowOpacity: ${vars.shadowOpacity}, textShadowColor: ${vars.titleShadow}, textShadowY: f32(1.2), textShadowBlur: 4, textShadowQuality: 4, textShadowRingOpacity: f32(0.6)
+      }
+    },
+    DetailClip {
+      type: "group", slot: "fileIconDetail", x: ${vars.detailLeft}, y: f32(${vars.detailY} - 6),
+      width: max(0, f32(${vars.detailRight} - ${vars.detailLeft})), height: max(0, f32(f32(${vars.bottom} + 6) - f32(${vars.detailY} - 6))),
+      visible: ${vars.list} && ${pogget.fileIcon.previewMode} != 1 && ${pogget.fileIcon.previewMode} != 2 && ${pogget.fileIcon.detail} != "" && ${vars.detailRight} > ${vars.detailLeft} && ${vars.detailHeight} > 0,
+      clip: ${vars.twoLine}, clipAntialias: "aliased",
+      Text {
+        type: "text", x: ${vars.detailDrawX} - ${vars.detailLeft}, y: ${vars.detailY} - f32(${vars.detailY} - 6),
+        width: ${vars.detailDrawWidth}, height: ${vars.detailHeight},
+        label: ${pogget.fileIcon.detail}, textLiteral: true, textRenderer: "dwrite3", textNoWrap: true, textY: 0,
+        textSize: ${vars.shadow} && ${vars.detailRawSize} == 10 ? 11.5 : max(0.001, ${vars.detailRawSize}), font: ${FileIconText.view.textLayout.font}, align: "left", color: ${vars.detailColor}, opacity: f32(${pogget.fileIcon.alpha} * f32(0.7)),
+        textShadowOpacity: ${vars.shadowOpacity}, textShadowColor: ${vars.detailShadow}, textShadowY: f32(1.2), textShadowBlur: 4, textShadowQuality: 4, textShadowRingOpacity: f32(0.6)
+      }
+    }
+  }
+}
+
+
+// File decoding and Markdown semantics stay native; all preview presentation
+// is shared with custom view nodes. Resources exist for one synchronous pass.
+FilePreview {
+  vars {
+    width: ${FileIconSurface.vars.width}, height: ${FileIconSurface.vars.height},
+    size: ${pogget.fileIcon.textSize}, scale: f32(${vars.size} / 10),
+    footerHeight: f32(20 + (${vars.size} > 12 && ${vars.size} < 100 ? f32(f32(${vars.size} - 12) * 2) : 0)),
+    contentHeight: max(0, f32(f32(${vars.height} - ${vars.footerHeight}) - 16)),
+    bodySize: f32(11 * ${vars.scale}),
+    unitWidth: max(1, f32(${vars.bodySize} * f32(0.55))),
+    usableWidth: max(1, f32(${vars.width} - 16)),
+    unitsPerLine: max(1, floor(f32(f32(${vars.usableWidth} - f32(${vars.unitWidth} * 3)) / ${vars.unitWidth}))),
+    lineHeight: max(1, f32(${vars.bodySize} * f32(1.3))),
+    lineCount: max(1, floor(f32(${vars.contentHeight} / ${vars.lineHeight}))),
+    footerTop: f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.height}) - ${vars.footerHeight}) - 3),
+    titleLineHeight: max(12, f32(${vars.size} * f32(1.3))),
+    titleY: f32(${vars.footerTop} + max(0, f32(f32(${vars.footerHeight} - ${vars.titleLineHeight}) * f32(0.5)))),
+    background: fade(${pogget.theme.midnight},10)
+  },
+  view {
+    type: "group", slot: "filePreview", width: 0, height: 0,
+    visible: ${pogget.fileIcon.textPreview} && !${pogget.fileIcon.list} && ${pogget.fileIcon.previewMode} != 1 && ${pogget.fileIcon.previewMode} != 2,
+    previewLayout {
+      excerptUnits: clamp((${vars.size} <= 12 || ${vars.size} >= 100 ? 18 : ${vars.unitsPerLine} * ${vars.lineCount}) + ${pogget.fileIcon.omitOffset}, 1, 64),
+      titleWidth: ${FilePreview.view.Title.width}, titleSize: ${FilePreview.view.Title.textSize}, titleFont: ${FilePreview.view.Title.font},
+      titleWrap: ${pogget.fileIcon.ghost} && ${pogget.fileIcon.network} && ${pogget.fileIcon.gridWrap}
+    },
+    Card {
+      type: "rect", x: ${pogget.fileIcon.drawX}, y: ${pogget.fileIcon.drawY}, width: max(0, ${vars.width}), height: max(0, f32(${vars.height} + 4)),
+      background: ${vars.background}, radius: 8, texture: 0, opacity: ${pogget.fileIcon.alpha}
+    },
+    ContentClip {
+      type: "group", x: f32(${pogget.fileIcon.drawX} + 8), y: f32(${pogget.fileIcon.drawY} + 8),
+      width: max(0, f32(${vars.width} - 16)), height: ${vars.contentHeight}, clip: true, clipAntialias: "perPrimitive",
+      Text {
+        type: "text", visible: !${pogget.fileIcon.markdown}, x: 0, y: 0,
+        width: ${FilePreview.view.ContentClip.width}, height: ${FilePreview.view.ContentClip.height},
+        label: ${pogget.fileIcon.previewText}, textLiteral: true, textRenderer: "dwrite3", textY: 0,
+        textSize: ${FileIconText.vars.shadow} && ${vars.bodySize} == 10 ? 11.5 : max(0.001, ${vars.bodySize}), font: ${pogget.fileIcon.font}, align: "left", color: ${FileIconText.vars.detailColor}, opacity: f32(${pogget.fileIcon.alpha} * f32(0.6)),
+        textShadowOpacity: ${FileIconText.vars.shadowOpacity}, textShadowColor: ${FileIconText.vars.detailShadow}, textShadowY: f32(1.2), textShadowBlur: 4, textShadowQuality: 4, textShadowRingOpacity: f32(0.6)
+      },
+      Markdown {
+        type: "content", visible: ${pogget.fileIcon.markdown}, source: "markdown", x: 0, y: 0,
+        width: ${FilePreview.view.ContentClip.width}, height: ${FilePreview.view.ContentClip.height}, contentScale: f32(0.45),
+        textSize: 12, font: "Segoe UI", textNoWrap: false, color: ${pogget.theme.white}, opacity: f32(${pogget.fileIcon.alpha} * f32(0.6))
+      }
+    },
+    Base {
+      type: "solid", x: f32(${pogget.fileIcon.drawX} + 2), y: f32(f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.height}) - 26) + 8) - f32(${vars.footerHeight} - 20)),
+      width: max(0, f32(${vars.width} - 4)), height: ${vars.footerHeight}, background: ${vars.background}, opacity: f32(f32(0.5) * ${pogget.fileIcon.alpha})
+    },
+    Fade1 {
+      type: "solid", x: f32(${pogget.fileIcon.drawX} + 2), y: f32(f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.height}) - 26) + 6) - f32(${vars.footerHeight} - 20)),
+      width: max(0, f32(${vars.width} - 4)), height: ${vars.footerHeight}, background: ${vars.background}, opacity: f32(f32(0.4) * ${pogget.fileIcon.alpha})
+    },
+    Fade2 {
+      type: "solid", x: f32(${pogget.fileIcon.drawX} + 2), y: f32(f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.height}) - 26) + 5) - f32(${vars.footerHeight} - 20)),
+      width: max(0, f32(${vars.width} - 4)), height: ${vars.footerHeight}, background: ${vars.background}, opacity: f32(f32(0.3) * ${pogget.fileIcon.alpha})
+    },
+    Fade3 {
+      type: "solid", x: f32(${pogget.fileIcon.drawX} + 2), y: f32(f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.height}) - 26) + 4) - f32(${vars.footerHeight} - 20)),
+      width: max(0, f32(${vars.width} - 4)), height: ${vars.footerHeight}, background: ${vars.background}, opacity: f32(f32(0.2) * ${pogget.fileIcon.alpha})
+    },
+    Fade4 {
+      type: "solid", x: f32(${pogget.fileIcon.drawX} + 2), y: f32(f32(f32(f32(${pogget.fileIcon.drawY} + ${vars.height}) - 26) + 3) - f32(${vars.footerHeight} - 20)),
+      width: max(0, f32(${vars.width} - 4)), height: ${vars.footerHeight}, background: ${vars.background}, opacity: f32(f32(0.1) * ${pogget.fileIcon.alpha})
+    },
+    Title {
+      type: "text", x: f32(${pogget.fileIcon.drawX} + 6), y: ${vars.titleY},
+      width: max(0, f32(${vars.width} - 14)), height: max(min(${vars.footerHeight}, f32(${vars.titleLineHeight} + 2)), ${pogget.fileIcon.previewTitleMeasuredHeight}),
+      label: ${pogget.fileIcon.previewTitle}, textLiteral: true, textRenderer: "dwrite2", textNoWrap: true, textY: 0,
+      textSize: ${FileIconText.vars.shadow} && f32(10 * ${vars.scale}) == 10 ? 11.5 : max(0.001, f32(10 * ${vars.scale})), font: ${pogget.fileIcon.font}, align: "left", color: ${pogget.fileIcon.network} ? ${FileIconText.vars.titleColor} : ${FileIconText.vars.detailColor}, opacity: ${pogget.fileIcon.alpha},
+      textShadowOpacity: ${FileIconText.vars.shadowOpacity}, textShadowColor: ${pogget.fileIcon.network} ? ${FileIconText.vars.titleShadow} : ${FileIconText.vars.detailShadow}, textShadowY: f32(1.2), textShadowBlur: 4, textShadowQuality: 4, textShadowRingOpacity: f32(0.6)
+    }
+  }
+}
+
+
+// Native input supplies progress, pointer facts and the reorder axis. The
+// preset owns the complete whole-icon placement and deformation policy.
+FileIconMotion {
+  vars {
+    ghost: ${pogget.fileIcon.ghost}, list: ${pogget.fileIcon.list},
+    push: f32(${pogget.fileIcon.push}),
+    sway: clamp(f32(f32(${pogget.fileIcon.cursorX} - ${pogget.fileIcon.pressX}) * f32(0.3)), -15, 15),
+    baseX: ${vars.ghost} && ${vars.list} ? f32(${pogget.fileIcon.x} + ${vars.sway}) : ${pogget.fileIcon.inputX},
+    baseY: ${vars.ghost} && ${vars.list} ? f32(f32(${pogget.fileIcon.inputY} + f32(${pogget.fileIcon.size} / 2)) - 15) : ${pogget.fileIcon.inputY},
+    x: ${vars.ghost} ? f32(${vars.baseX} + f32(f32(${pogget.fileIcon.x} - ${vars.baseX}) * ${vars.push})) : ${vars.baseX},
+    y: ${vars.ghost} ? f32(${vars.baseY} + f32(f32(${pogget.fileIcon.y} - ${vars.baseY}) * ${vars.push})) : ${vars.baseY},
+    pressScale: f32(1 - f32(${vars.push} * f32(0.05))),
+    ghostScale: f32(${vars.pressScale} * f32(f32(0.95) + f32(f32(0.05) * ${pogget.fileIcon.alpha}))),
+    along: f32(${vars.pressScale} * f32(1 - f32(f32(0.026) * ${pogget.fileIcon.deform}))),
+    across: f32(${vars.pressScale} * f32(1 + f32(f32(0.012) * ${pogget.fileIcon.deform})))
+  },
+  view {
+    type: "group", slot: "fileIconMotion", width: 0, height: 0,
+    animation {
+      hoverDuration: 0.25, unhoverDuration: 0.25, pressDuration: 0.15, releaseDuration: 0.25,
+      rightPressDuration: 0.1, rightReleaseDuration: 0.2,
+      rightPush: ${pogget.fileIcon.list} ? 0.3 : 0.6
+    },
+    motion {
+      x: ${vars.x}, y: ${vars.y},
+      active: ${vars.ghost} || ${pogget.fileIcon.push} > 0 || abs(${pogget.fileIcon.deform}) > f32(0.0001),
+      scaleX: ${vars.ghost} ? ${vars.ghostScale} : (${pogget.fileIcon.deformAxis} == 1 ? ${vars.along} : ${vars.across}),
+      scaleY: ${vars.ghost} ? ${vars.ghostScale} : (${pogget.fileIcon.deformAxis} == 2 ? ${vars.along} : ${vars.across}),
+      pivotX: f32(${vars.x} + f32(${FileIconSurface.vars.width} / 2)),
+      pivotY: f32(${vars.y} + f32(${FileIconSurface.vars.height} / 2))
+    }
+  }
+}
+
+FileGhost {
+  view {
+    type: "rect", slot: "fileGhostSurface", visible: ${pogget.fileIcon.ghost} && ${pogget.fileIcon.list},
+    x: ${pogget.fileIcon.drawX}, y: ${pogget.fileIcon.drawY}, width: max(0, ${FileIconSurface.vars.width}), height: max(0, ${FileIconSurface.vars.height}),
+    radius: 6, background: ${pogget.theme.midnight}, opacity: ${pogget.fileIcon.alpha}, fillOpacity: f32(0.95),
+    border: 1, borderColor: ${pogget.theme.white}, borderOpacity: f32(0.15),
+    shadowOpacity: f32(0.02), shadowX: 0, shadowY: 2, shadowBlur: 8, shadowQuality: 5, shadowColor: ${pogget.theme.white}
+  }
+}
+
+// Native owns the editor/files and snapshot device resources. Surface geometry,
+// snapshot crop, scale, opacity and physical clipping use ordinary primitives.
+InlineContent {
+  vars {
+    rawWidth: ${pogget.inlineContent.width}, rawHeight: ${pogget.inlineContent.height},
+    controlsStartY: ${pogget.inlineContent.upward} ? 10 : f32(${pogget.inlineContent.titleOffset} + 10),
+    width: f32(${vars.rawWidth}), height: f32(${vars.rawHeight}),
+    progress: f32(${pogget.inlineContent.progress}), switchProgress: f32(${pogget.inlineContent.switchProgress}),
+    startX: f32(${pogget.inlineContent.startX}), startY: f32(${pogget.inlineContent.startY}),
+    x: f32(${vars.startX} + f32(f32(0 - ${vars.startX}) * ${vars.progress})),
+    y: f32(${vars.startY} + f32(f32(0 - ${vars.startY}) * ${vars.progress})),
+    maskWidth: max(0, f32(${pogget.inlineContent.startWidth} + (${vars.rawWidth} - ${pogget.inlineContent.startWidth}) * ${vars.progress})),
+    maskHeight: max(0, f32(${pogget.inlineContent.startHeight} + (${vars.rawHeight} - ${pogget.inlineContent.startHeight}) * ${vars.progress})),
+    radius: max(0, f32(24 * f32(1 - f32(pow(${vars.progress}, 10))))),
+    exiting: ${pogget.inlineContent.exiting},
+    cropTop: ${pogget.inlineContent.compatible} == 3 || ${pogget.inlineContent.compatible} == 4 ? f32(${pogget.inlineContent.titleOffset}) : 0,
+    scale: ${vars.exiting} ? f32(f32(0.1) + f32(f32(0.9) * f32(pow(${vars.progress}, 1.5)))) : f32(1 - f32(f32(0.1) * ${vars.switchProgress})),
+    pivotX: ${vars.exiting} ? f32(${vars.x} + f32(${vars.maskWidth} / 2)) : f32(${vars.rawWidth} / 2),
+    pivotY: ${vars.exiting} ? f32(${vars.y} + f32(${vars.maskHeight} / 2)) : f32(${vars.rawHeight} / 2)
+  },
+  view {
+    type: "group", slot: "inlineContentSurface", width: ${vars.width}, height: ${vars.height}, visible: ${pogget.inlineContent.visible},
+    animation {
+      enterDuration: f32(0.35), enterX1: f32(0.16), enterY1: 1, enterX2: f32(0.3), enterY2: 1,
+      exitDuration: f32(0.6), exitX1: 0.68, exitY1: 0.01, exitX2: 0.37, exitY2: 0.99,
+      switchDuration: f32(0.25), switchX1: f32(0.33), switchY1: 1, switchX2: f32(0.68), switchY2: 1
+    },
+    editor {
+      padding: 10, margin: ${pogget.markdownEditor.nativeMargin}, textSize: ${pogget.markdownEditor.nativeTextSize}, font: "Segoe UI",
+      caretDuration: 0.6, scrollDuration: 0.22, zoomDuration: 0.18, zoomHintDuration: 1.35,
+      contentWidth: max(1, f32(f32(${pogget.markdownEditor.width} - f32(${self.padding} * 2)) - ${self.margin})),
+      baseHeight: max(1, f32(${pogget.markdownEditor.height} - f32(${self.padding} * 2))),
+      contentHeight: max(1, f32(f32(${pogget.markdownEditor.height} - f32(${self.padding} * 2)) - (!${pogget.markdownEditor.wrap} && ${pogget.markdownEditor.textWidth} > ${self.contentWidth} ? 8 : 0))),
+      layoutWidth: max(1, f32(f32(f32(${pogget.markdownEditor.width} - f32(${self.padding} * 2)) - ${self.margin}) / (${pogget.markdownEditor.wrap} ? ${pogget.markdownEditor.layoutScale} : 1))),
+      verticalTrack: max(0, f32(f32(${pogget.markdownEditor.height} - 4) - (!${pogget.markdownEditor.wrap} && ${pogget.markdownEditor.textWidth} > ${self.contentWidth} ? 10 : 4))),
+      verticalThumb: min(${self.verticalTrack}, max(15, f32(${self.verticalTrack} * f32(${self.contentHeight} / max(0.0001, ${pogget.markdownEditor.textHeight}))))),
+      horizontalTrack: max(0, f32(f32(${pogget.markdownEditor.width} - 4) - (${pogget.markdownEditor.textHeight} > ${self.contentHeight} ? 10 : 4))),
+      horizontalThumb: min(${self.horizontalTrack}, max(15, f32(${self.horizontalTrack} * f32(${self.contentWidth} / max(0.0001, ${pogget.markdownEditor.textWidth}))))),
+      verticalHitLeft: f32(${pogget.markdownEditor.width} - 14), verticalHitTop: 4, verticalHitRight: ${pogget.markdownEditor.width},
+      verticalHitBottom: f32(${pogget.markdownEditor.height} - (!${pogget.markdownEditor.wrap} && ${pogget.markdownEditor.textWidth} > ${self.contentWidth} ? 10 : 4)),
+      horizontalHitLeft: 4, horizontalHitTop: f32(${pogget.markdownEditor.height} - 14), horizontalHitRight: f32(${pogget.markdownEditor.width} - (${pogget.markdownEditor.textHeight} > ${self.contentHeight} ? 10 : 4)),
+      horizontalHitBottom: ${pogget.markdownEditor.height}
+    },
+    hostLayout {
+      editorX: 0, editorY: f32(f32(${vars.controlsStartY} + 45) + (${pogget.inlineContent.search} ? 45 : 0)),
+      editorWidth: ${vars.width}, editorHeight: max(50, f32(${vars.rawHeight} - ${self.editorY})),
+      iconsX: 25,
+      iconsY: trunc(f32(f32(f32(${vars.controlsStartY} + 45) + trunc(${pogget.inlineContent.searchChrome} ? ${pogget.inlineContent.searchExtraY} : 0)) + trunc(f32(15 * f32(1 - ${vars.progress}))))) - ${pogget.inlineContent.scrollDepth},
+      layoutWidth: ${vars.rawWidth}, viewportWidth: ${vars.rawWidth}, viewportHeight: ${vars.rawHeight},
+      iconsAlpha: ${pogget.inlineContent.switching} ? f32(${vars.switchProgress} * ${vars.progress}) : ${vars.progress},
+      viewTop: ${pogget.inlineContent.upward} ? 0 : f32(${pogget.inlineContent.titleOffset}), viewBottom: ${vars.height},
+      cullMargin: 30, expansionMargin: 5
+    },
+    Backdrop {
+      type: "group", width: ${vars.width}, height: ${vars.height}, blurRenderer: "snapshot",
+      blur: ${pogget.inlineContent.compatible} == 2 && ${vars.progress} > f32(0.01) && ${vars.progress} < f32(0.99) ? f32(2 * ${vars.progress}) : 0
+    },
+    Mask {
+      type: "rect", x: ${vars.x}, y: ${vars.y}, width: ${vars.maskWidth}, height: ${vars.maskHeight},
+      radius: ${vars.radius}, background: ${pogget.inlineContent.color}, opacity: ${vars.progress},
+      border: ${vars.exiting} ? 2 : 0, borderColor: ${pogget.theme.midnightplus}
+    },
+    Snapshot {
+      type: "group", slot: "inlineContentSnapshot", width: ${vars.width}, height: ${vars.height},
+      visible: ${vars.exiting} ? ${pogget.inlineContent.exitSnapshot} : (${pogget.inlineContent.switching} && ${pogget.inlineContent.switchSnapshot}),
+      Clip {
+        type: "group", x: ${vars.exiting} ? ${vars.x} : 0, y: ${vars.exiting} ? ${vars.y} : 0,
+        width: ${vars.exiting} ? ${vars.maskWidth} : ${vars.width}, height: ${vars.exiting} ? ${vars.maskHeight} : ${vars.height}, clip: ${vars.exiting},
+        Image {
+          type: "image", imageRenderer: "resource", source: ${vars.exiting} ? "inlineExit" : "inlineSwitch",
+          x: -${InlineContent.view.Snapshot.Clip.x}, y: ${vars.cropTop} - ${InlineContent.view.Snapshot.Clip.y},
+          width: ${vars.width}, height: max(0, f32(${vars.height} - ${vars.cropTop})),
+          imageCrop: true, imageSourceX: 0, imageSourceY: ${vars.cropTop}, imageSourceWidth: ${vars.width}, imageSourceHeight: max(0, f32(${vars.height} - ${vars.cropTop})),
+          imageScaleX: ${vars.scale}, imageScaleY: ${vars.scale}, imagePivotX: ${vars.pivotX}, imagePivotY: ${vars.pivotY},
+          opacity: ${vars.exiting} ? ${vars.progress} : f32(f32(1 - ${vars.switchProgress}) * ${vars.progress})
+        }
+      }
+    }
+  }
+}
+
+// Text input/IME and glyph layout stay native. All editor chrome uses the same
+// ordinary primitives as container skins; glyph bounds are request-time facts.
+MarkdownEditor {
+  vars {
+    x: ${pogget.markdownEditor.x}, y: ${pogget.markdownEditor.y},
+    width: ${pogget.markdownEditor.width}, height: ${pogget.markdownEditor.height},
+    zoom: ${pogget.markdownEditor.zoom}, scale: ${pogget.markdownEditor.scale},
+    baseX: f32(f32(f32(${vars.x} + ${InlineContent.view.editor.padding}) + ${InlineContent.view.editor.margin}) - ${pogget.markdownEditor.scrollX}),
+    baseY: f32(f32(${vars.y} + ${InlineContent.view.editor.padding}) - ${pogget.markdownEditor.scrollY}),
+    drawX: ${pogget.markdownEditor.drawX}, drawY: ${pogget.markdownEditor.drawY},
+    vertical: ${pogget.markdownEditor.hasLayout} && ${pogget.markdownEditor.textHeight} > ${InlineContent.view.editor.contentHeight},
+    horizontal: !${pogget.markdownEditor.wrap} && ${pogget.markdownEditor.hasLayout} && ${pogget.markdownEditor.textWidth} > ${InlineContent.view.editor.contentWidth},
+    verticalProgress: f32(${pogget.markdownEditor.scrollY} / max(0.0001, f32(${pogget.markdownEditor.textHeight} - ${InlineContent.view.editor.contentHeight}))),
+    horizontalProgress: f32(${pogget.markdownEditor.scrollX} / max(0.0001, f32(${pogget.markdownEditor.textWidth} - ${InlineContent.view.editor.contentWidth})))
+  },
+  view {
+    type: "group", slot: "markdownEditorSurface", width: max(0, ${vars.width}), height: max(0, ${vars.height}),
+    Surface {
+      type: "rect", visible: !${pogget.markdownEditor.staticText}, x: ${vars.x}, y: ${vars.y}, width: ${vars.width}, height: ${vars.height},
+      radius: ${pogget.markdownEditor.nativeRadius}, background: ${pogget.markdownEditor.background}, fillOpacity: ${pogget.markdownEditor.nativeBgAlpha},
+      border: ${pogget.markdownEditor.nativeBorder}, borderColor: ${pogget.markdownEditor.borderColor}, borderOpacity: ${pogget.markdownEditor.nativeBorderAlpha}
+    },
+    Viewport {
+      type: "group", slot: "markdownEditorViewport", clip: true, clipLayer: true,
+      x: f32(${vars.x} + 2), y: f32(${vars.y} + 2), width: max(f32(0.1), f32(${vars.width} - 4)), height: max(f32(0.1), f32(${vars.height} - 4)),
+      clipRadius: max(4, f32(${pogget.markdownEditor.nativeRadius} - 2)),
+      Body {
+        type: "content", source: "markdownEditorViewport", contentScale: ${vars.zoom},
+        x: ${vars.baseX} - ${MarkdownEditor.view.Viewport.x}, y: ${vars.baseY} - ${MarkdownEditor.view.Viewport.y},
+        width: ${InlineContent.view.editor.contentWidth}, height: ${InlineContent.view.editor.contentHeight}
+      }
+    },
+    Placeholder {
+      type: "text", slot: "markdownEditorPlaceholder", label: ${pogget.markdownEditor.placeholder}, textLiteral: true,
+      x: f32(f32(${vars.x} + ${InlineContent.view.editor.padding}) + ${InlineContent.view.editor.margin}),
+      y: f32(${vars.y} + ${InlineContent.view.editor.padding}),
+      width: max(0, f32(f32(${vars.x} + ${vars.width}) - ${self.x})),
+      height: max(0, f32(max(${vars.drawY}, f32(${vars.y} + ${vars.height})) - ${self.y})),
+      textRenderer: "direct", textX: 0, textY: 0, align: "left", color: ${pogget.markdownEditor.textColor}, opacity: f32(f32(0.5) * ${pogget.markdownEditor.masterAlpha}),
+      textSize: ${InlineContent.view.editor.textSize}, font: ${InlineContent.view.editor.font}
+    },
+    Selection {
+      type: "solid", slot: "markdownEditorSelection", x: f32(${vars.drawX} + ${pogget.markdownEditor.selectionX}),
+      y: f32(${vars.drawY} + ${pogget.markdownEditor.selectionY}), width: ${pogget.markdownEditor.selectionWidth}, height: ${pogget.markdownEditor.selectionHeight},
+      background: ${pogget.theme.accent}, opacity: f32(f32(0.25) * ${pogget.markdownEditor.masterAlpha})
+    },
+    Content {
+      type: "content", slot: "markdownEditorContent", source: "markdownEditor", x: ${vars.drawX}, y: ${vars.drawY},
+      width: ${InlineContent.view.editor.layoutWidth}, height: f32(${InlineContent.view.editor.contentHeight} / ${vars.scale}),
+      opacity: ${pogget.markdownEditor.masterAlpha}, color: ${pogget.markdownEditor.textColor}, textSize: ${InlineContent.view.editor.textSize}, font: ${InlineContent.view.editor.font}
+    },
+    Caret {
+      type: "solid", slot: "markdownEditorCaret", visible: ${pogget.markdownEditor.editing},
+      x: f32(${vars.drawX} + ${pogget.markdownEditor.caretX}), y: f32(${vars.drawY} + ${pogget.markdownEditor.caretY}),
+      width: f32((${pogget.markdownEditor.selected} ? f32(1.8) : f32(1.2)) / ${vars.scale}), height: ${pogget.markdownEditor.caretHeight},
+      background: ${pogget.markdownEditor.selected} ? ${pogget.theme.accent} : ${pogget.markdownEditor.textColor}, opacity: f32(${pogget.markdownEditor.caretOpacity} * ${pogget.markdownEditor.masterAlpha})
+    },
+    Scrollbars {
+      type: "group", slot: "markdownEditorScrollbars", width: ${vars.width}, height: ${vars.height},
+      Vertical {
+        type: "solid", visible: ${vars.vertical} && ${InlineContent.view.editor.verticalTrack} > 0,
+        x: f32(f32(${vars.x} + ${vars.width}) - 8),
+        y: f32(f32(${vars.y} + 4) + f32(${vars.verticalProgress} * f32(${InlineContent.view.editor.verticalTrack} - ${InlineContent.view.editor.verticalThumb}))),
+        width: 4, height: ${InlineContent.view.editor.verticalThumb}, background: ${pogget.markdownEditor.textColor},
+        opacity: ${pogget.markdownEditor.verticalDrag} ? f32(0.7) : (${pogget.markdownEditor.verticalHover} ? f32(0.55) : f32(0.25))
+      },
+      Horizontal {
+        type: "solid", visible: ${vars.horizontal} && ${InlineContent.view.editor.horizontalTrack} > 0,
+        x: f32(f32(${vars.x} + 4) + f32(${vars.horizontalProgress} * f32(${InlineContent.view.editor.horizontalTrack} - ${InlineContent.view.editor.horizontalThumb}))),
+        y: f32(f32(${vars.y} + ${vars.height}) - 8), width: ${InlineContent.view.editor.horizontalThumb}, height: 4,
+        background: ${pogget.markdownEditor.textColor},
+        opacity: ${pogget.markdownEditor.horizontalDrag} ? f32(0.7) : (${pogget.markdownEditor.horizontalHover} ? f32(0.55) : f32(0.25))
+      }
+    },
+    ZoomHint {
+      type: "group", slot: "markdownEditorZoomHint", width: ${vars.width}, height: ${vars.height},
+      visible: ${pogget.markdownEditor.zoomEnabled} && ${pogget.markdownEditor.hintOpacity} > f32(0.001) && ${vars.width} >= 100 && ${vars.height} >= 50,
+      x: f32(${vars.x} + 12), y: f32(f32(f32(${vars.y} + ${vars.height}) - 40) - (${vars.horizontal} ? 8 : 0)),
+      Background { type: "rect", width: 68, height: 28, radius: 7, background: rgb(24,24,28), opacity: f32(f32(0.82) * ${pogget.markdownEditor.hintOpacity}) },
+      Label { type: "text", y: 6, width: 68, height: 16, label: round(f32(${vars.zoom} * 100)) + "%", textLiteral: true,
+        textRenderer: "dwrite3", textX: 0, textY: 0, textNoWrap: true, textSize: 12, font: "Segoe UI", color: rgb(255,255,255), opacity: ${pogget.markdownEditor.hintOpacity} }
+    }
+  }
+}
+
+// The host repeats Dot using the declared count. The preset owns pagination
+// visibility, spacing, clipped edge dots and the interpolated active marker.
+PageIndicator {
+  vars {
+    maxDots: 9,
+    count: max(1, floor(${pogget.pageIndicator.count})),
+    visibleCount: min(${vars.count}, ${vars.maxDots}),
+    center: clamp(round(${pogget.pageIndicator.position}), 0, ${vars.count} - 1),
+    first: clamp(${vars.center} - floor(${vars.visibleCount} / 2), 0, ${vars.count} - ${vars.visibleCount}),
+    vertical: ${pogget.pageIndicator.vertical},
+    width: f32(${pogget.pageIndicator.width}), height: f32(${pogget.pageIndicator.height}),
+    extent: ${vars.vertical} ? ${vars.height} : ${vars.width},
+    available: max(40, f32(${vars.extent} - (${vars.vertical} ? 96 : 48))),
+    slot: f32(min(14, f32(${vars.available} / ${vars.visibleCount}))),
+    total: f32(${vars.slot} * ${vars.visibleCount}),
+    start: f32(f32(${vars.extent} - ${vars.total}) * 0.5),
+    index: ${pogget.pageIndicator.index},
+    clipped: (${vars.index} == 0 && ${vars.first} > 0) || (${vars.index} == ${vars.visibleCount} - 1 && ${vars.first} + ${vars.visibleCount} < ${vars.count}),
+    dotSize: ${vars.clipped} ? 3 : 4,
+    dotPosition: f32(f32(${vars.start} + f32(${vars.index} * ${vars.slot})) + f32(f32(${vars.slot} - ${vars.dotSize}) * 0.5)),
+    activeLength: max(0, min(12, f32(${vars.slot} - 2))),
+    activeOffset: clamp(f32(${pogget.pageIndicator.position} - ${vars.first}), 0, ${vars.visibleCount} - 1),
+    activePosition: f32(f32(${vars.start} + f32(${vars.activeOffset} * ${vars.slot})) + f32(f32(${vars.slot} - ${vars.activeLength}) * 0.5))
+  },
+  view {
+    type: "group", slot: "pageIndicatorSurface", width: ${vars.width}, height: ${vars.height}, visible: ${pogget.pageIndicator.visible},
+    repeat { count: ${vars.visibleCount} },
+    Dot {
+      type: "rect", slot: "pageIndicatorDot",
+      x: ${vars.vertical} ? f32(${vars.width} - 18) : ${vars.dotPosition}, y: ${vars.vertical} ? ${vars.dotPosition} : f32(${vars.height} - 17),
+      width: ${vars.dotSize}, height: ${vars.dotSize}, radius: f32(${vars.dotSize} * 0.5), background: ${pogget.theme.white}, opacity: f32(0.28)
+    },
+    Active {
+      type: "rect", slot: "pageIndicatorActive",
+      x: ${vars.vertical} ? f32(${vars.width} - 19) : ${vars.activePosition}, y: ${vars.vertical} ? ${vars.activePosition} : f32(${vars.height} - 18),
+      width: ${vars.vertical} ? 6 : ${vars.activeLength}, height: ${vars.vertical} ? ${vars.activeLength} : 6,
+      radius: 3, background: ${pogget.theme.white}, opacity: f32(0.86)
+    }
+  }
+}
+
+// Inline folder/editor navigation reuses native option gesture and business
+// controllers. The preset owns the capsule, complete button skin and motion.
+InlineNavigation {
+  vars {
+    startY: ${pogget.upward} ? 10 : (${pogget.layoutHidden} ? 10 : 70),
+    surfaceY: f32(f32(${vars.startY} - 5) + f32(${pogget.inlineNavigationOffset})),
+    buttonY: trunc(f32(f32(${vars.startY} - 1) + f32(${pogget.inlineNavigationOffset}))),
+    textSize: max(0.001, f32(15 * ${pogget.inlineAlpha})),
+    visible: ${pogget.inlineNavigation} && !${pogget.inlinePendingExit} && ${pogget.inlineAlpha} > f32(0.05) && ${pogget.inlineNavigationOffset} > -48,
+    factor: ${pogget.inlineColor} == ${pogget.theme.darknight} ? -1 : 1,
+    backHover: f32(${pogget.inlineNavigationBack.hover} * 0.5),
+    backColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.backHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.backHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.backHover} * 20) * ${vars.factor})) + 256) % 256),
+    homeHover: f32(${pogget.inlineNavigationHome.hover} * 0.5),
+    homeColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.homeHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.homeHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.homeHover} * 20) * ${vars.factor})) + 256) % 256),
+    saveHover: f32(${pogget.inlineNavigationSave.hover} * 0.5),
+    saveColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.saveHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.saveHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.saveHover} * 20) * ${vars.factor})) + 256) % 256),
+    openHover: f32(${pogget.inlineNavigationOpen.hover} * 0.5),
+    openColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.openHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.openHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.openHover} * 20) * ${vars.factor})) + 256) % 256),
+    searchHover: f32(${pogget.inlineNavigationSearch.hover} * 0.5),
+    searchColor: rgb((trunc(min(255, red(${pogget.inlineColor}) + f32(${vars.searchHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, green(${pogget.inlineColor}) + f32(${vars.searchHover} * 20) * ${vars.factor})) + 256) % 256, (trunc(min(255, blue(${pogget.inlineColor}) + f32(${vars.searchHover} * 20) * ${vars.factor})) + 256) % 256)
+  },
+  view {
+    type: "group", slot: "inlineNavigationSurface", width: ${pogget.width}, height: ${pogget.height}, visible: ${vars.visible},
+    motion { hideOffset: -50, showOffset: 0, duration: 350ms, scrollDelta: 1, pointerArea: 100, topThreshold: 5 },
+    Capsule { type: "rect", x: 20, y: ${vars.surfaceY}, width: ${pogget.inlineEditing} ? 145 : 110, height: 38, radius: 19, background: ${pogget.inlineColor}, opacity: ${pogget.inlineAlpha} },
+    Back {
+      type: "group", slot: "inlineNavigationBack", x: 25, y: ${vars.buttonY}, width: 30, height: 30,
+      visible: ${pogget.inlineAvailable} && (true), action: pogget.action.container.inlineBack, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.backHover}, y: -${vars.backHover}, width: 30 + ${vars.backHover} * 2, height: 30 + ${vars.backHover} * 2, radius: 6, background: ${vars.backColor}, border: 1, borderColor: ${vars.backColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${InlineNavigation.view.Back.y} + 15 - ${vars.textSize} / 1.5) + 3 - ${InlineNavigation.view.Back.y}, label: ":\uf053:", textLiteral: true, textSize: ${vars.textSize}, color: ${pogget.theme.white}, align: "center" }
+    },
+    Home {
+      type: "group", slot: "inlineNavigationHome", x: 60, y: ${vars.buttonY}, width: 30, height: 30,
+      visible: ${pogget.inlineAvailable} && (!${pogget.inlineEditing}), action: pogget.action.container.inlineHome, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.homeHover}, y: -${vars.homeHover}, width: 30 + ${vars.homeHover} * 2, height: 30 + ${vars.homeHover} * 2, radius: 6, background: ${vars.homeColor}, border: 1, borderColor: ${vars.homeColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${InlineNavigation.view.Home.y} + 15 - ${vars.textSize} / 1.5) + 3 - ${InlineNavigation.view.Home.y}, label: ":\uf015:", textLiteral: true, textSize: ${vars.textSize}, color: ${pogget.theme.white}, align: "center" }
+    },
+    Save {
+      type: "group", slot: "inlineNavigationSave", x: 60, y: ${vars.buttonY}, width: 30, height: 30,
+      visible: ${pogget.inlineAvailable} && (${pogget.inlineEditing}), action: pogget.action.container.inlineSave, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.saveHover}, y: -${vars.saveHover}, width: 30 + ${vars.saveHover} * 2, height: 30 + ${vars.saveHover} * 2, radius: 6, background: ${vars.saveColor}, border: 1, borderColor: ${vars.saveColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${InlineNavigation.view.Save.y} + 15 - ${vars.textSize} / 1.5) + 3 - ${InlineNavigation.view.Save.y}, label: ":\uf0c7:", textLiteral: true, textSize: ${vars.textSize}, color: ${pogget.theme.white}, align: "center" }
+    },
+    Open {
+      type: "group", slot: "inlineNavigationOpen", x: 95, y: ${vars.buttonY}, width: 30, height: 30,
+      visible: ${pogget.inlineAvailable} && (${pogget.inlineEditing}), action: pogget.action.container.inlineOpen, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.openHover}, y: -${vars.openHover}, width: 30 + ${vars.openHover} * 2, height: 30 + ${vars.openHover} * 2, radius: 6, background: ${vars.openColor}, border: 1, borderColor: ${vars.openColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${InlineNavigation.view.Open.y} + 15 - ${vars.textSize} / 1.5) + 3 - ${InlineNavigation.view.Open.y}, label: ":\uf08e:", textLiteral: true, textSize: ${vars.textSize}, color: ${pogget.theme.white}, align: "center" }
+    },
+    Search {
+      type: "group", slot: "inlineNavigationSearch", x: ${pogget.inlineEditing} ? 130 : 95, y: ${vars.buttonY}, width: 30, height: 30,
+      visible: ${pogget.inlineAvailable} && (true), action: pogget.action.container.toggleInlineSearch, transition: 250ms, unhoverTransition: 150ms,
+      Surface { type: "rect", x: -${vars.searchHover}, y: -${vars.searchHover}, width: 30 + ${vars.searchHover} * 2, height: 30 + ${vars.searchHover} * 2, radius: 6, background: ${vars.searchColor}, border: 1, borderColor: ${vars.searchColor} },
+      Text { type: "text", width: 30, height: 30, textY: f32(${InlineNavigation.view.Search.y} + 15 - ${vars.textSize} / 1.5) + 3 - ${InlineNavigation.view.Search.y}, label: ":\uf002:", textLiteral: true, textSize: ${vars.textSize}, color: ${pogget.theme.white}, align: "center" }
+    }
+  }
+}

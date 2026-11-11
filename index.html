@@ -1,106 +1,263 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CustomVinaEditor</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<div class="boot" id="boot">
-  <div class="boot-inner">
-    <h1 class="boot-title">CustomVinaEditor</h1>
-    <p class="boot-sub">CustomVina 可视化编辑器</p>
-    <div class="boot-bar" id="bootBar">
-      <div class="boot-bar-fill" id="bootFill"></div>
-    </div>
-    <p class="boot-hint" id="bootHint">请使用宽屏设备或电脑访问</p>
-  </div>
-</div>
-
-<header class="topbar">
-  <div class="brand">
-    CustomVinaEditor
-    <button class="brand-badge" id="versionBadge" type="button" title="查看版本信息">Beta</button>
-  </div>
-  <div class="topbar-actions">
-    <button class="btn-theme" id="themeBtn" type="button" title="切换主题">跟随系统</button>
-    <button class="btn-run" id="runBtn" type="button">
-      <span class="btn-run-text" id="runText">运行</span>
-    </button>
-    <button class="btn-primary" id="exportBtn">导出</button>
-  </div>
-</header>
-
-<main class="workspace">
-  <aside class="panel panel-left">
-    <div class="panel-head">组件库</div>
-    <div class="comp-list" id="compList"></div>
-    <div class="panel-foot">
-      <div class="cs-copyright" id="copyrightEl">Copyright © <span id="copyYear">2026</span> Vilnko Studio</div>
-      <div class="cs-title">画板尺寸</div>
-      <div class="cs-row">
-        <input class="ctl" type="number" id="boardWInput" value="360" min="120" max="1200" step="1">
-        <span>×</span>
-        <input class="ctl" type="number" id="boardHInput" value="480" min="120" max="1200" step="1">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>CustomVinaEditor</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        CustomVinaEditor
+        <button class="brand-badge" id="versionBadge" title="版本信息">
+          Beta 0.2
+        </button>
       </div>
-    </div>
-  </aside>
-
-  <section class="canvas-wrap" id="canvasWrap">
-    <div class="canvas-board" id="board">
-      <div class="board-empty" id="boardEmpty">
-        <div class="be-icon">⬚</div>
-        <p>把左侧组件拖到这里</p>
+      <div class="topbar-actions">
+        <button
+          class="btn-ghost compact"
+          id="undoBtn"
+          title="撤销 Ctrl+Z"
+          aria-label="撤销"
+        >
+          ↶
+        </button>
+        <button
+          class="btn-ghost compact"
+          id="redoBtn"
+          title="重做 Ctrl+Shift+Z / Ctrl+Y"
+          aria-label="重做"
+        >
+          ↷
+        </button>
+        <span class="toolbar-divider"></span>
+        <button class="btn-ghost" id="importBtn">导入</button
+        ><button
+          class="btn-ghost icon-only"
+          id="sourceBtn"
+          title="查看和编辑源码"
+          aria-label="源码"
+        >
+          <svg class="fa-icon" aria-hidden="true" focusable="false">
+            <use href="vendor/fontawesome/fa6.svg#fa-code"></use>
+          </svg>
+        </button>
+        <button
+          class="btn-theme icon-only"
+          id="themeBtn"
+          title="切换至深色模式"
+          aria-label="切换至深色模式"
+        >
+          <svg class="fa-icon" aria-hidden="true" focusable="false">
+            <use href="vendor/fontawesome/fa6.svg#fa-moon"></use>
+          </svg></button
+        ><button class="btn-run" id="runBtn">运行</button
+        ><button class="btn-primary" id="exportBtn">导出</button>
       </div>
-    </div>
-  </section>
-
-  <aside class="panel panel-right">
-    <div class="panel-head">属性</div>
-    <div class="insp-body" id="inspBody"></div>
-  </aside>
-</main>
-
-<div class="modal-mask" id="modalMask">
-  <div class="modal">
-    <div class="modal-head">
-      <h3>导出</h3>
-      <button class="icon-btn" id="modalClose" title="关闭">✕</button>
-    </div>
-    <pre class="code" id="codeOut"></pre>
-    <div class="modal-foot">
-      <button class="btn-ghost" id="copyBtn">复制</button>
-      <button class="btn-primary" id="downloadBtn">下载</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-mask" id="versionMask">
-  <div class="modal modal-version">
-    <div class="modal-head">
-      <h3>版本信息</h3>
-    </div>
-    <div class="version-body">
-      <div class="version-name">
-        <span class="version-brand">CustomVinaEditor</span>
-      </div>
-      <p class="version-desc">Pogget 个性化组件的可视化编辑器，基于 CustomVina 规范构建。</p>
-      <dl class="version-list">
-        <div class="version-row"><dt>工具版本</dt><dd>Beta 0.1.0</dd></div>
-        <div class="version-row"><dt>构建号</dt><dd>build20261110_rel0_Beta1</dd></div>
-        <div class="version-row"><dt>更新时间</dt><dd>2026-11-10</dd></div>
-      </dl>
-    </div>
-    <div class="modal-foot">
-      <button class="btn-primary" id="versionOk">我知道了</button>
-    </div>
-  </div>
-</div>
-
-<script src="vina-touch-drag.js"></script>
-<script src="vina-context-menu.js"></script>
-<script src="script.js"></script>
-</body>
+    </header>
+    <main class="workspace">
+      <aside class="panel panel-left">
+        <div class="panel-head">
+          组件库 <span class="subtle">点击或拖入画板</span>
+        </div>
+        <div class="comp-list" id="compList"></div>
+        <div class="panel-head layer-head">
+          图层 <span id="layerCount"></span>
+        </div>
+        <div class="layer-actions" role="toolbar" aria-label="图层操作">
+          <button class="mini-btn" data-command="group" title="编组 Ctrl+G">
+            <svg class="fa-icon" aria-hidden="true" focusable="false">
+              <use href="vendor/fontawesome/fa6.svg#fa-object-group"></use>
+            </svg>
+            编组</button
+          ><button
+            class="mini-btn"
+            data-command="ungroup"
+            title="解除编组 Ctrl+Shift+G"
+          >
+            <svg class="fa-icon" aria-hidden="true" focusable="false">
+              <use href="vendor/fontawesome/fa6.svg#fa-object-ungroup"></use>
+            </svg>
+            解组</button
+          ><button
+            class="mini-btn"
+            data-command="raise"
+            title="上移图层"
+            aria-label="上移图层"
+          >
+            <svg class="fa-icon" aria-hidden="true" focusable="false">
+              <use href="vendor/fontawesome/fa6.svg#fa-arrow-up"></use>
+            </svg></button
+          ><button
+            class="mini-btn"
+            data-command="lower"
+            title="下移图层"
+            aria-label="下移图层"
+          >
+            <svg class="fa-icon" aria-hidden="true" focusable="false">
+              <use href="vendor/fontawesome/fa6.svg#fa-arrow-down"></use>
+            </svg>
+          </button>
+        </div>
+        <input
+          class="ctl layer-search"
+          id="layerSearch"
+          placeholder="搜索图层…"
+          aria-label="搜索图层"
+        />
+        <div
+          class="layer-tree"
+          id="layerTree"
+          role="tree"
+          aria-label="图层树"
+        ></div>
+        <div class="panel-foot">
+          <div class="cs-title">画板尺寸 <span class="subtle">DIP</span></div>
+          <div class="cs-row">
+            <input
+              class="ctl"
+              type="number"
+              id="boardWInput"
+              value="360"
+              min="120"
+              max="32768"
+              aria-label="画板宽度"
+            /><span>×</span
+            ><input
+              class="ctl"
+              type="number"
+              id="boardHInput"
+              value="480"
+              min="120"
+              max="32768"
+              aria-label="画板高度"
+            />
+          </div>
+          <div class="cs-copyright">Copyright © 2026 Vilinko Studio</div>
+        </div>
+      </aside>
+      <section class="canvas-area">
+        <div class="canvas-tools" role="toolbar" aria-label="画布操作">
+          <div class="tool-group">
+            <button class="mini-btn" data-command="align-left" title="左对齐">
+              ⇤</button
+            ><button
+              class="mini-btn"
+              data-command="align-center"
+              title="水平居中"
+            >
+              ↔</button
+            ><button class="mini-btn" data-command="align-right" title="右对齐">
+              ⇥</button
+            ><button class="mini-btn" data-command="align-top" title="顶对齐">
+              ⤒</button
+            ><button
+              class="mini-btn"
+              data-command="align-middle"
+              title="垂直居中"
+            >
+              ↕</button
+            ><button
+              class="mini-btn"
+              data-command="align-bottom"
+              title="底对齐"
+            >
+              ⤓</button
+            ><select
+              class="ctl compact-select"
+              id="arrangeSelect"
+              aria-label="等距分布"
+            >
+              <option value="">分布</option>
+              <option value="distributeX">水平等距</option>
+              <option value="distributeY">垂直等距</option>
+            </select>
+          </div>
+          <div class="tool-group">
+            <select
+              class="ctl compact-select"
+              id="previewState"
+              aria-label="预览场景"
+              hidden
+            >
+              <option value="expanded">展开</option>
+              <option value="collapsed">收起</option>
+              <option value="search">搜索</option>
+              <option value="all">全部节点</option>
+            </select>
+            <button class="mini-btn" id="previewSettingsBtn" hidden>
+              预览设置
+            </button>
+            <label class="check-label"
+              ><input type="checkbox" id="showBase" />继承层</label
+            ><label class="check-label"
+              ><input type="checkbox" id="snapGrid" />网格吸附</label
+            ><select
+              class="ctl compact-select"
+              id="zoomSelect"
+              aria-label="画布缩放"
+            >
+              <option value="0.25">25%</option>
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="1" selected>100%</option>
+              <option value="1.5">150%</option>
+              <option value="2">200%</option>
+            </select>
+          </div>
+        </div>
+        <div
+          class="canvas-wrap"
+          id="canvasWrap"
+          tabindex="0"
+          aria-label="编辑画布"
+        >
+          <div id="boardSizer">
+            <div class="canvas-board" id="board">
+              <div id="scene"></div>
+              <div id="overlays"></div>
+              <div class="board-empty" id="boardEmpty">
+                <div class="be-icon">⬚</div>
+                <p>从左侧添加组件，或导入 .vina 预设</p>
+                <span class="be-sub">Shift 多选 · 拖动框选 · Ctrl+G 编组</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="statusbar">
+          <span id="statusText" role="status" aria-live="polite">就绪</span
+          ><span id="saveStatus">本地自动保存</span>
+        </div>
+      </section>
+      <aside class="panel panel-right">
+        <div class="panel-tabs">
+          <button class="tab active" id="propertiesTab">属性</button
+          ><button class="tab" id="variablesTab">变量与控件</button>
+        </div>
+        <div class="insp-body" id="inspBody"></div>
+      </aside>
+    </main>
+    <input id="fileInput" type="file" accept=".vina,.json" hidden />
+    <dialog id="editDialog" class="editor-dialog" aria-labelledby="dialogTitle">
+      <form id="dialogForm">
+        <div class="modal-head">
+          <h3 id="dialogTitle"></h3>
+          <button
+            class="icon-btn"
+            id="dialogClose"
+            type="button"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="dialog-body" id="dialogBody"></div>
+        <p class="dialog-error" id="dialogError" role="alert"></p>
+        <div class="modal-foot" id="dialogFoot"></div>
+      </form>
+    </dialog>
+    <script type="module" src="script.js"></script>
+  </body>
 </html>

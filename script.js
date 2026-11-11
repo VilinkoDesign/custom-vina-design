@@ -1,1512 +1,3320 @@
-"use strict";
-
-const STORAGE_KEY = 'customvina.state.v1';
-
-const TYPE_NAMES = {
-  rect: 'Rect', solid: 'Solid', glass: 'Glass',
-  text: 'Text', icon: 'Icon', image: 'Image',
-  button: 'Button', group: 'Group'
+import * as V from "./vina-core.js";
+import * as M from "./vina-model.js";
+import { renderScene } from "./vina-renderer.js";
+import { hitFrame } from "./vina-preview.js";
+import {
+  orderedLayers,
+  numberStep,
+  stepNumber,
+  resizeCorner,
+  propertyGroups,
+} from "./vina-editor.js";
+import { pickScene, hasVisiblePaint } from "./vina-canvas.js";
+import { icon, COMPONENT_ICONS } from "./icons.js";
+import {
+  isHostPreset,
+  previewInputs,
+  hostPreviewInputs,
+} from "./vina-scene.js";
+const $ = (id) => document.getElementById(id);
+const STORAGE = "customvina.project.v2",
+  RECOVERY = "customvina.recovery.v2";
+const NAMES = {
+  rect: "矩形",
+  solid: "实色块",
+  glass: "模糊层",
+  text: "文字",
+  icon: "图标",
+  image: "图片",
+  button: "按钮",
+  group: "分组",
+  path: "路径",
+  content: "应用内容",
+  container: "容器",
+  rectangle: "矩形",
 };
-
-/* 
-   内部动作（62 个）
-    */
-const ACTIONS = [
-  { value: '', label: '（无）' },
-
-  { value: 'pogget.action.view.toggle',                  label: 'view.toggle（切换视图）' },
-  { value: 'pogget.action.view.list',                    label: 'view.list（列表视图）' },
-  { value: 'pogget.action.view.grid',                    label: 'view.grid（图标视图）' },
-  { value: 'pogget.action.listViewMenu',                 label: 'listViewMenu（列表视图）' },
-  { value: 'pogget.action.iconViewMenu',                 label: 'iconViewMenu（图标视图）' },
-
-  { value: 'pogget.action.container.lock',               label: 'container.lock（布局锁定）' },
-  { value: 'pogget.action.container.personalization',    label: 'container.personalization（个性化）' },
-  { value: 'pogget.action.container.collapse',           label: 'container.collapse（折叠）' },
-  { value: 'pogget.action.container.expand',             label: 'container.expand（展开）' },
-  { value: 'pogget.action.container.toggleCollapse',     label: 'container.toggleCollapse（折叠/展开）' },
-  { value: 'pogget.action.container.menu',               label: 'container.menu（收纳盒菜单）' },
-  { value: 'pogget.action.container.tagMenu',            label: 'container.tagMenu（标签菜单）' },
-  { value: 'pogget.action.container.searchMenu',         label: 'container.searchMenu（搜索选项）' },
-  { value: 'pogget.action.container.hoverCollapse',      label: 'container.hoverCollapse（悬停折叠）' },
-  { value: 'pogget.action.container.pin',                label: 'container.pin（固定）' },
-  { value: 'pogget.action.container.endTemporarySession',label: 'container.endTemporarySession（结束临时会话）' },
-
-  { value: 'pogget.action.container.inlineBack',         label: 'container.inlineBack（内联后退）' },
-  { value: 'pogget.action.container.exitInlineSearch',   label: 'container.exitInlineSearch（退出内联搜索）' },
-  { value: 'pogget.action.container.inlineHome',         label: 'container.inlineHome（内联主页）' },
-  { value: 'pogget.action.container.inlineSave',         label: 'container.inlineSave（保存）' },
-  { value: 'pogget.action.container.inlineOpen',         label: 'container.inlineOpen（外部打开）' },
-  { value: 'pogget.action.container.toggleInlineSearch', label: 'container.toggleInlineSearch（内联搜索）' },
-
-  { value: 'pogget.action.mergedHostUseVerticalLayout',  label: 'mergedHostUseVerticalLayout（纵向布局）' },
-  { value: 'pogget.action.mergedHostUseTabLayout',       label: 'mergedHostUseTabLayout（标签页布局）' },
-  { value: 'pogget.action.alwaysOnTopMenu',              label: 'alwaysOnTopMenu（置顶层）' },
-  { value: 'pogget.action.normalLayerMenu',              label: 'normalLayerMenu（普通层）' },
-  { value: 'pogget.action.sendToBackMenu',               label: 'sendToBackMenu（底层）' },
-
-  { value: 'pogget.action.spacingCompact',               label: 'spacingCompact（紧凑间距）' },
-  { value: 'pogget.action.spacingStandard',              label: 'spacingStandard（标准间距）' },
-  { value: 'pogget.action.spacingLoose',                 label: 'spacingLoose（宽松间距）' },
-  { value: 'pogget.action.spacingPaged',                 label: 'spacingPaged（分页布局）' },
-  { value: 'pogget.action.spacingFixed',                 label: 'spacingFixed（固定间距）' },
-  { value: 'pogget.action.spacingDynamic',               label: 'spacingDynamic（动态间距）' },
-  { value: 'pogget.action.iconSpacingMenu',              label: 'iconSpacingMenu（间距菜单）' },
-
-  { value: 'pogget.action.sortFree',                     label: 'sortFree（自由排序）' },
-  { value: 'pogget.action.sortNameAsc',                  label: 'sortNameAsc（名称正序）' },
-  { value: 'pogget.action.sortNameDesc',                 label: 'sortNameDesc（名称倒序）' },
-  { value: 'pogget.action.sortTimeAsc',                  label: 'sortTimeAsc（时间正序）' },
-  { value: 'pogget.action.sortTimeDesc',                 label: 'sortTimeDesc（时间倒序）' },
-  { value: 'pogget.action.sortExtAsc',                   label: 'sortExtAsc（扩展名正序）' },
-  { value: 'pogget.action.sortExtDesc',                  label: 'sortExtDesc（扩展名倒序）' },
-  { value: 'pogget.action.sortSizeAsc',                  label: 'sortSizeAsc（大小正序）' },
-  { value: 'pogget.action.sortSizeDesc',                 label: 'sortSizeDesc（大小倒序）' },
-  { value: 'pogget.action.sortFreeGrid',                 label: 'sortFreeGrid（自由网格）' },
-  { value: 'pogget.action.sortMenu',                     label: 'sortMenu（排序菜单）' },
-
-  { value: 'pogget.action.unlockLayoutMenu',             label: 'unlockLayoutMenu（解除锁定）' },
-  { value: 'pogget.action.lockLayoutAndPosition',        label: 'lockLayoutAndPosition（锁定布局与位置）' },
-  { value: 'pogget.action.lockLayoutOnly',               label: 'lockLayoutOnly（只锁定布局）' },
-  { value: 'pogget.action.lockPositionOnly',             label: 'lockPositionOnly（只锁定位置）' },
-  { value: 'pogget.action.lockLayoutMenu',               label: 'lockLayoutMenu（锁定菜单）' },
-  { value: 'pogget.action.personalizationMenu',          label: 'personalizationMenu（个性化菜单）' },
-  { value: 'pogget.action.containerSettingsMenu',        label: 'containerSettingsMenu（设置菜单）' },
-
-  { value: 'pogget.action.pasteBoardCapacityTitle',      label: 'pasteBoardCapacityTitle（剪贴容量）' },
-  { value: 'pogget.action.pasteBoardCategoryText',       label: 'pasteBoardCategoryText（捕获文本）' },
-  { value: 'pogget.action.pasteBoardCategoryImage',      label: 'pasteBoardCategoryImage（捕获图片）' },
-  { value: 'pogget.action.pasteBoardCategoryOtherFiles', label: 'pasteBoardCategoryOtherFiles（捕获其他文件）' },
-  { value: 'pogget.action.pasteBoardFileCategories',     label: 'pasteBoardFileCategories（剪贴文件类别）' },
-  { value: 'pogget.action.pasteBoardClearAction',        label: 'pasteBoardClearAction（清空历史）' },
-  { value: 'pogget.action.pasteBoardClearAndCloseAction',label: 'pasteBoardClearAndCloseAction（清空并关闭）' },
-  { value: 'pogget.action.pasteBoardCloseOnlyAction',    label: 'pasteBoardCloseOnlyAction（仅关闭）' },
-  { value: 'pogget.action.containerDeleteSubmenu',       label: 'containerDeleteSubmenu（删除子菜单）' },
-  { value: 'pogget.action.containerDeleteMenu',          label: 'containerDeleteMenu（删除收纳盒）' }
-];
-
-const ACTION_LABELS = {};
-ACTIONS.forEach(a => { if (a.value) ACTION_LABELS[a.value] = a.label; });
-
-const COMPONENTS = [
-  { type: 'rect',   name: '矩形',   glyph: '▭' },
-  { type: 'solid',  name: '实色块', glyph: '■' },
-  { type: 'glass',  name: '玻璃',   glyph: '◈' },
-  { type: 'text',   name: '文字',   glyph: 'T' },
-  { type: 'icon',   name: '图标',   glyph: '★' },
-  { type: 'image',  name: '图片',   glyph: '▣' },
-  { type: 'button', name: '按钮',   glyph: '⬒' },
-  { type: 'group',  name: '分组',   glyph: '⬚' }
-];
-
-const ACCENT_HEX = '#5279FB';
-
-/* 
-   工具函数
-    */
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const round = (v, d = 2) => Number(Number(v).toFixed(d));
-
-function hexToRgb(hex) {
-  let h = String(hex || '#000000').replace('#', '');
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
-  const n = parseInt(h, 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+let project = V.createProject(),
+  history = new V.History(project),
+  selection = [],
+  running = false,
+  zoom = 1,
+  scene = null,
+  drag = null,
+  clipboard = null,
+  inspectorTab = "properties",
+  inputMode = "project",
+  saved = true,
+  pending = null;
+let standard,
+  schema,
+  defaults,
+  currentInputs = {},
+  runtimeOverrides = {},
+  lastSelection = [],
+  busy = false,
+  lastError = "",
+  importRevision = 0;
+const collapsed = new Set();
+const hoverStates = new Map();
+let previewFrame = 0;
+let hostState = "expanded",
+  hostOverrides = {},
+  lastHostPreset = false;
+let variableSearch = "",
+  dependenciesExpanded = false;
+function element(tag, className, text) {
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  if (text != null) n.textContent = text;
+  return n;
 }
-function toRgba(hex, a) {
-  const { r, g, b } = hexToRgb(hex);
-  return `rgba(${r}, ${g}, ${b}, ${a == null ? 1 : a})`;
+function button(text, handler, className = "mini-btn", title = text) {
+  const n = element("button", className, text);
+  n.type = "button";
+  n.title = title;
+  n.addEventListener("click", handler);
+  return n;
 }
-function toRgbStr(hex) {
-  const { r, g, b } = hexToRgb(hex);
-  return `rgb(${r}, ${g}, ${b})`;
+function iconButton(name, handler, className, label) {
+  const n = button("", handler, className, label);
+  n.setAttribute("aria-label", label);
+  n.append(icon(name));
+  return n;
 }
-function escapeStr(s) {
-  return String(s == null ? '' : s).replace(/"/g, '\\"');
+function toast(message) {
+  const n = element("div", "toast", message);
+  n.setAttribute("role", "status");
+  document.body.append(n);
+  requestAnimationFrame(() => n.classList.add("show"));
+  setTimeout(() => {
+    n.classList.remove("show");
+    setTimeout(() => n.remove(), 250);
+  }, 3000);
 }
-function msToVina(ms) {
-  return `${Math.max(0, Math.round(ms))}ms`;
+function status(message, error = false) {
+  $("statusText").textContent = message;
+  $("statusText").classList.toggle("error", error);
 }
-
-/* 
-   主题管理
-    */
-const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-const THEME_STORAGE_KEY = 'customvina.theme';
-const THEME_MODES = ['light', 'dark', 'system'];
-const THEME_LABELS = { light: '浅色', dark: '深色', system: '跟随系统' };
-
-function getThemeMode() {
-  try {
-    const v = localStorage.getItem(THEME_STORAGE_KEY);
-    if (THEME_MODES.indexOf(v) >= 0) return v;
-  } catch (e) {}
-  return 'system';
-}
-
-function resolveTheme(mode) {
-  if (mode === 'system') return darkModeQuery.matches ? 'dark' : 'light';
-  return mode === 'dark' ? 'dark' : 'light';
-}
-
-function updateThemeButtonLabel(mode) {
-  const btn = document.getElementById('themeBtn');
-  if (!btn) return;
-  const label = THEME_LABELS[mode] || '跟随系统';
-  btn.textContent = label;
-  btn.title = '当前：' + label + '（点击切换）';
-}
-
-function applyThemeMode(mode) {
-  if (THEME_MODES.indexOf(mode) < 0) mode = 'system';
-
-  const html = document.documentElement;
-  html.setAttribute('data-theme-mode', mode);
-  html.setAttribute('data-theme', resolveTheme(mode));
-
-  updateThemeButtonLabel(mode);
-
-  if (typeof state !== 'undefined' && state.elements && state.elements.length) {
-    state.elements.forEach(renderElement);
-  }
-}
-
-function setThemeMode(mode) {
-  if (THEME_MODES.indexOf(mode) < 0) mode = 'system';
-  try { localStorage.setItem(THEME_STORAGE_KEY, mode); } catch (e) {}
-  applyThemeMode(mode);
-}
-
-function cycleThemeMode() {
-  const current = getThemeMode();
-  const idx = THEME_MODES.indexOf(current);
-  const next = THEME_MODES[(idx + 1) % THEME_MODES.length];
-  setThemeMode(next);
-}
-
-function isDarkMode() {
-  return document.documentElement.getAttribute('data-theme') === 'dark';
-}
-
-/* 
-   状态
-    */
-const state = {
-  elements: [],
-  selectedId: null,
-  boardW: 360,
-  boardH: 480,
-  running: false,
-  toggles: {}
-};
-
-/* 首屏应用主题（此时 state 已初始化，可安全调用） */
-applyThemeMode(getThemeMode());
-
-const nodes = new Map();
-let idCounter = 0;
-const typeCounters = {};
-
-function nextId() { return 'el' + (++idCounter); }
-function nextSeq(type) {
-  typeCounters[type] = (typeCounters[type] || 0) + 1;
-  return typeCounters[type];
-}
-
-/* 
-   DOM
-    */
-const canvasWrap = document.getElementById('canvasWrap');
-const board      = document.getElementById('board');
-const boardEmpty = document.getElementById('boardEmpty');
-const compList   = document.getElementById('compList');
-const inspBody   = document.getElementById('inspBody');
-const modalMask  = document.getElementById('modalMask');
-const codeOut    = document.getElementById('codeOut');
-const runBtn     = document.getElementById('runBtn');
-const runText    = document.getElementById('runText');
-
-/* 
-   持久化
-    */
-let saveTimer = null;
-
-function saveState() {
-  try {
-    const data = {
-      elements: state.elements,
-      boardW: state.boardW,
-      boardH: state.boardH
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {}
-}
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveState, 250);
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== 'object') return;
-
-    if (Array.isArray(data.elements)) {
-      const clean = data.elements.filter(el =>
-        el && typeof el === 'object' &&
-        typeof el.id === 'string' &&
-        typeof el.type === 'string' &&
-        TYPE_NAMES[el.type]
+const idx = () => V.index(project.doc);
+const selected = () =>
+  selection.map((id) => idx().byId.get(id)).filter(Boolean);
+function inputValues(target = project) {
+  const inputs = previewInputs(
+    defaults,
+    target.board,
+    document.documentElement.dataset.theme === "dark",
+    isHostPreset(target.doc),
+    hostState,
+    { ...hostOverrides, ...runtimeOverrides },
+  );
+  if (isHostPreset(target.doc) && hostState === "search") {
+    try {
+      return hostPreviewInputs(
+        M.effectiveProject(target, standard),
+        inputs,
+        hostState,
       );
-
-      clean.forEach(el => {
-        const p = el.props || (el.props = {});
-
-        if (p.glassRenderer === 'liquid') p.glassRenderer = 'lightEffect';
-        if (el.type === 'glass' && p.glassActive == null) p.glassActive = true;
-        if (el.type === 'glass' && p.glassBorder == null) p.glassBorder = 1;
-
-        if (el.type === 'button') {
-          if (p.transition == null) p.transition = 200;
-          if (p.hoverOpacity == null) p.hoverOpacity = 1;
-          if (p.holdDelay == null) p.holdDelay = 0.4;
-          if (p.textLiteral == null) p.textLiteral = true;
-          if (p.hitPaddingX == null) p.hitPaddingX = 0;
-          if (p.hitPaddingY == null) p.hitPaddingY = 0;
-        }
-
-        if (p.visible == null) p.visible = true;
-        if (p.enabled == null) p.enabled = true;
-        if (p.opacity == null) p.opacity = 1;
-
-        if (el.type === 'rect' && p.texture == null) p.texture = false;
-      });
-
-      state.elements = clean;
-
-      let maxId = 0;
-      const maxSeqs = {};
-      clean.forEach(el => {
-        const n = parseInt(String(el.id).replace(/^el/, ''), 10);
-        if (!isNaN(n) && n > maxId) maxId = n;
-        if (typeof el.seq === 'number') {
-          maxSeqs[el.type] = Math.max(maxSeqs[el.type] || 0, el.seq);
-        }
-      });
-      idCounter = maxId;
-      Object.keys(maxSeqs).forEach(k => { typeCounters[k] = maxSeqs[k]; });
+    } catch {
+      /* Missing dependencies are reported by the document validator. */
     }
-
-    if (typeof data.boardW === 'number') state.boardW = clamp(data.boardW, 120, 1200);
-    if (typeof data.boardH === 'number') state.boardH = clamp(data.boardH, 120, 1200);
-  } catch (e) {}
+  }
+  return inputs;
 }
-
-/* 
-   崩溃兜底
-    */
-let __crashed = false;
-
-function showCrash() {
-  if (__crashed) return;
-  __crashed = true;
-  try { saveState(); } catch (e) {}
+function effective() {
+  return M.effectiveProject(project, standard);
+}
+function modelInputs() {
+  const result = { ...currentInputs },
+    own = idx().byPath;
+  if (!scene) return result;
+  for (const [path, p] of scene.runtime.idx.byPath)
+    if (p.kind === "property" && !own.has(path)) {
+      try {
+        result[path] = scene.runtime.get(path);
+      } catch {}
+    }
+  for (const [path, target] of scene.runtime.aliases)
+    if (!own.has(target)) {
+      try {
+        result[path] = scene.runtime.get(path);
+      } catch {}
+    }
+  return result;
+}
+function save() {
   try {
-    document.body.classList.add('is-crashed');
-    document.title = '页面崩溃 · CustomVinaEditor';
-    const mask = document.createElement('div');
-    mask.className = 'crash-mask';
-    mask.innerHTML =
-      '<h1 class="crash-title">页面崩溃</h1>' +
-      '<p class="crash-desc">已经尝试保存您的编辑内容，请刷新页面</p>';
-    document.body.appendChild(mask);
-  } catch (e) {}
-}
-
-const __originalConsoleError = console.error.bind(console);
-console.error = function (...args) {
-  try { __originalConsoleError(...args); } catch (e) {}
-  showCrash();
-};
-
-window.addEventListener('error', () => { if (!__crashed) showCrash(); });
-window.addEventListener('unhandledrejection', () => { if (!__crashed) showCrash(); });
-
-/* 
-   元素工厂
-    */
-function makeElement(type, x, y) {
-  const el = {
-    id: nextId(),
-    type,
-    seq: nextSeq(type),
-    x: Math.round(x),
-    y: Math.round(y),
-    w: 120,
-    h: 80,
-    props: {}
-  };
-  const p = el.props;
-
-  switch (type) {
-    case 'rect':
-      el.w = 160; el.h = 48;
-      Object.assign(p, {
-        z: 0, radius: 12,
-        background: ACCENT_HEX, fillOpacity: 1,
-        border: 0, borderColor: '#ffffff', borderOpacity: 1, borderStyle: 'solid',
-        texture: false,
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'solid':
-      el.w = 140; el.h = 60;
-      Object.assign(p, {
-        z: 0, background: '#111111', fillOpacity: 1,
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'glass':
-      el.w = 180; el.h = 72;
-      Object.assign(p, {
-        z: 1, radius: 16,
-        background: '#202837', fillOpacity: 0.28,
-        glassRenderer: 'standard', glassActive: true,
-        glassOpacity: 0.8, glassBorder: 1,
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'text':
-      el.w = 160; el.h = 20;
-      Object.assign(p, {
-        z: 1, label: '我的第一张卡片',
-        textLiteral: true, textSize: 14,
-        color: '#ffffff', font: 'Segoe UI',
-        align: 'left', textX: 0, textY: 0,
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'icon':
-      el.w = 32; el.h = 32;
-      Object.assign(p, {
-        z: 1, icon: '★', textSize: 16,
-        color: '#111111', font: 'Font Awesome 6 Free Solid',
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'image':
-      el.w = 96; el.h = 96;
-      Object.assign(p, {
-        z: 0, radius: 12,
-        source: '', imageRenderer: 'wic', imageFit: 'contain',
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'button':
-      el.w = 100; el.h = 28;
-      Object.assign(p, {
-        z: 10, radius: 6,
-        background: ACCENT_HEX, fillOpacity: 1,
-        border: 0, borderColor: '#ffffff', borderOpacity: 1, borderStyle: 'solid',
-        label: '切换视图', icon: '', textLiteral: true,
-        textSize: 12, color: '#ffffff', font: 'Segoe UI',
-        action: 'pogget.action.view.toggle',
-        holdAction: '', holdDelay: 0.4,
-        hitPaddingX: 0, hitPaddingY: 0,
-        transition: 200, hoverOpacity: 0.75,
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-    case 'group':
-      el.w = 160; el.h = 100;
-      Object.assign(p, {
-        z: 0, clip: false, clipRadius: 0, clipLayer: false,
-        opacity: 1, visible: true, enabled: true
-      });
-      break;
-  }
-  return el;
-}
-
-function compName(el) {
-  return (TYPE_NAMES[el.type] || 'Node') + (el.seq || '');
-}
-function getElement(id) {
-  return state.elements.find(e => e.id === id) || null;
-}
-function getSelected() {
-  return getElement(state.selectedId);
-}
-
-/* 
-   渲染
-    */
-function ensureNode(el) {
-  let node = nodes.get(el.id);
-  if (node) return node;
-
-  node = document.createElement('div');
-  node.className = 'el';
-  node.dataset.id = el.id;
-
-  const body = document.createElement('div');
-  body.className = 'el-body';
-  node.appendChild(body);
-
-  const handle = document.createElement('div');
-  handle.className = 'resize-handle';
-  node.appendChild(handle);
-
-  node._body = body;
-  board.appendChild(node);
-  nodes.set(el.id, node);
-  return node;
-}
-
-function styleBody(body, el) {
-  const p = el.props;
-
-  body.className = 'el-body';
-  body.removeAttribute('style');
-  body.textContent = '';
-  body.onpointerenter = null;
-  body.onpointerleave = null;
-
-  if (p.radius != null) body.style.borderRadius = p.radius + 'px';
-  if (p.opacity != null && p.opacity < 1) body.style.opacity = p.opacity;
-  if (p.visible === false) body.style.opacity = Math.min(body.style.opacity || 1, 0.15);
-
-  const borderStyle = p.borderStyle === 'dash' ? 'dashed' : 'solid';
-
-  if (p.shadowOpacity > 0) {
-    body.style.boxShadow = `${p.shadowX || 0}px ${p.shadowY == null ? 4 : p.shadowY}px ${p.shadowBlur == null ? 16 : p.shadowBlur}px ${toRgba(p.shadowColor || '#000000', p.shadowOpacity)}`;
-  }
-
-  switch (el.type) {
-    case 'rect': {
-      body.style.background = toRgba(p.background, p.fillOpacity);
-      if (p.border) {
-        body.style.border = `${p.border}px ${borderStyle} ${toRgba(p.borderColor, p.borderOpacity)}`;
-      }
-      if (p.texture) {
-        const tw = p.texture === true ? 1 : Math.max(1, Number(p.texture) || 1);
-        body.style.backgroundImage =
-          `repeating-linear-gradient(45deg, ${toRgba(p.borderColor || ACCENT_HEX, 0.18)} 0 ${tw}px, transparent ${tw}px ${tw + 6}px)`;
-      }
-      break;
-    }
-    case 'solid':
-      body.style.background = toRgba(p.background, p.fillOpacity);
-      break;
-    case 'button': {
-      body.classList.add('is-button');
-      body.style.background = toRgba(p.background, p.fillOpacity);
-      if (p.border) {
-        body.style.border = `${p.border}px ${borderStyle} ${toRgba(p.borderColor, p.borderOpacity)}`;
-      }
-      body.style.color = p.color;
-      body.style.fontSize = p.textSize + 'px';
-      body.style.fontFamily = p.font || 'Segoe UI';
-      body.style.display = 'flex';
-      body.style.alignItems = 'center';
-      body.style.justifyContent = 'center';
-      body.textContent = p.icon || p.label || '按钮';
-
-      if (!state.running && p.hoverOpacity != null && p.hoverOpacity < 1) {
-        const ms = p.transition != null ? p.transition : 200;
-        body.style.transition = `opacity ${ms}ms ease`;
-        body.onpointerenter = () => { body.style.opacity = p.hoverOpacity; };
-        body.onpointerleave = () => { body.style.opacity = p.opacity != null ? p.opacity : ''; };
-      }
-      break;
-    }
-    case 'glass': {
-      const isLight = p.glassRenderer === 'lightEffect';
-      body.style.background =
-        `repeating-linear-gradient(45deg, ${toRgba(p.borderColor || ACCENT_HEX, 0.14)} 0 1px, transparent 1px 7px), ` +
-        toRgba(p.background, Math.min(0.16, p.fillOpacity || 0.28));
-      const active = isLight ? true : p.glassActive !== false;
-      if (active && (p.glassBorder || 0) > 0) {
-        body.style.border = `${p.glassBorder}px solid ${toRgba(p.borderColor || ACCENT_HEX, 0.42)}`;
-      }
-      body.style.backdropFilter = 'blur(2px)';
-      body.style.webkitBackdropFilter = 'blur(2px)';
-      break;
-    }
-    case 'text':
-      body.style.display = 'flex';
-      body.style.alignItems = 'center';
-      body.style.justifyContent =
-        p.align === 'left' ? 'flex-start' : p.align === 'right' ? 'flex-end' : 'center';
-      body.style.color = p.color;
-      body.style.fontSize = p.textSize + 'px';
-      body.style.fontFamily = p.font || 'Segoe UI';
-      body.style.lineHeight = '1.2';
-      body.style.paddingLeft = (p.textX || 0) + 'px';
-      body.style.paddingTop  = (p.textY || 0) + 'px';
-      body.textContent = p.label;
-      if (p.textShadowOpacity > 0) {
-        body.style.textShadow =
-          `${p.textShadowX || 0}px ${p.textShadowY == null ? 1 : p.textShadowY}px ${p.textShadowBlur == null ? 2 : p.textShadowBlur}px ${toRgba(p.textShadowColor || '#000000', p.textShadowOpacity)}`;
-      }
-      break;
-    case 'icon':
-      body.style.display = 'flex';
-      body.style.alignItems = 'center';
-      body.style.justifyContent = 'center';
-      body.style.color = p.color;
-      body.style.fontSize = p.textSize + 'px';
-      body.textContent = p.icon || '★';
-      break;
-    case 'image':
-      body.style.display = 'flex';
-      body.style.alignItems = 'center';
-      body.style.justifyContent = 'center';
-      body.style.background = isDarkMode() ? '#141414' : '#fafafa';
-      body.style.border = isDarkMode() ? '1px dashed #4a4a4a' : '1px dashed #b8b8b8';
-      body.style.color = isDarkMode() ? '#666666' : '#b0b0b0';
-      body.style.fontSize = '20px';
-      body.textContent = '▣';
-      break;
-    case 'group':
-      body.style.background = 'transparent';
-      body.style.border = isDarkMode() ? '1px dashed #4a4a4a' : '1px dashed #9a9a9a';
-      if (p.clip) body.style.overflow = 'hidden';
-      break;
+    localStorage.setItem(STORAGE, JSON.stringify(project));
+    saved = true;
+    $("saveStatus").textContent = "已保存到本地";
+  } catch {
+    saved = false;
+    $("saveStatus").textContent = "本地空间不足，请导出工程";
   }
 }
-
-function renderElement(el) {
-  const node = ensureNode(el);
-  node.style.left   = el.x + 'px';
-  node.style.top    = el.y + 'px';
-  node.style.width  = el.w + 'px';
-  node.style.height = el.h + 'px';
-  node.style.zIndex = el.props.z != null ? el.props.z : 0;
-  node.classList.toggle('selected', !state.running && state.selectedId === el.id);
-  node.dataset.action = el.props.action || '';
-  styleBody(node._body, el);
-  scheduleSave();
+function checkpoint() {
+  try {
+    localStorage.setItem(
+      RECOVERY,
+      JSON.stringify(history.entries[history.position]),
+    );
+  } catch {}
 }
-
-function updateEmptyHint() {
-  boardEmpty.style.display = state.elements.length ? 'none' : 'flex';
+function markCommitted(label) {
+  if (history.commit(project, label)) {
+    save();
+    status(label);
+  }
+  syncHistory();
 }
-function removeElement(id) {
-  const node = nodes.get(id);
-  if (node) node.remove();
-  nodes.delete(id);
-  state.elements = state.elements.filter(e => e.id !== id);
-  if (state.selectedId === id) state.selectedId = null;
-  updateEmptyHint();
-  renderInspector();
-  saveState();
+function syncHistory() {
+  if (!history) return;
+  $("undoBtn").disabled = running || (!pending && !history.canUndo);
+  $("redoBtn").disabled = running || !!pending || !history.canRedo;
+  document.querySelectorAll("[data-command]").forEach((n) => {
+    n.disabled = running;
+  });
 }
-function select(id) {
-  if (state.running) return;
-  state.selectedId = id;
-  state.elements.forEach(renderElement);
+function flush() {
+  if (!pending) return true;
+  const before = pending;
+  pending = null;
+  try {
+    M.validate(project, standard, inputValues(), schema);
+    markCommitted("修改属性");
+    return true;
+  } catch (error) {
+    project = before;
+    renderAll();
+    toast(error.message);
+    return false;
+  }
+}
+function mutate(label, fn, { allowMissingBase = false } = {}) {
+  if (running || busy) return false;
+  flush();
+  const next = V.clone(project),
+    oldSelection = [...selection];
+  try {
+    fn(next);
+    try {
+      M.validate(next, standard, inputValues(next), schema);
+    } catch (error) {
+      if (!allowMissingBase || !error.message.startsWith("缺少基础预设"))
+        throw error;
+    }
+    project = next;
+    selection = selection.filter((id) => idx().byId.has(id));
+    checkpoint();
+    markCommitted(label);
+    renderAll();
+    return true;
+  } catch (error) {
+    selection = oldSelection;
+    lastError = error.message;
+    toast(error.message);
+    return false;
+  }
+}
+function undo(redo = false) {
+  if (running) return;
+  flush();
+  const next = redo ? history.redo() : history.undo();
+  if (!next) return;
+  project = next;
+  selection = selection.filter((id) => idx().byId.has(id));
+  runtimeOverrides = {};
+  save();
+  renderAll();
+  status(redo ? "已重做" : "已撤销");
+}
+function select(ids, add = false) {
+  if (running) return;
+  flush();
+  selection = add ? [...new Set([...selection, ...ids])] : ids;
+  renderCanvas();
+  renderLayers();
   renderInspector();
 }
-
-/* 
-   画板尺寸
-    */
-function applyBoardSize() {
-  board.style.width  = state.boardW + 'px';
-  board.style.height = state.boardH + 'px';
-  state.elements.forEach(el => {
-    el.x = clamp(el.x, -el.w + 16, state.boardW - 16);
-    el.y = clamp(el.y, -el.h + 16, state.boardH - 16);
-    renderElement(el);
-  });
-  scheduleSave();
+function theme(mode) {
+  if (!["system", "light", "dark"].includes(mode)) mode = "system";
+  document.documentElement.dataset.themeMode = mode;
+  document.documentElement.dataset.theme =
+    mode === "system"
+      ? matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      : mode;
+  const dark = document.documentElement.dataset.theme === "dark";
+  const label = dark ? "切换至浅色模式" : "切换至深色模式";
+  $("themeBtn").replaceChildren(icon(dark ? "sun" : "moon"));
+  $("themeBtn").setAttribute("aria-label", label);
+  $("themeBtn").title = label + (mode === "system" ? "（当前跟随系统）" : "");
+  try {
+    localStorage.setItem("customvina.theme", mode);
+  } catch {}
+  if (standard && history) {
+    flush();
+    renderAll();
+  } else if (standard) renderCanvas();
 }
-
-/* 
-   属性面板控件
-    */
-function addSection(parent, title) {
-  const h = document.createElement('div');
-  h.className = 'insp-section';
-  h.textContent = title;
-  parent.appendChild(h);
-}
-function addField(parent, label, control) {
-  const row = document.createElement('div');
-  row.className = 'field';
-  const lb = document.createElement('label');
-  lb.textContent = label;
-  lb.title = label;
-  row.appendChild(lb);
-  row.appendChild(control);
-  parent.appendChild(row);
-}
-
-function numInput(value, onChange, opts) {
-  opts = opts || {};
-  const inp = document.createElement('input');
-  inp.type = 'number';
-  inp.className = 'ctl';
-  inp.value = value;
-  inp.dataset.key = opts.key || '';
-  if (opts.min != null) inp.min = opts.min;
-  if (opts.max != null) inp.max = opts.max;
-  inp.step = opts.step != null ? opts.step : 1;
-  inp.addEventListener('input', () => {
-    const v = parseFloat(inp.value);
-    if (!isNaN(v)) onChange(v);
-  });
-  return inp;
-}
-function rangeInput(value, onChange, opts) {
-  const wrap = document.createElement('div');
-  wrap.className = 'range-wrap';
-
-  const inp = document.createElement('input');
-  inp.type = 'range';
-  inp.className = 'range';
-  inp.min = opts.min;
-  inp.max = opts.max;
-  inp.step = opts.step;
-  inp.value = value;
-
-  const out = document.createElement('span');
-  out.className = 'range-val';
-  const digits = String(opts.step).includes('.') ? String(opts.step).split('.')[1].length : 0;
-  out.textContent = Number(value).toFixed(digits);
-
-  inp.addEventListener('input', () => {
-    const v = parseFloat(inp.value);
-    out.textContent = v.toFixed(digits);
-    onChange(v);
-  });
-
-  wrap.appendChild(inp);
-  wrap.appendChild(out);
-  return wrap;
-}
-function colorInput(value, onChange) {
-  const inp = document.createElement('input');
-  inp.type = 'color';
-  inp.className = 'ctl ctl-color';
-  inp.value = value || '#000000';
-  inp.addEventListener('input', () => onChange(inp.value));
-  return inp;
-}
-function textInput(value, onChange) {
-  const inp = document.createElement('input');
-  inp.type = 'text';
-  inp.className = 'ctl';
-  inp.value = value == null ? '' : value;
-  inp.addEventListener('input', () => onChange(inp.value));
-  return inp;
-}
-function selectInput(value, options, onChange) {
-  const sel = document.createElement('select');
-  sel.className = 'ctl';
-  options.forEach(o => {
-    const op = document.createElement('option');
-    op.value = o.value;
-    op.textContent = o.label;
-    if (String(o.value) === String(value)) op.selected = true;
-    sel.appendChild(op);
-  });
-  sel.addEventListener('change', () => onChange(sel.value));
-  return sel;
-}
-
-/* 
-   属性面板
-    */
-function renderInspector() {
-  if (state.running) {
-    inspBody.innerHTML =
-      `<div class="insp-empty">
-         <p>正在运行</p>
-         <span>点击右上角“停止”返回编辑模式</span>
-       </div>`;
-    return;
+function renderCanvas() {
+  const host = isHostPreset(project.doc);
+  if (host !== lastHostPreset) {
+    $("showBase").checked = host;
+    lastHostPreset = host;
   }
-
-  const el = getSelected();
-  inspBody.innerHTML = '';
-
-  if (!el) {
-    inspBody.innerHTML =
-      `<div class="insp-empty">
-         <div class="insp-empty-icon">⬚</div>
-         <p>未选择组件</p>
-         <span>从左侧拖拽组件到画布<br>点击画布中的组件即可编辑</span>
-       </div>`;
-    return;
-  }
-
-  const p = el.props;
-
-  const head = document.createElement('div');
-  head.className = 'insp-el-head';
-  head.innerHTML =
-    `<span class="insp-el-name">${compName(el)}</span>
-     <span class="insp-el-type">${el.type}</span>`;
-  inspBody.appendChild(head);
-
-  addSection(inspBody, '布局');
-  addField(inspBody, 'X', numInput(el.x, v => { el.x = Math.round(v); renderElement(el); }, { key: 'x' }));
-  addField(inspBody, 'Y', numInput(el.y, v => { el.y = Math.round(v); renderElement(el); }, { key: 'y' }));
-  addField(inspBody, '宽度 width', numInput(el.w, v => { el.w = Math.max(4, Math.round(v)); renderElement(el); }, { key: 'w', min: 4 }));
-  addField(inspBody, '高度 height', numInput(el.h, v => { el.h = Math.max(4, Math.round(v)); renderElement(el); }, { key: 'h', min: 4 }));
-  addField(inspBody, '层级 z', numInput(p.z != null ? p.z : 0, v => { p.z = Math.round(v); renderElement(el); }, { step: 1 }));
-  addField(inspBody, '不透明度 opacity', rangeInput(p.opacity != null ? p.opacity : 1, v => { p.opacity = v; renderElement(el); }, { min: 0, max: 1, step: 0.01 }));
-  addField(inspBody, '可见 visible', selectInput(String(p.visible !== false), [
-    { value: 'true', label: 'true' },
-    { value: 'false', label: 'false' }
-  ], v => { p.visible = v === 'true'; renderElement(el); }));
-  addField(inspBody, '启用 enabled', selectInput(String(p.enabled !== false), [
-    { value: 'true', label: 'true' },
-    { value: 'false', label: 'false' }
-  ], v => { p.enabled = v === 'true'; renderElement(el); }));
-
-  addSection(inspBody, '外观');
-  if (p.radius != null) {
-    addField(inspBody, '圆角 radius', rangeInput(p.radius, v => { p.radius = v; renderElement(el); }, { min: 0, max: 48, step: 1 }));
-  }
-  if (p.background != null) {
-    addField(inspBody, '背景色', colorInput(p.background, v => { p.background = v; renderElement(el); }));
-    addField(inspBody, '填充不透明度', rangeInput(p.fillOpacity != null ? p.fillOpacity : 1, v => { p.fillOpacity = v; renderElement(el); }, { min: 0, max: 1, step: 0.01 }));
-  }
-  if (p.border != null) {
-    addField(inspBody, '边框 border', rangeInput(p.border, v => { p.border = v; renderElement(el); }, { min: 0, max: 16, step: 1 }));
-    addField(inspBody, '边框色', colorInput(p.borderColor, v => { p.borderColor = v; renderElement(el); }));
-    addField(inspBody, '边框不透明度', rangeInput(p.borderOpacity != null ? p.borderOpacity : 1, v => { p.borderOpacity = v; renderElement(el); }, { min: 0, max: 1, step: 0.01 }));
-    addField(inspBody, '边框样式', selectInput(p.borderStyle || 'solid', [
-      { value: 'solid', label: 'solid（实线）' },
-      { value: 'dash',  label: 'dash（虚线）' }
-    ], v => { p.borderStyle = v; renderElement(el); }));
-  }
-  addField(inspBody, '阴影不透明度', rangeInput(p.shadowOpacity != null ? p.shadowOpacity : 0, v => { p.shadowOpacity = v; renderElement(el); }, { min: 0, max: 1, step: 0.01 }));
-  if (p.shadowOpacity > 0) {
-    addField(inspBody, '阴影色', colorInput(p.shadowColor || '#000000', v => { p.shadowColor = v; renderElement(el); }));
-    addField(inspBody, '阴影 X', numInput(p.shadowX || 0, v => { p.shadowX = Math.round(v); renderElement(el); }, { step: 1 }));
-    addField(inspBody, '阴影 Y', numInput(p.shadowY == null ? 4 : p.shadowY, v => { p.shadowY = Math.round(v); renderElement(el); }, { step: 1 }));
-    addField(inspBody, '阴影模糊', numInput(p.shadowBlur == null ? 16 : p.shadowBlur, v => { p.shadowBlur = Math.max(0, Math.round(v)); renderElement(el); }, { min: 0, step: 1 }));
-  }
-
-  if (el.type === 'rect') {
-    const texValue = p.texture === true ? 'true' : p.texture ? String(p.texture) : 'false';
-    const texOpts = [
-      { value: 'false', label: '无' },
-      { value: 'true',  label: 'true（立体纹理）' }
-    ];
-    if (texValue !== 'false' && texValue !== 'true') {
-      texOpts.push({ value: texValue, label: `${texValue}（自定义宽度）` });
-    }
-    addField(inspBody, '纹理 texture', selectInput(texValue, texOpts, v => {
-      if (v === 'false') p.texture = false;
-      else if (v === 'true') p.texture = true;
-      else p.texture = Number(v) || 1;
-      renderElement(el);
-    }));
-    if (p.texture && p.texture !== true) {
-      addField(inspBody, '纹理宽度', rangeInput(Math.max(1, Number(p.texture)), v => {
-        p.texture = Math.max(1, Math.round(v));
-        renderElement(el);
-      }, { min: 1, max: 32, step: 1 }));
-    }
-  }
-
-  if (el.type === 'text') {
-    addSection(inspBody, '文字');
-    addField(inspBody, '内容 label', textInput(p.label, v => { p.label = v; renderElement(el); }));
-    addField(inspBody, 'textLiteral', selectInput(String(p.textLiteral !== false), [
-      { value: 'true', label: 'true（按原文显示）' },
-      { value: 'false', label: 'false' }
-    ], v => { p.textLiteral = v === 'true'; }));
-    addField(inspBody, '字号 textSize', rangeInput(p.textSize, v => { p.textSize = v; renderElement(el); }, { min: 8, max: 64, step: 1 }));
-    addField(inspBody, '颜色 color', colorInput(p.color, v => { p.color = v; renderElement(el); }));
-    addField(inspBody, '对齐 align', selectInput(p.align, [
-      { value: 'left', label: 'left' },
-      { value: 'center', label: 'center' },
-      { value: 'right', label: 'right' }
-    ], v => { p.align = v; renderElement(el); }));
-    addField(inspBody, '字体 font', textInput(p.font, v => { p.font = v; renderElement(el); }));
-    addField(inspBody, 'textX', numInput(p.textX || 0, v => { p.textX = Math.round(v); renderElement(el); }, { step: 1 }));
-    addField(inspBody, 'textY', numInput(p.textY || 0, v => { p.textY = Math.round(v); renderElement(el); }, { step: 1 }));
-
-    addSection(inspBody, '文字阴影');
-    addField(inspBody, '阴影不透明度', rangeInput(p.textShadowOpacity != null ? p.textShadowOpacity : 0, v => { p.textShadowOpacity = v; renderElement(el); }, { min: 0, max: 1, step: 0.01 }));
-    if (p.textShadowOpacity > 0) {
-      addField(inspBody, '阴影色', colorInput(p.textShadowColor || '#000000', v => { p.textShadowColor = v; renderElement(el); }));
-      addField(inspBody, '阴影 X', numInput(p.textShadowX || 0, v => { p.textShadowX = Math.round(v); renderElement(el); }, { step: 1 }));
-      addField(inspBody, '阴影 Y', numInput(p.textShadowY == null ? 1 : p.textShadowY, v => { p.textShadowY = Math.round(v); renderElement(el); }, { step: 1 }));
-      addField(inspBody, '阴影模糊', numInput(p.textShadowBlur == null ? 2 : p.textShadowBlur, v => { p.textShadowBlur = Math.max(0, Math.round(v)); renderElement(el); }, { min: 0, step: 1 }));
-    }
-  }
-
-  if (el.type === 'icon') {
-    addSection(inspBody, '图标');
-    addField(inspBody, '图标字符 icon', textInput(p.icon, v => { p.icon = v; renderElement(el); }));
-    addField(inspBody, '字体 font', textInput(p.font, v => { p.font = v; renderElement(el); }));
-    addField(inspBody, '字号', rangeInput(p.textSize, v => { p.textSize = v; renderElement(el); }, { min: 8, max: 64, step: 1 }));
-    addField(inspBody, '颜色', colorInput(p.color, v => { p.color = v; renderElement(el); }));
-  }
-
-  if (el.type === 'image') {
-    addSection(inspBody, '图片');
-    addField(inspBody, 'source', textInput(p.source, v => { p.source = v; renderElement(el); }));
-    addField(inspBody, 'imageRenderer', selectInput(p.imageRenderer || 'wic', [
-      { value: 'wic',      label: 'wic' },
-      { value: 'shell',    label: 'shell' },
-      { value: 'resource', label: 'resource' }
-    ], v => { p.imageRenderer = v; renderElement(el); }));
-    addField(inspBody, 'imageFit', selectInput(p.imageFit || 'contain', [
-      { value: 'stretch', label: 'stretch' },
-      { value: 'contain', label: 'contain' }
-    ], v => { p.imageFit = v; renderElement(el); }));
-  }
-
-  if (el.type === 'glass') {
-    addSection(inspBody, '玻璃');
-    addField(inspBody, 'glassRenderer', selectInput(p.glassRenderer || 'standard', [
-      { value: 'standard',    label: 'standard（普通高光）' },
-      { value: 'lightEffect', label: 'lightEffect（光效）' }
-    ], v => { p.glassRenderer = v; renderElement(el); }));
-
-    if (p.glassRenderer === 'standard') {
-      addField(inspBody, 'glassActive', selectInput(String(p.glassActive !== false), [
-        { value: 'true',  label: 'true（启用高光）' },
-        { value: 'false', label: 'false（关闭高光）' }
-      ], v => { p.glassActive = v === 'true'; renderElement(el); }));
-    }
-    addField(inspBody, 'glassBorder', rangeInput(p.glassBorder != null ? p.glassBorder : 1, v => { p.glassBorder = v; renderElement(el); }, { min: 0, max: 8, step: 1 }));
-    addField(inspBody, 'glassOpacity', rangeInput(p.glassOpacity != null ? p.glassOpacity : 0.8, v => { p.glassOpacity = v; renderElement(el); }, { min: 0, max: 1, step: 0.01 }));
-  }
-
-  if (el.type === 'button') {
-    addSection(inspBody, '按钮内容');
-    addField(inspBody, '标签 label', textInput(p.label, v => { p.label = v; renderElement(el); }));
-    addField(inspBody, 'textLiteral', selectInput(String(p.textLiteral !== false), [
-      { value: 'true', label: 'true（按原文显示）' },
-      { value: 'false', label: 'false' }
-    ], v => { p.textLiteral = v === 'true'; }));
-    addField(inspBody, '图标 icon（优先）', textInput(p.icon, v => { p.icon = v; renderElement(el); }));
-    addField(inspBody, '字号', rangeInput(p.textSize, v => { p.textSize = v; renderElement(el); }, { min: 8, max: 32, step: 1 }));
-    addField(inspBody, '文字颜色', colorInput(p.color, v => { p.color = v; renderElement(el); }));
-    addField(inspBody, '字体', textInput(p.font, v => { p.font = v; renderElement(el); }));
-
-    addSection(inspBody, '按钮行为');
-    addField(inspBody, 'interaction', selectInput(p.interaction || '', [
-      { value: '',      label: '（无）' },
-      { value: 'title', label: 'title（跟随标题）' },
-      { value: 'icon',  label: 'icon（跟随文件图标）' }
-    ], v => { p.interaction = v || undefined; }));
-
-    addField(inspBody, 'action', selectInput(p.action || '', ACTIONS, v => {
-      p.action = v || undefined;
-      renderElement(el);
-    }));
-
-    addField(inspBody, 'holdAction', selectInput(p.holdAction || '', ACTIONS, v => {
-      p.holdAction = v || undefined;
-    }));
-
-    addField(inspBody, 'holdDelay (ms)', numInput(p.holdDelay != null ? Math.round(p.holdDelay * 1000) : 400, v => {
-      p.holdDelay = Math.max(0, v / 1000);
-    }, { min: 0, step: 50 }));
-
-    addField(inspBody, 'hitPaddingX', numInput(p.hitPaddingX || 0, v => { p.hitPaddingX = Math.max(0, Math.round(v)); }, { min: 0 }));
-    addField(inspBody, 'hitPaddingY', numInput(p.hitPaddingY || 0, v => { p.hitPaddingY = Math.max(0, Math.round(v)); }, { min: 0 }));
-
-    addField(inspBody, 'transition (ms)', numInput(p.transition != null ? p.transition : 200, v => {
-      p.transition = Math.max(0, Math.round(v));
-    }, { min: 0, step: 10 }));
-
-    addField(inspBody, '悬停 opacity', rangeInput(p.hoverOpacity != null ? p.hoverOpacity : 1, v => {
-      p.hoverOpacity = v; renderElement(el);
-    }, { min: 0, max: 1, step: 0.01 }));
-  }
-
-  if (el.type === 'group') {
-    addSection(inspBody, '分组');
-    addField(inspBody, 'clip', selectInput(String(p.clip === true), [
-      { value: 'false', label: 'false' },
-      { value: 'true',  label: 'true（裁剪子节点）' }
-    ], v => { p.clip = v === 'true'; renderElement(el); }));
-    if (p.clip) {
-      addField(inspBody, 'clipRadius', numInput(p.clipRadius || 0, v => {
-        p.clipRadius = Math.max(0, Math.round(v)); renderElement(el);
-      }, { min: 0 }));
-      addField(inspBody, 'clipLayer', selectInput(String(p.clipLayer === true), [
-        { value: 'false', label: 'false' },
-        { value: 'true',  label: 'true（共享蒙版）' }
-      ], v => { p.clipLayer = v === 'true'; }));
-    }
-  }
-
-  const del = document.createElement('button');
-  del.className = 'btn-danger';
-  del.textContent = '删除组件';
-  del.addEventListener('click', () => removeElement(el.id));
-  inspBody.appendChild(del);
-}
-
-/* 
-   导出
-    */
-function genCode() {
-  const lines = [];
-  lines.push('Preset { dependsOn: "Pogget_Std" }');
-  lines.push('');
-
-  if (state.elements.length === 0) {
-    lines.push('// 画布为空，从左侧拖入组件后再导出');
-  }
-
-  state.elements.forEach(el => {
-    const p = el.props;
-    const attrs = [];
-
-    attrs.push(['type', `"${el.type}"`]);
-    attrs.push(['x', el.x]);
-    attrs.push(['y', el.y]);
-    attrs.push(['width', el.w]);
-    attrs.push(['height', el.h]);
-
-    if (p.z != null && p.z !== 0) attrs.push(['z', p.z]);
-    if (p.opacity != null && p.opacity !== 1) attrs.push(['opacity', round(p.opacity, 2)]);
-    if (p.visible === false) attrs.push(['visible', false]);
-    if (p.enabled === false) attrs.push(['enabled', false]);
-    if (p.interaction) attrs.push(['interaction', `"${p.interaction}"`]);
-
-    if (p.radius != null && p.radius !== 0) attrs.push(['radius', p.radius]);
-    if (p.background != null) attrs.push(['background', toRgbStr(p.background)]);
-    if (p.fillOpacity != null && p.fillOpacity !== 1) attrs.push(['fillOpacity', round(p.fillOpacity, 2)]);
-
-    if (p.border != null && p.border !== 0) {
-      attrs.push(['border', p.border]);
-      if (p.borderColor) attrs.push(['borderColor', toRgbStr(p.borderColor)]);
-      if (p.borderOpacity != null && p.borderOpacity !== 1) attrs.push(['borderOpacity', round(p.borderOpacity, 2)]);
-      if (p.borderStyle && p.borderStyle !== 'solid') attrs.push(['borderStyle', `"${p.borderStyle}"`]);
-    }
-
-    if (p.shadowOpacity > 0) {
-      attrs.push(['shadowOpacity', round(p.shadowOpacity, 2)]);
-      if (p.shadowColor) attrs.push(['shadowColor', toRgbStr(p.shadowColor)]);
-      if (p.shadowX) attrs.push(['shadowX', p.shadowX]);
-      if (p.shadowY != null && p.shadowY !== 4) attrs.push(['shadowY', p.shadowY]);
-      if (p.shadowBlur != null && p.shadowBlur !== 16) attrs.push(['shadowBlur', p.shadowBlur]);
-    }
-
-    if (el.type === 'rect' && p.texture) {
-      if (p.texture === true) attrs.push(['texture', true]);
-      else attrs.push(['texture', Math.max(0, Math.round(p.texture))]);
-    }
-
-    if (el.type === 'glass') {
-      if (p.glassRenderer) attrs.push(['glassRenderer', `"${p.glassRenderer}"`]);
-      if (p.glassRenderer === 'standard' && p.glassActive != null) {
-        attrs.push(['glassActive', p.glassActive]);
-      }
-      if (p.glassBorder != null) attrs.push(['glassBorder', p.glassBorder]);
-      if (p.glassOpacity != null) attrs.push(['glassOpacity', round(p.glassOpacity, 2)]);
-    }
-
-    if (el.type === 'text') {
-      attrs.push(['label', `"${escapeStr(p.label)}"`]);
-      attrs.push(['textLiteral', p.textLiteral !== false]);
-      attrs.push(['textSize', p.textSize]);
-      attrs.push(['color', toRgbStr(p.color)]);
-      if (p.font) attrs.push(['font', `"${p.font}"`]);
-      if (p.align) attrs.push(['align', `"${p.align}"`]);
-      if (p.textX) attrs.push(['textX', p.textX]);
-      if (p.textY) attrs.push(['textY', p.textY]);
-
-      if (p.textShadowOpacity > 0) {
-        attrs.push(['textShadowOpacity', round(p.textShadowOpacity, 2)]);
-        if (p.textShadowColor) attrs.push(['textShadowColor', toRgbStr(p.textShadowColor)]);
-        if (p.textShadowX) attrs.push(['textShadowX', p.textShadowX]);
-        if (p.textShadowY != null && p.textShadowY !== 1) attrs.push(['textShadowY', p.textShadowY]);
-        if (p.textShadowBlur != null && p.textShadowBlur !== 2) attrs.push(['textShadowBlur', p.textShadowBlur]);
-      }
-    }
-
-    if (el.type === 'icon') {
-      attrs.push(['icon', `"${escapeStr(p.icon)}"`]);
-      attrs.push(['textSize', p.textSize]);
-      attrs.push(['color', toRgbStr(p.color)]);
-      if (p.font) attrs.push(['font', `"${p.font}"`]);
-    }
-
-    if (el.type === 'button') {
-      if (p.label) {
-        attrs.push(['label', `"${escapeStr(p.label)}"`]);
-        attrs.push(['textLiteral', p.textLiteral !== false]);
-      }
-      if (p.icon) attrs.push(['icon', `"${escapeStr(p.icon)}"`]);
-      if (p.textSize) attrs.push(['textSize', p.textSize]);
-      if (p.color) attrs.push(['color', toRgbStr(p.color)]);
-      if (p.font) attrs.push(['font', `"${p.font}"`]);
-      if (p.transition) attrs.push(['transition', msToVina(p.transition)]);
-      if (p.hitPaddingX) attrs.push(['hitPaddingX', p.hitPaddingX]);
-      if (p.hitPaddingY) attrs.push(['hitPaddingY', p.hitPaddingY]);
-      if (p.holdDelay) attrs.push(['holdDelay', msToVina(p.holdDelay * 1000)]);
-    }
-
-    if (el.type === 'image') {
-      if (p.source) attrs.push(['source', `"${escapeStr(p.source)}"`]);
-      if (p.imageRenderer && p.imageRenderer !== 'wic') attrs.push(['imageRenderer', `"${p.imageRenderer}"`]);
-      if (p.imageFit && p.imageFit !== 'stretch') attrs.push(['imageFit', `"${p.imageFit}"`]);
-    }
-
-    if (el.type === 'group') {
-      if (p.clip) {
-        attrs.push(['clip', true]);
-        if (p.clipRadius) attrs.push(['clipRadius', p.clipRadius]);
-        if (p.clipLayer) attrs.push(['clipLayer', true]);
-      }
-    }
-
-    if (p.action) attrs.push(['action', p.action]);
-    if (p.holdAction) attrs.push(['holdAction', p.holdAction]);
-
-    const hasHover = el.type === 'button'
-      && p.hoverOpacity != null
-      && p.hoverOpacity < 1;
-
-    lines.push(compName(el) + ' {');
-    lines.push('  view {');
-
-    attrs.forEach((pair, i) => {
-      const comma = (i < attrs.length - 1 || hasHover) ? ',' : '';
-      lines.push(`    ${pair[0]}: ${pair[1]}${comma}`);
+  $("previewState").hidden = !host;
+  $("previewSettingsBtn").hidden = !host;
+  $("board").classList.toggle("host-preview", host);
+  $("board").style.width = project.board.w + "px";
+  $("board").style.height = project.board.h + "px";
+  $("board").style.transform = `scale(${zoom})`;
+  $("boardSizer").style.width = project.board.w * zoom + "px";
+  $("boardSizer").style.height = project.board.h * zoom + "px";
+  currentInputs = inputValues();
+  $("scene").style.background = host
+    ? V.colorHex(currentInputs["pogget.theme.darknight"])
+    : "";
+  try {
+    const next = renderScene(effective(), currentInputs, {
+      editable: new Set(idx().byId.keys()),
+      showBase: $("showBase").checked,
+      host: host && hostState !== "all",
+      hostState,
+      selection,
+      running,
+      locks: project.locks,
+      hover: running
+        ? new Map([...hoverStates].map(([id, s]) => [id, s.value]))
+        : new Map(),
+      defaults: {
+        ...FALLBACK,
+        background: currentInputs["pogget.theme.midnight"],
+        color: currentInputs["pogget.theme.white"],
+        borderColor: currentInputs["pogget.theme.white"],
+      },
+      bounds: schema.bounds,
     });
-
-    if (hasHover) {
-      lines.push('    hover {');
-      lines.push(`      opacity: ${round(p.hoverOpacity, 2)}`);
-      lines.push('    }');
+    // Keep wrappers during preview so a hover update cannot cancel capture or
+    // synthesize leave/enter loops by replacing the element under the pointer.
+    if (
+      running &&
+      scene &&
+      next.nodes.size === scene.nodes.size &&
+      [...next.nodes.keys()].every((id) => scene.nodes.has(id))
+    ) {
+      for (const [id, fresh] of next.nodes) {
+        const old = scene.nodes.get(id);
+        old.style.cssText = fresh.style.cssText;
+        old.className = fresh.className;
+        old
+          .querySelector(":scope > .el-body")
+          .replaceWith(fresh.querySelector(":scope > .el-body"));
+        old._children.style.cssText = fresh._children.style.cssText;
+      }
+      next.nodes = scene.nodes;
+    } else $("scene").replaceChildren(next.fragment);
+    scene = next;
+    const empty = ![...scene.frames.values()].some((f) => f.rendered);
+    $("boardEmpty").style.display = empty ? "flex" : "none";
+    renderOverlays();
+    syncHistory();
+  } catch (error) {
+    status(error.message, true);
+    $("boardEmpty").style.display = scene?.nodes.size ? "none" : "flex";
+  }
+}
+function animatePreview(time) {
+  previewFrame = 0;
+  if (!running) return;
+  let active = false;
+  for (const [id, s] of hoverStates) {
+    const elapsed = s.duration
+      ? Math.min(1, (time - s.start) / (s.duration * 1000))
+      : 1;
+    s.value = s.from + (s.target - s.from) * elapsed;
+    runtimeOverrides[s.path + ".hoverProgress"] = s.value;
+    if (elapsed < 1) active = true;
+  }
+  renderCanvas();
+  if (active) previewFrame = requestAnimationFrame(animatePreview);
+}
+function trackHover(point) {
+  if (!running || !scene) return;
+  const time = performance.now();
+  let changed = false;
+  if (isHostPreset(project.doc)) {
+    const x = point?.x ?? -9999,
+      y = point?.y ?? -9999;
+    changed =
+      runtimeOverrides["pogget.containerFrame.pointerX"] !== x ||
+      runtimeOverrides["pogget.containerFrame.pointerY"] !== y;
+    runtimeOverrides["pogget.containerFrame.pointerX"] = x;
+    runtimeOverrides["pogget.containerFrame.pointerY"] = y;
+  }
+  for (const [id, f] of scene.frames) {
+    if (!f.rendered) continue;
+    let on = point ? hitFrame(scene, id, point) : false;
+    const region = V.block(f.node, "hoverRegion"),
+      state = hoverStates.get(id);
+    if (region && point && f.visible && f.enabled && f.alpha > 0.001) {
+      const path = f.path + ".hoverRegion",
+        get = (key, fallback) => scene.runtime.get(path + "." + key, fallback),
+        retained = state?.target === 1;
+      const x = get(retained ? "retainX" : "x", get("x", f.x)),
+        y = get(retained ? "retainY" : "y", get("y", f.y)),
+        w = get(retained ? "retainWidth" : "width", get("width", f.w)),
+        h = get(retained ? "retainHeight" : "height", get("height", f.h));
+      on =
+        get("enabled", true) &&
+        point.x >= x &&
+        point.y >= y &&
+        point.x <= x + w &&
+        point.y <= y + h;
     }
-
-    lines.push('  }');
-    lines.push('}');
-    lines.push('');
+    if ((state?.target || 0) === (on ? 1 : 0)) continue;
+    const value = state?.value || 0,
+      duration = on
+        ? (f.p.transition ?? 0.2)
+        : (f.p.unhoverTransition ?? f.p.transition ?? 0.2);
+    hoverStates.set(id, {
+      value,
+      from: value,
+      target: on ? 1 : 0,
+      start: time,
+      duration,
+      path: f.path,
+    });
+    runtimeOverrides[f.path + ".hovered"] = on;
+    changed = true;
+  }
+  if (changed && !previewFrame)
+    previewFrame = requestAnimationFrame(animatePreview);
+}
+function renderOverlays() {
+  $("overlays").replaceChildren();
+  if (running || !scene) return;
+  for (const id of selection) {
+    const f = scene.frames.get(id);
+    if (!f) continue;
+    const outline = element("div", "selection-box");
+    outline.dataset.id = id;
+    outline.style.cssText = `left:${f.paintX}px;top:${f.paintY}px;width:${f.w}px;height:${f.h}px`;
+    if (!isLocked(id)) {
+      for (const [corner, label] of [
+        ["nw", "左上角"],
+        ["ne", "右上角"],
+        ["sw", "左下角"],
+        ["se", "右下角"],
+      ]) {
+        const resize = element("div", "resize-handle");
+        resize.dataset.resize = id;
+        resize.dataset.corner = corner;
+        resize.setAttribute("aria-label", "调整尺寸 · " + label);
+        outline.append(resize);
+      }
+    }
+    $("overlays").append(outline);
+  }
+  if (
+    selection.length === 1 &&
+    scene.frames.get(selection[0])?.p.type === "path" &&
+    !isLocked(selection[0])
+  )
+    renderPathPoints(selection[0]);
+}
+function renderPathPoints(id) {
+  const f = scene.frames.get(id);
+  let points;
+  try {
+    points = V.parsePoints(f.p.points, f.p.closed ?? true);
+  } catch {
+    return;
+  }
+  points.forEach((point, i) => {
+    const dot = button(
+      "",
+      () => {},
+      "path-point",
+      `点 ${i + 1}：${point.x}, ${point.y} · 双击删除`,
+    );
+    dot.dataset.point = String(i);
+    dot.dataset.id = id;
+    dot.style.left = f.x + (point.x / (f.p.pathWidth || 100)) * f.w + "px";
+    dot.style.top = f.y + (point.y / (f.p.pathHeight || 100)) * f.h + "px";
+    dot.addEventListener("dblclick", (event) => {
+      event.stopPropagation();
+      mutate("删除路径点", (next) => {
+        const node = V.index(next.doc).byId.get(id);
+        const pts = V.parsePoints(
+          scene.frames.get(id).p.points,
+          f.p.closed ?? true,
+        );
+        pts.splice(i, 1);
+        V.parsePoints(V.pointsText(pts), f.p.closed ?? true);
+        V.setValue(node, "points", V.pointsText(pts));
+      });
+    });
+    $("overlays").append(dot);
   });
-
-  return lines.join('\n').replace(/\n+$/, '') + '\n';
 }
-
-function openExport() {
-  codeOut.textContent = genCode();
-  modalMask.classList.add('show');
+function renderAll() {
+  renderCanvas();
+  renderLayers();
+  renderInspector();
+  syncHistory();
+  $("boardWInput").value = project.board.w;
+  $("boardHInput").value = project.board.h;
 }
-function closeExport() {
-  modalMask.classList.remove('show');
+function isLocked(id) {
+  const i = idx();
+  return (
+    project.locks.includes(id) ||
+    M.ancestors(i, id).some((n) => project.locks.includes(n.id))
+  );
 }
-
-function download(filename, text) {
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+function renderLayers() {
+  const tree = $("layerTree");
+  tree.replaceChildren();
+  const filter = $("layerSearch").value.toLowerCase(),
+    i = idx(),
+    views = orderedLayers(project.doc, scene?.frames || new Map());
+  $("layerCount").textContent = views.length ? String(views.length) : "";
+  for (const { node, parent, component } of views) {
+    const chain = M.ancestors(i, node.id);
+    if (!filter && chain.some((n) => collapsed.has(n.id))) continue;
+    const path = i.paths.get(node.id),
+      name = parent ? node.name : component.name;
+    if (filter && !path.toLowerCase().includes(filter)) continue;
+    const row = element("div", "layer-row");
+    row.setAttribute("role", "treeitem");
+    row.setAttribute("aria-selected", String(selection.includes(node.id)));
+    row.classList.toggle("active", selection.includes(node.id));
+    row.style.paddingLeft = 8 + Math.max(0, chain.length - 1) * 14 + "px";
+    row.dataset.id = node.id;
+    row.dataset.path = path;
+    row.draggable = !running;
+    const children = node.members.some(
+      (m) => m.kind === "block" && !V.META.has(m.name),
+    );
+    if (children) {
+      row.setAttribute("aria-expanded", String(!collapsed.has(node.id)));
+      row.append(
+        iconButton(
+          collapsed.has(node.id) ? "caret-right" : "caret-down",
+          (event) => {
+            event.stopPropagation();
+            if (collapsed.has(node.id)) collapsed.delete(node.id);
+            else collapsed.add(node.id);
+            renderLayers();
+          },
+          "layer-toggle",
+          collapsed.has(node.id) ? "展开图层" : "折叠图层",
+        ),
+      );
+    } else {
+      const glyph = element("span", "layer-toggle layer-glyph");
+      glyph.append(
+        icon(
+          COMPONENT_ICONS[scene?.frames.get(node.id)?.p.type] ||
+            "regular-square",
+        ),
+      );
+      row.append(glyph);
+    }
+    const label = element("span", "layer-name", name);
+    label.title = path;
+    row.append(label);
+    row.append(
+      iconButton(
+        isLocked(node.id) ? "lock" : "lock-open",
+        (event) => {
+          event.stopPropagation();
+          mutate("切换图层锁定", (next) => {
+            next.locks = next.locks.includes(node.id)
+              ? next.locks.filter((v) => v !== node.id)
+              : [...next.locks, node.id];
+          });
+        },
+        "layer-toggle",
+        isLocked(node.id) ? "解锁" : "锁定",
+      ),
+    );
+    row.append(
+      iconButton(
+        scene?.frames.get(node.id)?.p.visible !== false ? "eye" : "eye-slash",
+        (event) => {
+          event.stopPropagation();
+          mutate("切换可见性", (next) =>
+            V.setValue(
+              V.index(next.doc).byId.get(node.id),
+              "visible",
+              scene?.frames.get(node.id)?.p.visible === false,
+            ),
+          );
+        },
+        "layer-toggle",
+        "切换可见性",
+      ),
+    );
+    row.addEventListener("click", (event) =>
+      select([node.id], event.shiftKey || event.ctrlKey || event.metaKey),
+    );
+    row.addEventListener("dragstart", (event) => {
+      if (running) return event.preventDefault();
+      if (!selection.includes(node.id)) select([node.id]);
+      event.dataTransfer.setData(
+        "application/x-vina-layer",
+        JSON.stringify(selection),
+      );
+      event.dataTransfer.effectAllowed = "move";
+    });
+    row.addEventListener("dragover", (event) => {
+      if (event.dataTransfer.types.includes("application/x-vina-layer")) {
+        event.preventDefault();
+        row.classList.add("drop-target");
+      }
+    });
+    row.addEventListener("dragleave", () =>
+      row.classList.remove("drop-target"),
+    );
+    row.addEventListener("drop", (event) => {
+      row.classList.remove("drop-target");
+      if (!event.dataTransfer.types.includes("application/x-vina-layer"))
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      const ids = JSON.parse(
+        event.dataTransfer.getData("application/x-vina-layer"),
+      );
+      mutate("移动图层", (next) => {
+        if (ids.some(isLocked) || isLocked(node.id))
+          throw new Error("请先解锁图层");
+        M.reparent(
+          next.doc,
+          ids,
+          scene.frames.get(node.id)?.p.type === "group" ? node.id : parent?.id,
+          modelInputs(),
+        );
+      });
+    });
+    tree.append(row);
+  }
+  if (!views.length)
+    tree.append(element("p", "panel-hint", "添加组件后在这里管理层级"));
+  const unnest = button("移到画板根层", () => command("root"), "root-drop");
+  unnest.prepend(icon("arrow-turn-up"));
+  unnest.addEventListener("dragover", (e) => e.preventDefault());
+  unnest.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData("application/x-vina-layer");
+    if (data)
+      mutate("移到根层", (next) =>
+        M.reparent(next.doc, JSON.parse(data), null, modelInputs()),
+      );
+  });
+  tree.append(unnest);
+}
+function section(title) {
+  const n = element("div", "insp-section", title);
+  $("inspBody").append(n);
+  return n;
+}
+function field(label, control, key = "", target = $("inspBody")) {
+  const row = element("div", "field"),
+    lb = element("label", "", label);
+  lb.title = key || label;
+  row.append(lb, control);
+  target.append(row);
+  return row;
+}
+function hint(text) {
+  $("inspBody").append(element("p", "panel-hint", text));
+}
+function selectControl(value, options, change) {
+  const n = element("select", "ctl");
+  for (const o of options) {
+    const value = typeof o === "object" ? o.value : o,
+      label = typeof o === "object" ? o.label : o,
+      opt = element("option", "", label);
+    opt.value = value;
+    n.append(opt);
+  }
+  n.value = value ?? "";
+  n.addEventListener("change", () => change(n.value));
+  return n;
+}
+function textControl(value, change, type = "text") {
+  const n = element("input", "ctl");
+  let stepped = false;
+  n.type = type;
+  n.value = value ?? "";
+  n.addEventListener("change", () => {
+    stepped = false;
+    change(n.value);
+  });
+  if (type === "number") {
+    n.step = String(numberStep("", value));
+    const bump = (event, direction) => {
+      if (n.disabled || n.readOnly || !Number.isFinite(Number(n.value))) return;
+      event.preventDefault();
+      const step = Number(n.step) || 0.1,
+        scale = event.shiftKey ? 10 : event.altKey ? 0.1 : 1;
+      n.value = String(
+        stepNumber(
+          n.value,
+          step * scale,
+          direction,
+          n.min === "" ? -Infinity : Number(n.min),
+          n.max === "" ? Infinity : Number(n.max),
+        ),
+      );
+      stepped = true;
+      n.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    n.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown")
+        bump(e, e.key === "ArrowUp" ? 1 : -1);
+    });
+    n.addEventListener(
+      "wheel",
+      (e) => {
+        if (document.activeElement === n && e.deltaY)
+          bump(e, e.deltaY < 0 ? 1 : -1);
+      },
+      { passive: false },
+    );
+    // A focused field is one edit transaction, independent of key repeat speed.
+    // Programmatic stepping does not trigger the browser's native blur change.
+    n.addEventListener("blur", () => {
+      if (stepped) n.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    n.title = "方向键或聚焦后滚轮微调；Shift ×10，Alt ÷10";
+  }
+  return n;
+}
+const LABELS = {
+  x: "X",
+  y: "Y",
+  width: "宽度",
+  height: "高度",
+  z: "层级",
+  opacity: "不透明度",
+  visible: "可见",
+  enabled: "启用",
+  radius: "圆角",
+  background: "背景色",
+  fillOpacity: "填充透明度",
+  border: "描边宽度",
+  borderColor: "描边色",
+  borderOpacity: "描边透明度",
+  borderStyle: "描边样式",
+  borderOnly: "仅描边",
+  label: "文字内容",
+  color: "文字颜色",
+  font: "字体",
+  textSize: "字号",
+  textLiteral: "按原文显示",
+  textX: "文字 X",
+  textY: "文字 Y",
+  align: "文字对齐",
+  texture: "纹理",
+  blur: "模糊强度",
+  blurRenderer: "模糊后端",
+  shadowOpacity: "阴影透明度",
+  shadowColor: "阴影颜色",
+  shadowX: "阴影 X",
+  shadowY: "阴影 Y",
+  shadowBlur: "阴影模糊",
+  shadowQuality: "阴影质量",
+  clip: "裁剪子节点",
+  clipRadius: "裁剪圆角",
+  clipLayer: "共享裁剪层",
+  points: "路径点列",
+  closed: "闭合路径",
+  smooth: "平滑曲线",
+  tension: "曲线张力",
+  pathWidth: "路径坐标宽度",
+  pathHeight: "路径坐标高度",
+  slot: "宿主绘制阶段",
+  interaction: "交互范围",
+  action: "点击动作",
+  holdAction: "长按动作",
+  holdDelay: "长按阈值（秒）",
+  transition: "进入时长（秒）",
+  unhoverTransition: "退出时长（秒）",
+  pressDuration: "按下时长（秒）",
+  releaseDuration: "释放时长（秒）",
+  blendMode: "混合模式",
+  source: "资源来源",
+  glassRenderer: "高光样式",
+  glassOpacity: "模糊层透明度",
+  glassBorder: "模糊层描边",
+  glassActive: "高光启用",
+  glassTintEnabled: "模糊层着色",
+  glassTintColor: "着色颜色",
+  glassTintAmount: "着色强度",
+};
+const ENUMS = {
+  type: V.TYPES.filter((type) => !type.startsWith("pogget.native.")),
+  align: ["left", "center", "right"],
+  borderStyle: ["solid", "dash"],
+  blendMode: ["normal", "multiply", "linearDodge"],
+  glassRenderer: ["standard", "lightEffect"],
+  imageRenderer: ["wic", "shell", "resource"],
+  imageFit: ["stretch", "contain"],
+  clipAntialias: ["perPrimitive", "aliased"],
+  textRenderer: ["", "glyph", "dwrite2", "dwrite3", "direct", "resource"],
+  interaction: ["", "title", "icon"],
+  blurRenderer: ["title", "snapshot"],
+};
+const BOOLS = new Set([
+  "visible",
+  "enabled",
+  "borderOnly",
+  "textLiteral",
+  "textNoWrap",
+  "textClip",
+  "emphasized",
+  "clip",
+  "clipLayer",
+  "closed",
+  "smooth",
+  "glassActive",
+  "glassTintEnabled",
+  "glassCustomEdge",
+  "textFloatPosition",
+  "textColorFont",
+  "textAppFonts",
+  "imageCrop",
+]);
+const STRINGS = new Set([
+  "label",
+  "text",
+  "icon",
+  "font",
+  "source",
+  "src",
+  "points",
+  "slot",
+  "interaction",
+  "type",
+  "tagAlign",
+  "toggle",
+]);
+const COLORS = new Set([
+  "background",
+  "color",
+  "borderColor",
+  "shadowColor",
+  "textShadowColor",
+  "glassTintColor",
+]);
+const FALLBACK = {
+  x: 0,
+  y: 0,
+  width: 40,
+  height: 40,
+  z: 0,
+  opacity: 1,
+  visible: true,
+  enabled: true,
+  radius: 0,
+  background: 0,
+  border: 0,
+  borderColor: 16777215,
+  borderOpacity: 1,
+  fillOpacity: 1,
+  borderOnly: false,
+  borderStyle: "solid",
+  blendMode: "normal",
+  align: "center",
+  texture: false,
+  blur: 0,
+  blurRenderer: "title",
+  shadowOpacity: 0,
+  shadowColor: 0,
+  shadowX: 0,
+  shadowY: 4,
+  shadowBlur: 16,
+  shadowQuality: 4,
+  clip: false,
+  clipLayer: false,
+  clipRadius: 0,
+  clipAntialias: "perPrimitive",
+  pathWidth: 100,
+  pathHeight: 100,
+  tension: 0.25,
+  closed: true,
+  smooth: false,
+  holdDelay: 0.4,
+  transition: 0.2,
+  unhoverTransition: 0.2,
+  pressDuration: 0.15,
+  releaseDuration: 0.3,
+  contentScale: 1,
+  textSize: 14,
+  textLiteral: true,
+  textX: 0,
+  textY: 0,
+  glassRenderer: "standard",
+  glassOpacity: 1,
+  glassBorder: 1,
+  glassActive: false,
+};
+function propertyField(node, key, target = $("inspBody")) {
+  const p = V.property(node, key),
+    raw = p?.raw,
+    id = node.id,
+    path = idx().paths.get(id);
+  let value = scene?.frames.get(id)?.p[key] ?? FALLBACK[key] ?? "",
+    dynamic = false;
+  try {
+    value = scene?.runtime.get(path + "." + key, value) ?? value;
+    dynamic = !!p && V.references(V.expressionOf(p)).length > 0;
+  } catch {
+    dynamic = true;
+  }
+  const wrap = element("div", "property-control"),
+    apply = (newRaw) =>
+      mutate("修改 " + (LABELS[key] || key), (next) =>
+        V.setRaw(V.index(next.doc).byId.get(id), key, newRaw),
+      );
+  let control;
+  const stageNumber = (v) => {
+    if (v.trim() === "" || !Number.isFinite(Number(v))) return false;
+    const raw = String(Number(v));
+    if (V.property(idx().byId.get(id), key)?.raw === raw) return true;
+    if (!pending) pending = V.clone(project);
+    V.setRaw(idx().byId.get(id), key, raw);
+    control.classList.remove("bound-value");
+    wrap.querySelector(".binding-btn")?.classList.remove("bound");
+    renderCanvas();
+    renderLayers();
+    return true;
+  };
+  if (ENUMS[key] || key === "action" || key === "holdAction") {
+    control = selectControl(
+      String(value),
+      ENUMS[key] || ["", ...schema.actions],
+      (v) => apply(V.literal(v)),
+    );
+  } else if (BOOLS.has(key))
+    control = selectControl(String(value), ["true", "false"], (v) => apply(v));
+  else if (key === "texture") {
+    control = element("div", "color-control");
+    const mode = selectControl(
+      typeof value === "boolean" ? String(value) : "number",
+      [
+        { value: "false", label: "关闭" },
+        { value: "true", label: "立体纹理" },
+        { value: "number", label: "描边宽度" },
+      ],
+      (v) => apply(v === "number" ? "1" : v),
+    );
+    control.append(mode);
+    if (typeof value === "number") {
+      const width = textControl(
+        value,
+        (v) => {
+          if (stageNumber(v)) flush();
+        },
+        "number",
+      );
+      width.min = 0;
+      width.max = 64;
+      width.step = ".1";
+      width.addEventListener("input", () => stageNumber(width.value));
+      control.append(width);
+    }
+  } else if (COLORS.has(key)) {
+    control = element("div", "color-control");
+    let hex = "#000000";
+    try {
+      hex = V.colorHex(value);
+    } catch {}
+    const picker = textControl(hex, () => {}, "color");
+    picker.classList.add("color-swatch");
+    picker.setAttribute("aria-label", (LABELS[key] || key) + "色盘");
+    picker.addEventListener("input", () => {
+      if (!pending) pending = V.clone(project);
+      V.setRaw(idx().byId.get(id), key, V.colorRaw(picker.value));
+      renderCanvas();
+      hexInput.value = picker.value.toUpperCase();
+    });
+    picker.addEventListener("change", () => {
+      flush();
+      renderInspector();
+    });
+    const hexInput = textControl(hex.toUpperCase(), (v) => {
+      try {
+        apply(V.colorRaw(v));
+      } catch (error) {
+        toast(error.message);
+        renderInspector();
+      }
+    });
+    hexInput.classList.add("hex-input");
+    hexInput.setAttribute("aria-label", (LABELS[key] || key) + " HEX");
+    control.append(picker, hexInput);
+  } else {
+    const isText = STRINGS.has(key) || typeof value === "string";
+    control = textControl(
+      isText ? value : Number.isFinite(Number(value)) ? value : 0,
+      (v) => {
+        if (isText) apply(V.literal(v));
+        else if (stageNumber(v)) flush();
+        else {
+          toast("请输入有限数值");
+          renderInspector();
+        }
+      },
+      isText ? "text" : "number",
+    );
+    if (!isText) {
+      control.step = String(numberStep(key, value));
+      control.addEventListener("input", () => stageNumber(control.value));
+    }
+    const bounds = schema.bounds[key];
+    if (bounds) {
+      control.min = bounds[0];
+      control.max = bounds[1];
+    }
+  }
+  control.dataset.prop = key;
+  control.title =
+    (raw ?? "使用默认值") +
+    (control.type === "number"
+      ? "；方向键或聚焦后滚轮微调，Shift ×10，Alt ÷10"
+      : "");
+  control.classList.toggle("bound-value", dynamic);
+  const fx = button(
+    "ƒ",
+    () => expressionDialog(node, key),
+    "binding-btn" + (dynamic ? " bound" : ""),
+    "绑定变量或编辑表达式",
+  );
+  fx.dataset.bind = key;
+  wrap.append(control, fx);
+  field(LABELS[key] || key, wrap, key, target);
+}
+function renderInspector() {
+  const body = $("inspBody");
+  body.replaceChildren();
+  $("propertiesTab").classList.toggle("active", inspectorTab === "properties");
+  $("variablesTab").classList.toggle("active", inspectorTab === "variables");
+  if (running) {
+    section("交互预览");
+    hint(
+      "原生菜单、文件操作及宿主资源在 Pogget 内执行。这里预览布局、状态与控件值。",
+    );
+    renderVariables(true);
+    return;
+  }
+  if (inspectorTab === "variables") {
+    renderVariables();
+    return;
+  }
+  const items = selected();
+  if (!items.length) {
+    const empty = element("div", "insp-empty");
+    empty.append(
+      element("div", "insp-empty-icon", "⬚"),
+      element("p", "", "未选择组件"),
+      element("span", "", "点击组件编辑属性，Shift 多选"),
+    );
+    body.append(empty);
+    section("预设");
+    const dependency = project.doc.roots.find((n) => n.name === "Preset");
+    field(
+      "基础预设",
+      textControl(
+        dependency
+          ? V.evaluateExpression(
+              V.expressionOf(V.property(dependency, "dependsOn")),
+            )
+          : "",
+        (name) =>
+          mutate(
+            "修改基础预设",
+            (next) => {
+              next.doc.roots = next.doc.roots.filter(
+                (n) => n.name !== "Preset",
+              );
+              if (name.trim())
+                next.doc.roots.unshift(
+                  V.makeBlock("Preset", { dependsOn: name.trim() }),
+                );
+            },
+            { allowMissingBase: true },
+          ),
+      ),
+    );
+    body.append(
+      button(
+        "导入基础预设文件",
+        () => {
+          inputMode = "base";
+          $("fileInput").click();
+        },
+        "btn-ghost full-width",
+      ),
+    );
+    hint(
+      "差异预设保留继承声明；基础预设开关用于查看继承图层。源码支持所有已接入的宿主 slot 与元数据。",
+    );
+    return;
+  }
+  const i = idx(),
+    node = items[0],
+    path = i.paths.get(node.id),
+    p = scene?.frames.get(node.id)?.p || {
+      type: scene?.runtime.get(path + ".type", "group"),
+    };
+  const head = element("div", "insp-el-head");
+  head.append(
+    element(
+      "span",
+      "insp-el-name",
+      items.length > 1
+        ? `已选择 ${items.length} 个组件`
+        : path
+            .split(".")
+            .filter((s) => s !== "view")
+            .join(" / "),
+    ),
+    element("span", "insp-el-type", p.type || ""),
+  );
+  body.append(head);
+  if (items.length > 1) {
+    body.append(
+      button("编组 Ctrl+G", () => command("group"), "btn-ghost full-width"),
+      button("复制 Ctrl+D", () => command("duplicate"), "btn-ghost full-width"),
+    );
+    hint("使用画布工具栏对齐或等距分布。拖动将保持相对位置。");
+    body.append(button("删除所选组件", () => command("delete"), "btn-danger"));
+    return;
+  }
+  const parent = i.parents.get(node.id),
+    renameTarget = parent && !i.parents.get(parent.id) ? parent : node;
+  field(
+    "名称",
+    textControl(renameTarget.name, (name) =>
+      mutate("重命名图层", (next) => {
+        if (!/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name))
+          throw new Error("名称需为字母、汉字、数字或下划线，且不能以数字开头");
+        M.rename(next.doc, renameTarget.id, name);
+      }),
+    ),
+  );
+  if (p.type?.startsWith("pogget.native.")) {
+    section("应用配置");
+    for (const member of node.members.filter(
+      (m) => m.kind === "property" && m.name !== "type",
+    ))
+      propertyField(node, member.name);
+    body.append(
+      button(
+        "编辑组件与元数据源码",
+        () => nodeSourceDialog(node),
+        "btn-ghost full-width",
+      ),
+    );
+    return;
+  }
+  section("布局");
+  for (const key of [
+    "type",
+    "x",
+    "y",
+    "width",
+    "height",
+    "z",
+    "opacity",
+    "visible",
+    "enabled",
+  ])
+    propertyField(node, key);
+  field(
+    "父分组",
+    selectControl(
+      parent && i.parents.get(parent.id) ? parent.id : "",
+      [
+        { value: "", label: "画板根层" },
+        ...V.viewNodes(project.doc)
+          .filter(
+            (v) =>
+              v.node.id !== node.id &&
+              scene?.frames.get(v.node.id)?.p.type === "group" &&
+              !M.ancestors(i, v.node.id).some((n) => n.id === node.id),
+          )
+          .map((v) => ({ value: v.node.id, label: i.paths.get(v.node.id) })),
+      ],
+      (value) =>
+        mutate("移动到分组", (next) =>
+          M.reparent(next.doc, [node.id], value || null, modelInputs()),
+        ),
+    ),
+  );
+  const type = p.type || "rect",
+    shown = new Set([
+      "type",
+      "x",
+      "y",
+      "width",
+      "height",
+      "z",
+      "opacity",
+      "visible",
+      "enabled",
+    ]);
+  if (type === "content")
+    hint(
+      "嵌入由 Pogget 绘制的应用内容，例如 Markdown 预览或编辑区。source 指定内容来源，在线画布显示占位。",
+    );
+  for (const group of propertyGroups(node, p)) {
+    let target = body;
+    if (group.collapsed) {
+      const details = element("details", "property-details");
+      details.append(element("summary", "", group.title));
+      target = element("div", "property-details-body");
+      details.append(target);
+      body.append(details);
+    } else section(group.title);
+    for (const key of group.keys) {
+      propertyField(node, key, target);
+      shown.add(key);
+    }
+    if (group.gradients) {
+      gradientEditor(node, "backgroundGradient", "背景渐变", target);
+      gradientEditor(node, "borderGradient", "描边渐变", target);
+    }
+  }
+  if (type === "group")
+    body.append(
+      button(
+        "选择所有直接子节点",
+        () =>
+          select(
+            V.viewNodes(project.doc)
+              .filter((v) => v.parent?.id === node.id)
+              .map((v) => v.node.id),
+          ),
+        "btn-ghost full-width",
+      ),
+    );
+  if (type === "path")
+    hint(
+      "拖动路径节点；双击路径区域添加点；双击节点删除。绑定点列时请在变量中修改。",
+    );
+  const hot = V.block(node, "hover");
+  const details = element("details", "property-details");
+  details.append(element("summary", "", "悬停状态"));
+  if (hot) {
+    for (const key of [
+      ...new Set([
+        "opacity",
+        ...hot.members.filter((m) => m.kind === "property").map((m) => m.name),
+      ]),
+    ])
+      propertyField(hot, key, details);
+    details.append(
+      button(
+        "编辑 hover 完整声明",
+        () => nodeSourceDialog(hot),
+        "btn-ghost full-width",
+      ),
+      button(
+        "移除悬停状态",
+        () =>
+          mutate("移除悬停状态", (next) => {
+            const target = V.index(next.doc).byId.get(node.id);
+            target.members = target.members.filter((m) => m.name !== "hover");
+          }),
+        "btn-ghost full-width",
+      ),
+    );
+  } else
+    details.append(
+      button(
+        "添加悬停状态",
+        () =>
+          mutate("添加悬停状态", (next) =>
+            V.index(next.doc)
+              .byId.get(node.id)
+              .members.push(V.makeBlock("hover", { opacity: 0.75 })),
+          ),
+        "btn-ghost full-width",
+      ),
+    );
+  body.append(details);
+  // Preserve explicit extensions without surfacing irrelevant defaults.
+  const extra = node.members.filter(
+    (m) => m.kind === "property" && !shown.has(m.name),
+  );
+  if (extra.length) {
+    const extended = element("details", "property-details");
+    extended.append(element("summary", "", "其他已声明属性 · " + extra.length));
+    for (const m of extra) propertyField(node, m.name, extended);
+    body.append(extended);
+  }
+  section("完整声明");
+  body.append(
+    button(
+      "编辑组件与元数据源码",
+      () => nodeSourceDialog(node),
+      "btn-ghost full-width",
+    ),
+    button("添加属性", () => addPropertyDialog(node), "btn-ghost full-width"),
+  );
+  hint(
+    "hover、ui、动画策略、布局策略、repeat 等嵌套声明会完整保留，可在源码中编辑。",
+  );
+  body.append(button("删除组件", () => command("delete"), "btn-danger"));
+  if (isLocked(node.id)) {
+    hint("此图层已锁定，解锁后可编辑。");
+    body
+      .querySelectorAll("input,select,button")
+      .forEach((n) => (n.disabled = true));
+    body.append(
+      button(
+        "解锁",
+        () =>
+          mutate("解锁图层", (next) => {
+            const chain = M.ancestors(i, node.id).map((n) => n.id);
+            next.locks = next.locks.filter(
+              (id) => id !== node.id && !chain.includes(id),
+            );
+          }),
+        "btn-ghost full-width",
+      ),
+    );
+  }
+}
+function gradientEditor(node, key, title, target = $("inspBody")) {
+  const gradient = V.block(node, key),
+    row = element("div", "gradient-row");
+  row.append(element("span", "", title));
+  row.append(
+    button(
+      gradient ? "编辑" : "添加",
+      () => gradientDialog(node, key),
+      "mini-btn",
+    ),
+  );
+  if (gradient)
+    row.append(
+      button(
+        "移除",
+        () =>
+          mutate("移除" + title, (next) => {
+            const n = V.index(next.doc).byId.get(node.id);
+            n.members = n.members.filter((m) => m.name !== key);
+          }),
+        "mini-btn",
+      ),
+    );
+  target.append(row);
+}
+function renderVariables(preview = false) {
+  if (!preview) {
+    $("inspBody").append(
+      button("新增变量 / 个性化控件", variableDialog, "btn-primary full-width"),
+    );
+    hint(
+      "变量与 ui 控件保留原始类型；属性右侧 ƒ 可选择绑定。颜色使用 COLORREF / rgb()，时长使用秒或 ms。",
+    );
+  }
+  const search = textControl(variableSearch, () => {});
+  search.placeholder = "搜索变量或控件";
+  search.setAttribute("aria-label", "搜索变量或控件");
+  $("inspBody").append(search);
+  const cards = [];
+  const ownHeading = element("div", "insp-section", "本预设变量与控件"),
+    ownList = element("div", "preset-variables"),
+    inherited = element("details", "dependency-variables"),
+    summary = element("summary", "", "依赖预设"),
+    inheritedList = element("div", "dependency-variable-list"),
+    empty = element("p", "panel-hint", "没有匹配的变量或控件");
+  inherited.open = dependenciesExpanded;
+  inherited.append(summary, inheritedList);
+  inherited.addEventListener("toggle", () => {
+    if (!search.value.trim()) dependenciesExpanded = inherited.open;
+  });
+  $("inspBody").append(ownHeading, ownList, inherited, empty);
+  let doc;
+  try {
+    doc = effective();
+  } catch {
+    doc = project.doc;
+  }
+  const rt = new V.Runtime(doc, inputValues()),
+    i = V.index(project.doc);
+  let count = 0;
+  for (const root of doc.roots)
+    for (const scope of ["vars", "state", "ui"]) {
+      const group = V.block(root, scope);
+      if (!group) continue;
+      const fields =
+        scope === "ui"
+          ? group.members
+              .filter((n) => n.kind === "block")
+              .map((n) => ({
+                owner: n,
+                p: V.property(n, "default"),
+                key: n.name,
+              }))
+          : group.members
+              .filter((n) => n.kind === "property")
+              .map((p) => ({ owner: group, p, key: p.name }));
+      for (const { owner, p, key } of fields) {
+        const ownerPath = root.name + "." + scope + "." + key,
+          kind =
+            scope === "ui"
+              ? rt.get(
+                  ownerPath + ".control",
+                  rt.get(ownerPath + ".type", "number"),
+                )
+              : "";
+        if (!p && kind !== "button") continue;
+        count++;
+        const path = ownerPath + (scope === "ui" ? ".value" : "");
+        const row = element("div", "variable-card"),
+          label = element("div", "variable-title", path);
+        row.append(label);
+        let value;
+        try {
+          value = rt.get(path);
+        } catch {
+          value = "不可用";
+        }
+        const editable = p ? i.byId.has(p.id) : i.byId.has(owner.id);
+        const own = editable || (scope === "ui" && i.byId.has(owner.id));
+        let control;
+        function change(v, commit = true) {
+          if (preview) {
+            const prior = runtimeOverrides[path];
+            runtimeOverrides[path] = v;
+            try {
+              M.validate(project, standard, inputValues(), schema);
+              renderCanvas();
+            } catch (error) {
+              if (prior === undefined) delete runtimeOverrides[path];
+              else runtimeOverrides[path] = prior;
+              toast(error.message);
+            }
+          } else if (editable) {
+            if (typeof v === "number" && Number.isFinite(v)) {
+              const target = idx().byId.get(owner.id);
+              if (V.property(target, p.name)?.raw !== V.literal(v)) {
+                if (!pending) pending = V.clone(project);
+                V.setValue(target, p.name, v);
+                renderCanvas();
+                renderLayers();
+              }
+              if (commit) flush();
+            } else
+              mutate("修改变量", (next) => {
+                V.setValue(V.index(next.doc).byId.get(owner.id), p.name, v);
+              });
+          }
+        }
+        if (kind === "button")
+          control = button(
+            rt.get(ownerPath + ".label", key),
+            () =>
+              toast(
+                "在 Pogget 内执行：" +
+                  rt.get(ownerPath + ".action", "按钮动作"),
+              ),
+            "btn-ghost full-width",
+          );
+        else if (
+          preview &&
+          scope === "ui" &&
+          ["select", "choice"].includes(kind)
+        ) {
+          const choices =
+              V.block(owner, "choices") || V.block(owner, "options"),
+            entries =
+              choices?.members.map((n, j) => ({
+                value: String(j),
+                label:
+                  n.kind === "property"
+                    ? String(
+                        rt.get(ownerPath + "." + choices.name + "." + n.name),
+                      )
+                    : n.name,
+              })) || [];
+          control = selectControl(String(Number(value)), entries, (v) =>
+            change(typeof value === "boolean" ? Number(v) !== 0 : Number(v)),
+          );
+        } else if (preview && scope === "ui" && kind === "color") {
+          control = textControl(
+            V.colorHex(value),
+            (v) =>
+              change(V.evaluateExpression(V.parseExpression(V.colorRaw(v)))),
+            "color",
+          );
+        } else
+          control =
+            typeof value === "boolean"
+              ? selectControl(String(value), ["true", "false"], (v) =>
+                  change(v === "true"),
+                )
+              : textControl(
+                  value,
+                  (v) => change(typeof value === "number" ? Number(v) : v),
+                  typeof value === "number" ? "number" : "text",
+                );
+        if (preview && kind === "slider") {
+          control.type = "range";
+          control.min = rt.get(ownerPath + ".min", 0);
+          control.max = rt.get(ownerPath + ".max", 1);
+          control.step = rt.get(ownerPath + ".step", 0.01);
+          control.addEventListener("input", () =>
+            change(Number(control.value)),
+          );
+        }
+        if (control.type === "number") {
+          control.step = String(
+            scope === "ui"
+              ? rt.get(ownerPath + ".step", numberStep(key, value))
+              : numberStep(key, value),
+          );
+          if (scope === "ui") {
+            control.min = rt.get(ownerPath + ".min", "");
+            control.max = rt.get(ownerPath + ".max", "");
+          }
+          control.addEventListener("input", () => {
+            if (control.value.trim() && Number.isFinite(Number(control.value)))
+              change(Number(control.value), false);
+          });
+        }
+        control.setAttribute("aria-label", path);
+        control.disabled = !preview && !editable;
+        row.append(control);
+        if (!preview && editable && p)
+          row.append(
+            button("表达式", () => expressionDialog(owner, p.name), "mini-btn"),
+          );
+        if (!preview && scope === "ui" && i.byId.has(owner.id))
+          row.append(
+            button("控件设置", () => nodeSourceDialog(owner), "mini-btn"),
+          );
+        if (!editable) {
+          row.append(element("span", "subtle", "继承自基础预设"));
+          if (!preview && p)
+            row.append(
+              button(
+                "创建覆盖",
+                () =>
+                  mutate("覆盖基础变量", (next) => {
+                    let target = next.doc.roots.find(
+                      (n) => n.name === root.name,
+                    );
+                    if (!target) {
+                      target = V.makeBlock(root.name);
+                      next.doc.roots.push(target);
+                    }
+                    for (const name of [
+                      scope,
+                      ...(scope === "ui" ? [key] : []),
+                    ]) {
+                      let child = V.block(target, name);
+                      if (!child) {
+                        child = V.makeBlock(name);
+                        target.members.push(child);
+                      }
+                      target = child;
+                    }
+                    V.setValue(target, p.name, value);
+                  }),
+                "mini-btn",
+              ),
+            );
+        }
+        row.dataset.variable = path;
+        const labelText =
+          scope === "ui" ? rt.get(ownerPath + ".label", key) : key;
+        cards.push({
+          row,
+          text: [path, labelText, value]
+            .join(" ")
+            .normalize("NFKC")
+            .toLowerCase(),
+          own,
+        });
+        (own ? ownList : inheritedList).append(row);
+      }
+    }
+  const filter = () => {
+    variableSearch = search.value;
+    const terms = variableSearch
+      .normalize("NFKC")
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    let ownCount = 0,
+      inheritedCount = 0;
+    for (const card of cards) {
+      card.row.hidden = !terms.every((term) => card.text.includes(term));
+      if (!card.row.hidden) {
+        if (card.own) ownCount++;
+        else inheritedCount++;
+      }
+    }
+    ownHeading.hidden = ownCount === 0;
+    ownList.hidden = ownCount === 0;
+    inherited.hidden = inheritedCount === 0;
+    summary.textContent = "依赖预设 · " + inheritedCount + " 项";
+    inherited.open = terms.length ? inheritedCount > 0 : dependenciesExpanded;
+    empty.hidden = ownCount + inheritedCount > 0 || !count;
+  };
+  search.addEventListener("input", filter);
+  filter();
+  if (!count)
+    hint(
+      "尚无变量。新增 vars 常量、state 状态或 ui 控件后，可在任意属性中引用。",
+    );
+}
+function dialog(title, build, actions = []) {
+  flush();
+  $("dialogTitle").textContent = title;
+  $("dialogBody").replaceChildren();
+  $("dialogFoot").replaceChildren();
+  $("dialogError").textContent = "";
+  $("editDialog").classList.remove("wide-dialog");
+  build($("dialogBody"));
+  $("dialogFoot").append(
+    button("关闭", () => $("editDialog").close(), "btn-ghost"),
+  );
+  for (const { label, run, primary } of actions)
+    $("dialogFoot").append(
+      button(
+        label,
+        async () => {
+          try {
+            await run();
+          } catch (error) {
+            $("dialogError").textContent = error.message;
+          }
+        },
+        primary ? "btn-primary" : "btn-ghost",
+      ),
+    );
+  if (!$("editDialog").open) $("editDialog").showModal();
+}
+function previewSettingsDialog() {
+  let title, measured, mode, frame, upward;
+  dialog(
+    "Pogget 预览设置",
+    (body) => {
+      const inputs = inputValues(),
+        grid = element("div", "dialog-grid");
+      const add = (name, control) => {
+        control.setAttribute("aria-label", name);
+        grid.append(element("label", "", name), control);
+        return control;
+      };
+      measured = textControl(
+        inputs["pogget.titleTextWidth"],
+        () => {},
+        "number",
+      );
+      title = add(
+        "标题文字",
+        textControl(inputs["pogget.tag.text"], (value) => {
+          const context = document.createElement("canvas").getContext("2d");
+          context.font = '14px "Segoe UI"';
+          measured.value = Math.ceil(context.measureText(value).width);
+        }),
+      );
+      add("标题测量宽度", measured);
+      mode = add(
+        "窗口渲染模式",
+        selectControl(
+          String(inputs["pogget.mode"]),
+          [
+            { value: "0", label: "默认" },
+            { value: "1", label: "静态" },
+            { value: "2", label: "模糊" },
+            { value: "3", label: "透明" },
+            { value: "4", label: "扩展" },
+          ],
+          () => {},
+        ),
+      );
+      frame = add(
+        "窗口边框",
+        selectControl(
+          String(inputs["pogget.containerFrame.frame"]),
+          [
+            { value: "0", label: "无" },
+            { value: "1", label: "画布边框" },
+            { value: "2", label: "系统边框" },
+            { value: "3", label: "高光边框" },
+          ],
+          () => {},
+        ),
+      );
+      upward = add(
+        "向上展开",
+        selectControl(
+          String(inputs["pogget.upward"]),
+          [
+            { value: "false", label: "否" },
+            { value: "true", label: "是" },
+          ],
+          () => {},
+        ),
+      );
+      body.append(
+        grid,
+        element(
+          "p",
+          "panel-hint",
+          "窗口状态、标题与鼠标位置会影响预设布局。这里仅改变预览，不写入预设，也不产生撤销记录。运行时在画布上移动鼠标可预览视差。",
+        ),
+      );
+    },
+    [
+      {
+        label: "恢复默认",
+        run: () => {
+          hostOverrides = {};
+          renderAll();
+          $("editDialog").close();
+        },
+      },
+      {
+        label: "应用预览",
+        primary: true,
+        run: () => {
+          const width = Number(measured.value);
+          if (!Number.isFinite(width) || width < 0 || width > 32768)
+            throw new Error("标题测量宽度必须在 0..32768 之间");
+          const next = {
+            ...hostOverrides,
+            "pogget.title": title.value,
+            "pogget.tag.text": title.value,
+            "pogget.tag.oldText": title.value,
+            "pogget.titleTextWidth": width,
+            "pogget.tag.measuredWidth": width,
+            "pogget.mode": Number(mode.value),
+            "pogget.containerFrame.mode": Number(mode.value),
+            "pogget.frame": Number(frame.value),
+            "pogget.containerFrame.frame": Number(frame.value),
+            "pogget.upward": upward.value === "true",
+            "pogget.containerFrame.upward": upward.value === "true",
+          };
+          M.validate(project, standard, { ...inputValues(), ...next }, schema);
+          hostOverrides = next;
+          renderAll();
+          $("editDialog").close();
+        },
+      },
+    ],
+  );
+}
+function textarea(value) {
+  const n = element("textarea", "source-editor");
+  n.spellcheck = false;
+  n.value = value;
+  n.setAttribute("aria-label", "Vina 源码");
+  n.addEventListener("keydown", (event) => {
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const start = n.selectionStart;
+      n.setRangeText("  ", start, n.selectionEnd, "end");
+    }
+  });
+  return n;
+}
+function sourceDialog() {
+  let input;
+  dialog(
+    "Vina 源码",
+    (body) => {
+      body.append(
+        element(
+          "p",
+          "panel-hint",
+          "应用前完整校验。未通过时保留当前工程；成功应用可一次撤销。",
+        ),
+      );
+      input = textarea(V.serialize(project.doc));
+      body.append(input);
+      $("editDialog").classList.add("wide-dialog");
+    },
+    [
+      {
+        label: "应用源码",
+        primary: true,
+        run: () => {
+          const next = M.projectFromVina(input.value, project);
+          if (
+            !mutate("应用源码", (target) => Object.assign(target, next), {
+              allowMissingBase: true,
+            })
+          )
+            throw new Error(lastError || "源码校验未通过，请修正后再应用");
+          selection = [];
+          renderAll();
+          $("editDialog").close();
+        },
+      },
+      {
+        label: "恢复上次有效版本",
+        run: () => {
+          const raw = localStorage.getItem(RECOVERY);
+          if (!raw) throw new Error("尚无恢复备份");
+          const next = M.projectFromJSON(raw);
+          if (
+            mutate("恢复备份", (target) => Object.assign(target, next), {
+              allowMissingBase: true,
+            })
+          ) {
+            $("editDialog").close();
+            selection = [];
+            renderAll();
+          } else throw new Error(lastError);
+        },
+      },
+    ],
+  );
+}
+function nodeSourceDialog(node) {
+  let input;
+  dialog(
+    "编辑 " + node.name + " 的完整声明",
+    (body) => {
+      input = textarea(V.serialize({ roots: [node] }));
+      body.append(input);
+    },
+    [
+      {
+        label: "应用",
+        primary: true,
+        run: () => {
+          const parsed = V.parse(input.value);
+          if (parsed.roots.length !== 1 || parsed.roots[0].name !== node.name)
+            throw new Error("请保留当前块名称，只编辑块内声明");
+          if (
+            !mutate("编辑完整声明", (next) => {
+              const i = V.index(next.doc),
+                old = i.byId.get(node.id),
+                parent = i.parents.get(node.id),
+                list = parent?.members || next.doc.roots;
+              parsed.roots[0].id = node.id;
+              list.splice(list.indexOf(old), 1, parsed.roots[0]);
+            })
+          )
+            throw new Error("声明未通过校验");
+          $("editDialog").close();
+        },
+      },
+    ],
+  );
+}
+function expressionDialog(node, key) {
+  let input, search, list, display;
+  const path = idx().paths.get(node.id) + "." + key;
+  dialog(
+    "表达式 · " + key,
+    (body) => {
+      input = textarea(
+        V.property(node, key)?.raw ?? V.literal(FALLBACK[key] ?? ""),
+      );
+      input.classList.add("expression-editor");
+      input.setAttribute("aria-label", "属性表达式");
+      body.append(
+        element(
+          "p",
+          "panel-hint",
+          "引用用 ${变量路径}；支持 rgb、fade、min/max、clamp、f32 和条件表达式。",
+        ),
+        input,
+      );
+      display = element("p", "expression-result");
+      body.append(display);
+      const update = () => {
+        try {
+          const rt = new V.Runtime(effective(), inputValues());
+          const value = V.evaluateExpression(
+            V.parseExpression(input.value),
+            (ref) => rt.get(V.resolveReference(ref, path)),
+          );
+          display.textContent = "当前预览值：" + String(value);
+          display.classList.remove("error");
+        } catch (error) {
+          display.textContent = error.message;
+          display.classList.add("error");
+        }
+      };
+      input.addEventListener("input", update);
+      update();
+      search = textControl("", () => {});
+      search.placeholder = "搜索主题、布局、ui 或 state 变量";
+      search.setAttribute("aria-label", "搜索变量");
+      body.append(search);
+      list = element("div", "reference-list");
+      body.append(list);
+      const rt = new V.Runtime(effective(), inputValues());
+      const names = [
+        ...new Set([
+          ...Object.keys(defaults),
+          ...schema.references,
+          ...[...rt.idx.byPath]
+            .filter(([, p]) => p.kind === "property")
+            .map(([path]) => path),
+          ...rt.aliases.keys(),
+        ]),
+      ];
+      const refresh = () => {
+        list.replaceChildren();
+        const query = search.value.toLowerCase();
+        for (const name of names
+          .filter((n) => n.toLowerCase().includes(query))
+          .slice(0, 120)) {
+          let value;
+          try {
+            value = rt.get(name);
+          } catch {
+            continue;
+          }
+          const option = button(
+            name + "  ·  " + String(value).slice(0, 40),
+            () => {
+              input.setRangeText(
+                "${" + name + "}",
+                input.selectionStart,
+                input.selectionEnd,
+                "end",
+              );
+              input.focus();
+              update();
+            },
+            "reference-option",
+          );
+          list.append(option);
+        }
+      };
+      search.addEventListener("input", refresh);
+      refresh();
+    },
+    [
+      {
+        label: "使用当前值（解除绑定）",
+        run: () => {
+          const rt = new V.Runtime(effective(), inputValues());
+          input.value = V.literal(
+            V.evaluateExpression(V.parseExpression(input.value), (ref) =>
+              rt.get(V.resolveReference(ref, path)),
+            ),
+          );
+        },
+      },
+      {
+        label: "应用表达式",
+        primary: true,
+        run: () => {
+          V.parseExpression(input.value);
+          if (
+            !mutate("绑定表达式", (next) =>
+              V.setRaw(V.index(next.doc).byId.get(node.id), key, input.value),
+            )
+          )
+            throw new Error(lastError || "表达式未通过校验");
+          $("editDialog").close();
+        },
+      },
+    ],
+  );
+}
+function addPropertyDialog(node) {
+  let key, input;
+  dialog(
+    "添加 Vina 属性",
+    (body) => {
+      key = textControl("", () => {});
+      key.placeholder = "属性名，例如 textShadowOpacity";
+      input = textControl("0", () => {});
+      body.append(key, input);
+    },
+    [
+      {
+        label: "添加",
+        primary: true,
+        run: () => {
+          if (!/^[\p{L}_][\p{L}\p{N}_.]*$/u.test(key.value))
+            throw new Error("属性名称无效");
+          if (
+            !mutate("添加属性", (next) =>
+              V.setRaw(
+                V.index(next.doc).byId.get(node.id),
+                key.value,
+                input.value,
+              ),
+            )
+          )
+            throw new Error("属性未通过校验");
+          $("editDialog").close();
+        },
+      },
+    ],
+  );
+}
+function gradientDialog(node, key) {
+  const existing = V.block(node, key);
+  let draft = existing
+    ? V.clone(existing)
+    : V.makeBlock(key, { type: "linear" }, [
+        V.makeBlock("stops", {}, [
+          V.makeBlock("Start", { position: 0, color: 0xfb7952 }),
+          V.makeBlock("End", { position: 1, color: 0xff9ada }),
+        ]),
+      ]);
+  let kind, enabled, geometry, stopsContainer;
+  const read = (n, k, d) => {
+    try {
+      return V.evaluateExpression(V.expressionOf(V.property(n, k)));
+    } catch {
+      return d;
+    }
+  };
+  dialog(
+    key === "backgroundGradient" ? "背景渐变" : "描边渐变",
+    (body) => {
+      const top = element("div", "dialog-grid");
+      kind = selectControl(
+        read(draft, "type", "linear"),
+        ["linear", "radial"],
+        (v) => {
+          V.setValue(draft, "type", v);
+          refreshGeometry();
+        },
+      );
+      enabled = selectControl(
+        String(read(draft, "enabled", true)),
+        ["true", "false"],
+        (v) => V.setValue(draft, "enabled", v === "true"),
+      );
+      top.append(
+        element("label", "", "类型"),
+        kind,
+        element("label", "", "启用"),
+        enabled,
+      );
+      body.append(top);
+      geometry = element("div", "dialog-grid");
+      body.append(geometry);
+      stopsContainer = element("div", "gradient-stops");
+      body.append(stopsContainer);
+      body.append(
+        button(
+          "添加色标",
+          () => {
+            const stops = V.block(draft, "stops");
+            if (stops.members.length >= 16) {
+              toast("最多 16 个色标");
+              return;
+            }
+            let name = "Stop" + stops.members.length;
+            while (stops.members.some((n) => n.name === name)) name += "1";
+            stops.members.push(
+              V.makeBlock(name, { position: 1, color: 0xffffff }),
+            );
+            refreshStops();
+          },
+          "btn-ghost full-width",
+        ),
+      );
+      body.append(
+        element(
+          "p",
+          "panel-hint",
+          "色标按声明顺序排列，位置需从小到大；同位置可形成硬边。颜色表达式支持 rgb() 和 ${pogget.theme.*}。",
+        ),
+      );
+      function refreshGeometry() {
+        geometry.replaceChildren();
+        const keys =
+          kind.value === "radial"
+            ? { centerX: 0.5, centerY: 0.5, radiusX: 0.5, radiusY: 0.5 }
+            : { startX: 0, startY: 0, endX: 1, endY: 0 };
+        for (const [k, d] of Object.entries(keys)) {
+          const input = textControl(
+            V.property(draft, k)?.raw ?? String(d),
+            (v) => V.setRaw(draft, k, v),
+          );
+          input.setAttribute("aria-label", k);
+          geometry.append(element("label", "", k), input);
+        }
+      }
+      function refreshStops() {
+        stopsContainer.replaceChildren();
+        const stops = V.block(draft, "stops");
+        for (const stop of stops.members) {
+          const row = element("div", "gradient-stop"),
+            name = element("span", "subtle", stop.name);
+          row.append(name);
+          const pos = textControl(
+            V.property(stop, "position")?.raw ?? "0",
+            (v) => V.setRaw(stop, "position", v),
+          );
+          pos.title = "位置 0..1";
+          pos.setAttribute("aria-label", stop.name + " 位置");
+          row.append(pos);
+          let c = "#000000";
+          try {
+            const owner = scene?.runtime.idx.paths.get(existing?.id);
+            c = V.colorHex(
+              owner
+                ? scene.runtime.get(owner + ".stops." + stop.name + ".color")
+                : read(stop, "color", 0),
+            );
+          } catch {}
+          const picker = textControl(
+            c,
+            (v) => {
+              V.setRaw(stop, "color", V.colorRaw(v));
+              raw.value = V.property(stop, "color").raw;
+            },
+            "color",
+          );
+          picker.classList.add("stop-color");
+          picker.setAttribute("aria-label", stop.name + " 色盘");
+          row.append(picker);
+          const raw = textControl(V.property(stop, "color")?.raw ?? "0", (v) =>
+            V.setRaw(stop, "color", v),
+          );
+          raw.title = "COLORREF / rgb() / ${变量}";
+          raw.setAttribute("aria-label", stop.name + " 颜色表达式");
+          row.append(raw);
+          const alpha = textControl(
+            V.property(stop, "opacity")?.raw ?? "1",
+            (v) => V.setRaw(stop, "opacity", v),
+          );
+          alpha.title = "透明度 0..1";
+          alpha.setAttribute("aria-label", stop.name + " 透明度");
+          row.append(alpha);
+          row.append(
+            button(
+              "−",
+              () => {
+                if (stops.members.length <= 2) {
+                  toast("至少保留两个色标");
+                  return;
+                }
+                stops.members = stops.members.filter((n) => n !== stop);
+                refreshStops();
+              },
+              "mini-btn",
+              "删除色标",
+            ),
+          );
+          stopsContainer.append(row);
+        }
+      }
+      refreshGeometry();
+      refreshStops();
+    },
+    [
+      {
+        label: "应用渐变",
+        primary: true,
+        run: () => {
+          if (
+            !mutate("编辑渐变", (next) => {
+              const n = V.index(next.doc).byId.get(node.id);
+              n.members = n.members.filter((m) => m.name !== key);
+              n.members.push(draft);
+            })
+          )
+            throw new Error(lastError || "渐变未通过校验，请检查位置和表达式");
+          $("editDialog").close();
+        },
+      },
+    ],
+  );
+}
+function variableDialog() {
+  let component, scope, name, type, control, value, min, max, step, options;
+  dialog(
+    "新增变量或个性化控件",
+    (body) => {
+      const grid = element("div", "dialog-grid"),
+        roots = project.doc.roots.filter((n) => n.name !== "Preset");
+      const add = (label, n) => grid.append(element("label", "", label), n);
+      component = selectControl(
+        roots[0]?.name || "Variables",
+        roots.length ? roots.map((n) => n.name) : ["Variables"],
+        () => {},
+      );
+      add("所属组件", component);
+      scope = selectControl(
+        "vars",
+        [
+          { value: "vars", label: "vars · 表达式变量" },
+          { value: "state", label: "state · 运行时状态" },
+          { value: "ui", label: "ui · 个性化控件" },
+        ],
+        () => {},
+      );
+      add("作用域", scope);
+      name = textControl("Value1", () => {});
+      add("变量名", name);
+      type = selectControl(
+        "number",
+        ["number", "boolean", "text", "color"],
+        () => {},
+      );
+      add("值类型", type);
+      control = selectControl(
+        "slider",
+        [
+          "slider",
+          "number",
+          "switch",
+          "choice",
+          "select",
+          "text",
+          "color",
+          "font",
+          "button",
+        ],
+        () => {},
+      );
+      add("ui 控件", control);
+      value = textControl("12", () => {});
+      value.setAttribute("aria-label", "变量默认值");
+      add("默认值 / 表达式", value);
+      min = textControl("0", () => {});
+      max = textControl("100", () => {});
+      step = textControl("1", () => {});
+      add("最小值", min);
+      add("最大值", max);
+      add("步长", step);
+      options = textarea("选项一\n选项二");
+      options.classList.add("options-editor");
+      add("choice/select 选项", options);
+      body.append(
+        grid,
+        element(
+          "p",
+          "panel-hint",
+          "文本默认值直接输入文字。状态变量只能使用字面量。ui 的 choice/select 默认值是从 0 开始的选项序号。",
+        ),
+      );
+    },
+    [
+      {
+        label: "创建",
+        primary: true,
+        run: () => {
+          if (!/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name.value))
+            throw new Error("变量名无效");
+          if (
+            !mutate("创建变量", (next) => {
+              let root = next.doc.roots.find((n) => n.name === component.value);
+              if (!root) {
+                root = V.makeBlock(component.value);
+                next.doc.roots.push(root);
+              }
+              let group = V.block(root, scope.value);
+              if (!group) {
+                group = V.makeBlock(scope.value);
+                root.members.push(group);
+              }
+              if (group.members.some((n) => n.name === name.value))
+                throw new Error("变量名重复");
+              const raw =
+                type.value === "text"
+                  ? V.literal(value.value)
+                  : type.value === "color" && value.value.startsWith("#")
+                    ? V.colorRaw(value.value)
+                    : value.value;
+              if (scope.value === "ui") {
+                const field = V.makeBlock(name.value, {
+                  label: name.value,
+                  type: type.value === "color" ? "number" : type.value,
+                  control: control.value,
+                });
+                V.setRaw(field, "default", raw);
+                if (["number", "slider"].includes(control.value)) {
+                  V.setRaw(field, "min", min.value);
+                  V.setRaw(field, "max", max.value);
+                  V.setRaw(field, "step", step.value);
+                }
+                if (["choice", "select"].includes(control.value)) {
+                  const labels = options.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  if (!labels.length) throw new Error("请声明选项");
+                  field.members.push(
+                    V.makeBlock(
+                      "choices",
+                      Object.fromEntries(labels.map((s, i) => ["c" + i, s])),
+                    ),
+                  );
+                }
+                group.members.push(field);
+              } else V.setRaw(group, name.value, raw);
+            })
+          )
+            throw new Error("变量声明未通过校验");
+          $("editDialog").close();
+          inspectorTab = "variables";
+          renderInspector();
+        },
+      },
+    ],
+  );
+}
+function download(filename, text, type = "text/plain;charset=utf-8") {
+  const url = URL.createObjectURL(new Blob([text], { type })),
+    link = element("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-
-function toast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(() => {
-    t.classList.remove('show');
-    setTimeout(() => t.remove(), 300);
-  }, 1800);
-}
-
-/* 
-   运行模式
-    */
-function setRunning(on) {
-  state.running = on;
-  board.classList.toggle('running', on);
-  runBtn.classList.toggle('is-running', on);
-  runText.textContent = on ? '停止' : '运行';
-  runBtn.title = on ? '停止运行，返回编辑' : '运行预设，与组件交互';
-
-  if (on) {
-    state.selectedId = null;
-    if (vinaMenu) vinaMenu.close();
-    state.elements.forEach(renderElement);
-    renderInspector();
-    toast('已进入运行模式，点击带 action 的组件进行交互');
-  } else {
-    state.elements.forEach(renderElement);
-    renderInspector();
-    toast('已退出运行模式');
-  }
-}
-
-function handleAction(action) {
-  const label = ACTION_LABELS[action] || action;
-  toast(`▶ 触发：${label}`);
-}
-
-runBtn.addEventListener('click', () => setRunning(!state.running));
-
-board.addEventListener('click', e => {
-  if (!state.running) return;
-  const node = e.target.closest('.el');
-  if (!node) return;
-  const el = getElement(node.dataset.id);
-  if (!el) return;
-  const action = el.props.action;
-  if (!action) return;
-  e.stopPropagation();
-  handleAction(action);
-});
-
-/* 
-   右键菜单（VinaContextMenu 通用库实例化）
-    */
-let clipboardEl = null;
-
-function copySelected() {
-  const el = getSelected();
-  if (!el) return;
-  clipboardEl = {
-    type: el.type,
-    w: el.w,
-    h: el.h,
-    props: JSON.parse(JSON.stringify(el.props))
-  };
-  toast('已复制组件');
-}
-
-function pasteFromClipboard(x, y) {
-  if (!clipboardEl) return;
-
-  const el = {
-    id: nextId(),
-    type: clipboardEl.type,
-    seq: nextSeq(clipboardEl.type),
-    x: 0, y: 0,
-    w: clipboardEl.w,
-    h: clipboardEl.h,
-    props: JSON.parse(JSON.stringify(clipboardEl.props))
-  };
-
-  el.x = Math.round(clamp(x - el.w / 2, 0, Math.max(0, state.boardW - el.w)));
-  el.y = Math.round(clamp(y - el.h / 2, 0, Math.max(0, state.boardH - el.h)));
-
-  state.elements.push(el);
-  renderElement(el);
-  updateEmptyHint();
-  select(el.id);
-  saveState();
-  toast('已粘贴组件');
-}
-
-function pasteAuto() {
-  if (!clipboardEl) return;
-  const sel = getSelected();
-  const x = sel ? sel.x + 20 : state.boardW / 2;
-  const y = sel ? sel.y + 20 : state.boardH / 2;
-  pasteFromClipboard(x, y);
-}
-
-const vinaMenu = new VinaContextMenu({
-  container: canvasWrap,
-
-  items: [
-    {
-      key: 'delete',
-      label: '删除组件',
-      shortcut: 'Del',
-      isDisabled: () => state.running || !state.selectedId,
-      onClick: () => { if (state.selectedId) removeElement(state.selectedId); }
-    },
-    {
-      key: 'copy',
-      label: '复制',
-      shortcut: 'Ctrl+C',
-      isDisabled: () => state.running || !state.selectedId,
-      onClick: copySelected
-    },
-    { separator: true },
-    {
-      key: 'paste',
-      label: '粘贴',
-      shortcut: 'Ctrl+V',
-      isDisabled: () => state.running || !clipboardEl,
-      onClick: (ctx) => {
-        const pos = TouchDrag.clientToBoard(ctx.x, ctx.y);
-        pasteFromClipboard(pos.x, pos.y);
-      }
-    }
-  ],
-
-  shortcuts: [
-    {
-      key: 'c', ctrl: true,
-      handler: () => {
-        if (state.running) return false;
-        copySelected();
-      }
-    },
-    {
-      key: 'v', ctrl: true,
-      handler: () => {
-        if (state.running) return false;
-        pasteAuto();
-      }
-    }
-  ],
-
-  onBeforeOpen: (ctx) => {
-    if (state.running) return false;
-
-    const node = ctx.target.closest('.el');
-    if (node) {
-      const el = getElement(node.dataset.id);
-      if (el) select(el.id);
-    } else {
-      select(null);
-    }
-    return true;
-  }
-});
-
-vinaMenu.attach();
-
-/* 
-   事件绑定
-    */
-document.getElementById('exportBtn').addEventListener('click', openExport);
-document.getElementById('modalClose').addEventListener('click', closeExport);
-modalMask.addEventListener('click', e => { if (e.target === modalMask) closeExport(); });
-
-document.getElementById('copyBtn').addEventListener('click', async () => {
+function exportDialog() {
+  let source;
   try {
-    await navigator.clipboard.writeText(codeOut.textContent);
-    toast('代码已复制到剪贴板');
-  } catch {
-    toast('复制失败，请手动选择代码');
+    flush();
+    source = V.serialize(project.doc);
+    V.parse(source);
+  } catch (error) {
+    toast(error.message);
+    return;
   }
-});
-
-document.getElementById('downloadBtn').addEventListener('click', () => {
-  download('MyPreset.vina', codeOut.textContent);
-  toast('已下载 MyPreset.vina');
-});
-
-const boardWInput = document.getElementById('boardWInput');
-const boardHInput = document.getElementById('boardHInput');
-
-boardWInput.addEventListener('change', () => {
-  if (state.running) return;
-  state.boardW = clamp(parseInt(boardWInput.value, 10) || 360, 120, 1200);
-  boardWInput.value = state.boardW;
-  applyBoardSize();
-});
-boardHInput.addEventListener('change', () => {
-  if (state.running) return;
-  state.boardH = clamp(parseInt(boardHInput.value, 10) || 480, 120, 1200);
-  boardHInput.value = state.boardH;
-  applyBoardSize();
-});
-
-window.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if (modalMask.classList.contains('show')) closeExport();
-    if (versionMask.classList.contains('show')) closeVersion();
-  }
-});
-
-/* 
-   版本信息
-    */
-const versionBadge = document.getElementById('versionBadge');
-const versionMask  = document.getElementById('versionMask');
-const versionOk    = document.getElementById('versionOk');
-
-function openVersion() { versionMask.classList.add('show'); }
-function closeVersion() { versionMask.classList.remove('show'); }
-
-if (versionBadge) versionBadge.addEventListener('click', openVersion);
-if (versionOk) versionOk.addEventListener('click', closeVersion);
-if (versionMask) versionMask.addEventListener('click', e => {
-  if (e.target === versionMask) closeVersion();
-});
-
-/* 
-   调试：连续点击版权 5 次触发崩溃
-    */
-(function installCrashTrigger() {
-  const el = document.getElementById('copyrightEl');
-  if (!el) return;
-
-  let clicks = 0, timer = null;
-
-  el.addEventListener('click', () => {
-    clicks++;
-    clearTimeout(timer);
-    timer = setTimeout(() => { clicks = 0; }, 1200);
-
-    if (clicks >= 5) {
-      clicks = 0;
-      console.error('[DEBUG] Manual crash triggered via copyright click');
-    }
-  });
-})();
-
-/* 
-   输入保存
-    */
-inspBody.addEventListener('input', scheduleSave);
-inspBody.addEventListener('change', scheduleSave);
-
-/* 
-   初始化
-    */
-(function setCopyrightYear() {
-  const el = document.getElementById('copyYear');
-  if (!el) return;
-  el.textContent = Math.max(2026, new Date().getFullYear());
-})();
-
-function init() {
-  /* 主题按钮绑定 */
-  const themeBtn = document.getElementById('themeBtn');
-  if (themeBtn) {
-    themeBtn.addEventListener('click', cycleThemeMode);
-  }
-
-  /* 系统主题变化时：仅 system 模式重新计算 data-theme */
-  const onSystemSchemeChange = () => {
-    if (getThemeMode() === 'system') {
-      applyThemeMode('system');
-    }
-  };
-  if (typeof darkModeQuery.addEventListener === 'function') {
-    darkModeQuery.addEventListener('change', onSystemSchemeChange);
-  } else if (typeof darkModeQuery.addListener === 'function') {
-    darkModeQuery.addListener(onSystemSchemeChange);
-  }
-
-  loadState();
-
-  boardWInput.value = state.boardW;
-  boardHInput.value = state.boardH;
-
-  applyBoardSize();
-
-  /* 初始化 TouchDrag（拖拽 / 缩放 / 组件库） */
-  TouchDrag.init({
-    state: state,
-    board: board,
-    canvasWrap: canvasWrap,
-    compList: compList,
-    inspBody: inspBody,
-    COMPONENTS: COMPONENTS,
-    clamp: clamp,
-    round: round,
-    getElement: getElement,
-    makeElement: makeElement,
-    renderElement: renderElement,
-    select: select,
-    updateEmptyHint: updateEmptyHint,
-    removeElement: removeElement,
-    saveState: saveState
-  });
-
-  updateEmptyHint();
-  renderInspector();
+  dialog(
+    "导出预设",
+    (body) => {
+      const code = element("pre", "code", source);
+      body.append(code);
+      $("editDialog").classList.add("wide-dialog");
+      body.append(
+        element(
+          "p",
+          "panel-hint",
+          "Vina 文件用于 Pogget；工程文件包含画板、基础预设及编辑状态，可继续编辑。",
+        ),
+      );
+    },
+    [
+      {
+        label: "复制源码",
+        run: async () => {
+          await navigator.clipboard.writeText(source);
+          toast("源码已复制");
+        },
+      },
+      {
+        label: "保存工程",
+        run: () => {
+          let data = V.clone(project);
+          if (
+            !data.base &&
+            project.doc.roots.some((n) => n.name === "Preset")
+          ) {
+            try {
+              const name = V.evaluateExpression(
+                V.expressionOf(
+                  V.property(
+                    project.doc.roots.find((n) => n.name === "Preset"),
+                    "dependsOn",
+                  ),
+                ),
+              );
+              if (name.toLowerCase() === "pogget_std") {
+                data.base = standard;
+                data.baseName = "Pogget_Std";
+              }
+            } catch {}
+          }
+          download(
+            (project.name || "MyPreset") + ".vina-project.json",
+            JSON.stringify(data, null, 2),
+            "application/json;charset=utf-8",
+          );
+        },
+      },
+      {
+        label: "下载 .vina",
+        primary: true,
+        run: () => download((project.name || "MyPreset") + ".vina", source),
+      },
+    ],
+  );
 }
-init();
-
-window.addEventListener('beforeunload', () => {
-  try { saveState(); } catch (e) {}
-});
-
-/* 
-   启动加载
-    */
-(function bootController() {
-  const boot = document.getElementById('boot');
-  const fill = document.getElementById('bootFill');
-  const bar  = document.getElementById('bootBar');
-  const hint = document.getElementById('bootHint');
-
-  const START = performance.now();
-  const MIN_DURATION = 1500;
-  const MIN_WIDTH = 1024;
-
-  let pct = 0;
-  let pageLoaded = (document.readyState === 'complete');
-  let completed = false;
-  let tickTimer = null;
-
-  const isNarrow = () => window.innerWidth < MIN_WIDTH;
-
-  function startTick() {
-    if (tickTimer) return;
-    const step = () => {
-      tickTimer = null;
-      if (completed || isNarrow() || pct >= 90) return;
-      pct = Math.min(90, pct + Math.random() * 5 + 1.2);
-      fill.style.width = pct + '%';
-      tickTimer = setTimeout(step, 90);
-    };
-    step();
+async function importFile(file, mode = "project") {
+  if (!file || running) return;
+  if (file.size > 4 * 1024 * 1024) {
+    toast("文件超过 4 MiB，请缩小文件后导入");
+    return;
   }
-
-  function finishLoad() {
-    if (completed || isNarrow()) return;
-    const wait = Math.max(0, MIN_DURATION - (performance.now() - START));
-
-    setTimeout(() => {
-      if (completed || isNarrow()) return;
-      completed = true;
-      pct = 100;
-      fill.style.width = '100%';
-      setTimeout(() => {
-        if (!isNarrow()) boot.classList.add('hide');
-      }, 380);
-    }, wait);
-  }
-
-  function sync() {
-    if (isNarrow()) {
-      bar.style.display = 'none';
-      hint.style.display = 'block';
-      boot.classList.remove('hide');
+  const revision = ++importRevision;
+  try {
+    const source = new TextDecoder("utf-8", { fatal: true }).decode(
+      await file.arrayBuffer(),
+    );
+    if (revision !== importRevision || running) return;
+    if (mode === "base") {
+      const base = V.parse(source);
+      if (base.roots.some((n) => n.name === "Preset"))
+        throw new Error("请选择独立基础预设，不能包含依赖链");
+      const declaration = project.doc.roots.find((n) => n.name === "Preset");
+      if (!declaration) throw new Error("请先在预设中填写基础预设名称");
+      const name = V.evaluateExpression(
+        V.expressionOf(V.property(declaration, "dependsOn")),
+      );
+      if (
+        file.name.replace(/\.vina$/i, "").toLowerCase() !== name.toLowerCase()
+      )
+        throw new Error(`基础文件应为 ${name}.vina`);
+      mutate("导入基础预设", (next) => {
+        next.base = base;
+        next.baseName = name;
+      });
       return;
     }
-    bar.style.display = 'block';
-    hint.style.display = 'none';
-
-    if (completed) {
-      boot.classList.add('hide');
-      return;
+    const next = /\.json$/i.test(file.name)
+      ? M.projectFromJSON(source)
+      : M.projectFromVina(source, project);
+    next.name = file.name.replace(/(?:\.vina-project)?\.(vina|json)$/i, "");
+    const applied = mutate(
+      "导入 " + file.name,
+      (target) => Object.assign(target, next),
+      { allowMissingBase: true },
+    );
+    if (applied) {
+      selection = [];
+      renderAll();
+      toast("已导入；Ctrl+Z 可恢复导入前的工程");
     }
-    boot.classList.remove('hide');
-    startTick();
-    if (pageLoaded) finishLoad();
+  } catch (error) {
+    toast("导入失败：" + error.message);
+    status("导入失败，当前工程已保留", true);
   }
-
-  window.addEventListener('load', () => {
-    pageLoaded = true;
-    sync();
+}
+function command(name) {
+  if (running) return;
+  const ids = M.selectedRoots(project.doc, selection);
+  if (name === "copy") {
+    if (ids.length) {
+      clipboard = M.copySelection(project.doc, ids, modelInputs());
+      toast("组件已复制");
+    }
+    return;
+  }
+  if (name === "paste") {
+    if (!clipboard) return;
+    mutate("粘贴组件", (next) => {
+      selection = M.pasteSelection(next.doc, clipboard, modelInputs());
+    });
+    return;
+  }
+  if (!ids.length) return;
+  if (ids.some(isLocked)) {
+    toast("请先解锁所选图层");
+    return;
+  }
+  mutate(
+    {
+      delete: "删除组件",
+      duplicate: "复制组件",
+      group: "编组",
+      ungroup: "解除编组",
+      root: "移到根层",
+      raise: "上移图层",
+      lower: "下移图层",
+    }[name] || "排列组件",
+    (next) => {
+      if (name === "delete") {
+        M.remove(next.doc, ids);
+        selection = [];
+      } else if (name === "duplicate")
+        selection = M.duplicate(next.doc, ids, modelInputs());
+      else if (name === "group")
+        selection = [M.group(next.doc, ids, modelInputs())];
+      else if (name === "ungroup")
+        selection = M.ungroup(next.doc, ids, modelInputs());
+      else if (name === "root") M.reparent(next.doc, ids, null, modelInputs());
+      else if (name === "raise" || name === "lower")
+        M.reorder(next.doc, ids, name === "raise" ? 1 : -1, modelInputs());
+      else if (name.startsWith("align-"))
+        M.align(next.doc, ids, name.slice(6), modelInputs());
+      else if (name.startsWith("distribute"))
+        M.align(next.doc, ids, name, modelInputs());
+    },
+  );
+}
+function boardPoint(event) {
+  const rect = $("scene").getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) / zoom,
+    y: (event.clientY - rect.top) / zoom,
+  };
+}
+function shifted(raw, delta) {
+  const expr = V.parseExpression(raw || "0");
+  if ("value" in expr && typeof expr.value === "number")
+    return String(+(expr.value + delta).toFixed(4));
+  const existing = /^\(([\s\S]*)\) \+ \((-?[\d.eE+]+)\)$/.exec(raw || "");
+  if (existing)
+    return `(${existing[1]}) + (${+(Number(existing[2]) + delta).toFixed(4)})`;
+  return `(${raw || "0"}) + (${+delta.toFixed(4)})`;
+}
+function addComponent(type, point) {
+  mutate("添加 " + (NAMES[type] || type), (next) => {
+    const parent =
+      selection.length === 1 &&
+      scene?.frames.get(selection[0])?.p.type === "group" &&
+      !isLocked(selection[0])
+        ? selection[0]
+        : null;
+    const origin = parent ? scene.frames.get(parent) : { x: 0, y: 0 };
+    const n = V.createView(
+      next.doc,
+      type,
+      (point?.x ?? origin.x + 20) - origin.x,
+      (point?.y ?? origin.y + 20) - origin.y,
+      parent,
+      scene?.runtime.doc.roots.map((n) => n.name) || [],
+    );
+    selection = [n.id];
   });
-  window.addEventListener('resize', sync);
-
-  if (document.readyState === 'complete') pageLoaded = true;
-  sync();
-})();
+}
+function finishDrag(cancel = false) {
+  const d = drag;
+  if (!d) return;
+  drag = null;
+  if (d.kind === "library") {
+    document.querySelector(".library-ghost")?.remove();
+    if (!cancel && d.moved) {
+      const rect = $("board").getBoundingClientRect();
+      if (
+        d.clientX >= rect.left &&
+        d.clientX <= rect.right &&
+        d.clientY >= rect.top &&
+        d.clientY <= rect.bottom
+      )
+        addComponent(d.type, {
+          x: (d.clientX - rect.left) / zoom,
+          y: (d.clientY - rect.top) / zoom,
+        });
+    }
+    return;
+  }
+  if (d.kind === "pan") return;
+  if (d.kind === "run") {
+    if (cancel) return;
+    const f = scene?.frames.get(d.id),
+      point = d.last || d.start;
+    if (!f || !hitFrame(scene, d.id, point)) return;
+    const p = f.p,
+      held = (performance.now() - d.time) / 1000 >= (p.holdDelay ?? 0.4);
+    const action = held && p.holdAction ? p.holdAction : p.action;
+    if (p.toggle) {
+      const state = p.toggle.startsWith("state.")
+        ? f.path.split(".")[0] + "." + p.toggle
+        : p.toggle;
+      const value = scene.runtime.get(state);
+      if (typeof value === "boolean") runtimeOverrides[state] = !value;
+    }
+    if (action) {
+      if (action === "pogget.action.view.toggle")
+        runtimeOverrides["pogget.isListView"] =
+          !currentInputs["pogget.isListView"];
+      else if (action === "pogget.action.view.list")
+        runtimeOverrides["pogget.isListView"] = true;
+      else if (action === "pogget.action.view.grid")
+        runtimeOverrides["pogget.isListView"] = false;
+      else if (action === "pogget.action.container.lock")
+        runtimeOverrides["pogget.locked"] = !currentInputs["pogget.locked"];
+      else if (action === "pogget.action.container.toggleCollapse")
+        runtimeOverrides["pogget.collapsed"] =
+          !currentInputs["pogget.collapsed"];
+      else if (action === "pogget.action.container.collapse")
+        runtimeOverrides["pogget.collapsed"] = true;
+      else if (action === "pogget.action.container.expand")
+        runtimeOverrides["pogget.collapsed"] = false;
+      else toast("在 Pogget 内执行：" + action);
+    }
+    renderCanvas();
+    renderInspector();
+    return;
+  }
+  if (d.kind === "marquee") {
+    document.querySelector(".marquee")?.remove();
+    if (cancel) {
+      selection = d.selection;
+      return;
+    }
+    const end = d.last || d.start,
+      x = Math.min(d.start.x, end.x),
+      y = Math.min(d.start.y, end.y),
+      w = Math.abs(end.x - d.start.x),
+      h = Math.abs(end.y - d.start.y);
+    if (w < 3 && h < 3) {
+      select(d.add ? d.selection : []);
+      return;
+    }
+    const found = [...scene.frames]
+      .filter(
+        ([id, f]) =>
+          idx().byId.has(id) &&
+          hasVisiblePaint(scene, f) &&
+          !isLocked(id) &&
+          f.paintX < x + w &&
+          f.paintX + f.w > x &&
+          f.paintY < y + h &&
+          f.paintY + f.h > y,
+      )
+      .map(([id]) => id);
+    select(d.add ? [...new Set([...d.selection, ...found])] : found);
+    return;
+  }
+  if (cancel) {
+    project = d.before;
+    selection = d.selection;
+    renderAll();
+    status("操作已取消");
+    return;
+  }
+  if (!d.moved) return;
+  try {
+    M.validate(project, standard, inputValues(), schema);
+    markCommitted(
+      d.kind === "point"
+        ? "编辑路径点"
+        : d.kind === "resize"
+          ? "调整尺寸"
+          : "移动组件",
+    );
+    renderAll();
+  } catch (error) {
+    project = d.before;
+    selection = d.selection;
+    renderAll();
+    toast(error.message);
+  }
+}
+function pointerDown(event) {
+  if (event.button !== 0 && event.button !== 1) return;
+  const point = boardPoint(event),
+    target = event.target;
+  if (target.closest("button") && !target.closest("[data-point]")) return;
+  if (event.button === 1 || spaceHeld) {
+    event.preventDefault();
+    drag = {
+      kind: "pan",
+      clientX: event.clientX,
+      clientY: event.clientY,
+      left: $("canvasWrap").scrollLeft,
+      top: $("canvasWrap").scrollTop,
+    };
+    $("board").setPointerCapture(event.pointerId);
+    return;
+  }
+  const dot = target.closest("[data-point]"),
+    resize = target.closest("[data-resize]"),
+    picked = pickScene(
+      scene,
+      point,
+      { x: event.clientX, y: event.clientY },
+      running,
+    );
+  let id = dot?.dataset.id || resize?.dataset.resize || picked?.node.id;
+  if (running) {
+    trackHover(point);
+    const frame = picked;
+    if (frame && frame.visible && frame.enabled) {
+      drag = {
+        kind: "run",
+        id: frame.node.id,
+        start: point,
+        time: performance.now(),
+      };
+      $("board").setPointerCapture(event.pointerId);
+    }
+    return;
+  }
+  flush();
+  if (id && !idx().byId.has(id)) {
+    select([]);
+    toast(
+      "这是基础预设图层。请在源码中添加同路径覆盖，或导入完整基础文件编辑。",
+    );
+    return;
+  }
+  if (id) {
+    event.preventDefault();
+    if (!selection.includes(id)) {
+      select([id], event.shiftKey || event.ctrlKey || event.metaKey);
+    } else if (
+      (event.shiftKey || event.ctrlKey || event.metaKey) &&
+      !dot &&
+      !resize
+    ) {
+      select(selection.filter((v) => v !== id));
+      return;
+    }
+    if (isLocked(id)) return;
+    if (
+      dot &&
+      V.references(V.expressionOf(V.property(idx().byId.get(id), "points")))
+        .length
+    ) {
+      toast("点列已绑定变量，请先解除绑定或编辑变量");
+      return;
+    }
+    const kind = dot ? "point" : resize ? "resize" : "move",
+      ids = kind === "move" ? M.selectedRoots(project.doc, selection) : [id];
+    if (ids.some(isLocked)) {
+      toast("请先解锁所选图层");
+      return;
+    }
+    drag = {
+      kind,
+      ids,
+      id,
+      start: point,
+      before: V.clone(project),
+      selection: [...selection],
+      frames: new Map(scene.frames),
+      pointIndex: dot ? Number(dot.dataset.point) : null,
+      corner: resize?.dataset.corner || "se",
+      moved: false,
+    };
+  } else {
+    if (!event.shiftKey && !event.ctrlKey && !event.metaKey) select([]);
+    drag = {
+      kind: "marquee",
+      start: point,
+      selection: [...selection],
+      add: event.shiftKey || event.ctrlKey || event.metaKey,
+    };
+    const marquee = element("div", "marquee");
+    $("overlays").append(marquee);
+  }
+  $("board").setPointerCapture(event.pointerId);
+}
+function pointerMove(event) {
+  const d = drag;
+  if (!d) {
+    if (running) trackHover(boardPoint(event));
+    return;
+  }
+  if (d.kind === "library") {
+    d.clientX = event.clientX;
+    d.clientY = event.clientY;
+    d.moved ||=
+      Math.hypot(event.clientX - d.startX, event.clientY - d.startY) > 5;
+    if (d.moved) {
+      let ghost = document.querySelector(".library-ghost");
+      if (!ghost) {
+        ghost = element("div", "library-ghost");
+        ghost.append(
+          icon(COMPONENT_ICONS[d.type]),
+          element("span", "", NAMES[d.type] || d.type),
+        );
+        document.body.append(ghost);
+      }
+      ghost.style.left = event.clientX + 12 + "px";
+      ghost.style.top = event.clientY + 12 + "px";
+    }
+    return;
+  }
+  if (d.kind === "pan") {
+    $("canvasWrap").scrollLeft = d.left - (event.clientX - d.clientX);
+    $("canvasWrap").scrollTop = d.top - (event.clientY - d.clientY);
+    return;
+  }
+  const point = boardPoint(event);
+  d.last = point;
+  if (d.kind === "run") {
+    trackHover(point);
+    return;
+  }
+  if (d.kind === "marquee") {
+    const n = document.querySelector(".marquee");
+    if (n)
+      n.style.cssText = `left:${Math.min(point.x, d.start.x)}px;top:${Math.min(point.y, d.start.y)}px;width:${Math.abs(point.x - d.start.x)}px;height:${Math.abs(point.y - d.start.y)}px`;
+    return;
+  }
+  let dx = point.x - d.start.x,
+    dy = point.y - d.start.y;
+  if (!d.moved && Math.hypot(dx, dy) < 2) return;
+  d.moved = true;
+  if (event.shiftKey && d.kind === "move") {
+    if (Math.abs(dx) > Math.abs(dy)) dy = 0;
+    else dx = 0;
+  }
+  if ($("snapGrid").checked) {
+    dx = Math.round(dx / 8) * 8;
+    dy = Math.round(dy / 8) * 8;
+  }
+  project = V.clone(d.before);
+  const i = idx();
+  if (d.kind === "point") {
+    const f = d.frames.get(d.id),
+      points = V.parsePoints(f.p.points, f.p.closed ?? true);
+    points[d.pointIndex] = {
+      x: Math.max(
+        -32768,
+        Math.min(
+          32768,
+          ((point.x - f.x) / Math.max(0.001, f.w)) * (f.p.pathWidth || 100),
+        ),
+      ),
+      y: Math.max(
+        -32768,
+        Math.min(
+          32768,
+          ((point.y - f.y) / Math.max(0.001, f.h)) * (f.p.pathHeight || 100),
+        ),
+      ),
+    };
+    V.setValue(i.byId.get(d.id), "points", V.pointsText(points));
+  } else
+    for (const id of d.ids) {
+      const n = i.byId.get(id),
+        f = d.frames.get(id);
+      if (!n || !f) continue;
+      if (d.kind === "resize") {
+        const bounds = resizeCorner(f, d.corner, dx, dy, event.shiftKey);
+        V.setRaw(
+          n,
+          "width",
+          shifted(V.property(n, "width")?.raw || String(f.w), bounds.w - f.w),
+        );
+        V.setRaw(
+          n,
+          "height",
+          shifted(V.property(n, "height")?.raw || String(f.h), bounds.h - f.h),
+        );
+        const authoredY =
+          currentInputs["pogget.upward"] && f.interaction === "title"
+            ? -bounds.y - (bounds.h - f.h)
+            : bounds.y;
+        if (bounds.x)
+          V.setRaw(n, "x", shifted(V.property(n, "x")?.raw || "0", bounds.x));
+        if (authoredY)
+          V.setRaw(n, "y", shifted(V.property(n, "y")?.raw || "0", authoredY));
+      } else {
+        V.setRaw(n, "x", shifted(V.property(n, "x")?.raw || "0", dx));
+        V.setRaw(n, "y", shifted(V.property(n, "y")?.raw || "0", dy));
+      }
+    }
+  renderCanvas();
+  status(
+    `${d.kind === "resize" ? "尺寸调整" : "移动"} ${dx.toFixed(1)}, ${dy.toFixed(1)} DIP`,
+  );
+}
+function setRunning(on) {
+  if (on && !flush()) return;
+  finishDrag(true);
+  if (on) {
+    try {
+      M.validate(project, standard, inputValues(), schema);
+    } catch (error) {
+      toast(error.message);
+      return;
+    }
+    lastSelection = [...selection];
+    selection = [];
+  }
+  cancelAnimationFrame(previewFrame);
+  previewFrame = 0;
+  hoverStates.clear();
+  running = on;
+  runtimeOverrides = {};
+  if (!on) selection = lastSelection.filter((id) => idx().byId.has(id));
+  $("runBtn").textContent = on ? "停止" : "运行";
+  $("runBtn").classList.toggle("is-running", on);
+  $("board").classList.toggle("running", on);
+  for (const id of ["importBtn", "sourceBtn", "boardWInput", "boardHInput"])
+    $(id).disabled = on;
+  renderAll();
+  status(on ? "交互预览 · 状态不写入工程" : "编辑模式");
+}
+let spaceHeld = false,
+  keyboardMove = false;
+function keydown(event) {
+  const editable = event.target.closest(
+    'input,textarea,select,[contenteditable="true"]',
+  );
+  const mod = event.ctrlKey || event.metaKey,
+    key = event.key.toLowerCase();
+  if (event.key === "Escape") {
+    if (drag) {
+      finishDrag(true);
+      return;
+    }
+    if (running) {
+      setRunning(false);
+      return;
+    }
+    closeContext();
+    return;
+  }
+  if ($("editDialog").open) return;
+  if (mod && key === "s") {
+    event.preventDefault();
+    flush();
+    save();
+    exportDialog();
+    return;
+  }
+  if (editable) return;
+  if (mod && ["z", "y"].includes(key)) {
+    event.preventDefault();
+    undo(key === "y" || event.shiftKey);
+    return;
+  }
+  if (running) return;
+  if (event.code === "Space") {
+    spaceHeld = true;
+    event.preventDefault();
+    return;
+  }
+  if (mod && key === "a") {
+    event.preventDefault();
+    select(V.viewNodes(project.doc).map((v) => v.node.id));
+    return;
+  }
+  const commandMap = {
+    c: "copy",
+    v: "paste",
+    d: "duplicate",
+    g: event.shiftKey ? "ungroup" : "group",
+  };
+  if (mod && commandMap[key]) {
+    event.preventDefault();
+    command(commandMap[key]);
+    return;
+  }
+  if (event.key === "Delete" || event.key === "Backspace") {
+    event.preventDefault();
+    command("delete");
+    return;
+  }
+  if (
+    ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key) &&
+    selection.length
+  ) {
+    event.preventDefault();
+    if (selection.some(isLocked)) return;
+    if (!pending) pending = V.clone(project);
+    keyboardMove = true;
+    const axis =
+        event.key === "ArrowLeft" || event.key === "ArrowRight" ? "x" : "y",
+      delta =
+        (event.shiftKey ? 10 : 1) *
+        (event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1);
+    for (const id of M.selectedRoots(project.doc, selection)) {
+      const n = idx().byId.get(id);
+      V.setRaw(n, axis, shifted(V.property(n, axis)?.raw || "0", delta));
+    }
+    renderCanvas();
+  }
+}
+function closeContext() {
+  document.querySelector(".editor-context")?.remove();
+}
+function contextMenu(event) {
+  if (running) return;
+  event.preventDefault();
+  closeContext();
+  const hit = pickScene(scene, boardPoint(event), {
+    x: event.clientX,
+    y: event.clientY,
+  });
+  const id = hit?.node.id;
+  if (id && idx().byId.has(id)) {
+    if (!selection.includes(id)) select([id]);
+  } else select([]);
+  const menu = element("div", "editor-context");
+  menu.setAttribute("role", "menu");
+  for (const [label, action, enabled] of [
+    ["撤销  Ctrl+Z", () => undo(), history.canUndo],
+    ["重做  Ctrl+Shift+Z", () => undo(true), history.canRedo],
+    ["复制  Ctrl+C", () => command("copy"), selection.length],
+    ["粘贴  Ctrl+V", () => command("paste"), clipboard],
+    ["创建副本  Ctrl+D", () => command("duplicate"), selection.length],
+    ["编组  Ctrl+G", () => command("group"), selection.length],
+    ["解除编组  Ctrl+Shift+G", () => command("ungroup"), selection.length],
+    ["删除  Delete", () => command("delete"), selection.length],
+  ]) {
+    const item = button(
+      label,
+      () => {
+        closeContext();
+        action();
+      },
+      "context-item",
+    );
+    item.disabled = !enabled;
+    item.setAttribute("role", "menuitem");
+    menu.append(item);
+  }
+  document.body.append(menu);
+  menu.style.left =
+    Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8) + "px";
+  menu.style.top =
+    Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8) + "px";
+}
+function migrateLegacy(data) {
+  const next = V.createProject();
+  next.board = { w: Number(data.boardW) || 360, h: Number(data.boardH) || 480 };
+  for (const old of data.elements || []) {
+    if (!V.TYPES.includes(old.type)) continue;
+    const n = V.createView(
+      next.doc,
+      old.type,
+      Number(old.x) || 0,
+      Number(old.y) || 0,
+    );
+    V.setValue(n, "width", Number(old.w) || 40);
+    V.setValue(n, "height", Number(old.h) || 40);
+    for (const [key, value] of Object.entries(old.props || {})) {
+      if (value == null) continue;
+      if (key === "hoverOpacity") {
+        n.members.push(V.makeBlock("hover", { opacity: value }));
+        continue;
+      }
+      if (COLORS.has(key) && typeof value === "string")
+        V.setRaw(n, key, V.colorRaw(value));
+      else
+        V.setValue(
+          n,
+          key,
+          key === "transition"
+            ? Number(value) / 1000
+            : key === "glassRenderer" && value === "liquid"
+              ? "lightEffect"
+              : value,
+        );
+    }
+  }
+  return next;
+}
+async function init() {
+  try {
+    const assets = await Promise.all(
+      [
+        "data/Pogget_Std.vina",
+        "data/schema.json",
+        "data/preview-inputs.json",
+      ].map(async (url) => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("无法读取 " + url);
+        return response.text();
+      }),
+    );
+    standard = V.parse(assets[0]);
+    schema = JSON.parse(assets[1]);
+    defaults = JSON.parse(assets[2]);
+    let themeMode = "system";
+    try {
+      themeMode = localStorage.getItem("customvina.theme") || "system";
+      const raw = localStorage.getItem(STORAGE),
+        legacy = localStorage.getItem("customvina.state.v1");
+      if (raw) project = M.projectFromJSON(raw);
+      else if (legacy) {
+        project = migrateLegacy(JSON.parse(legacy));
+        toast("已迁移旧版画布；旧存档仍保留");
+      }
+    } catch (error) {
+      toast("本地存档无法读取，原始存档未改动：" + error.message);
+    }
+    theme(themeMode);
+    history = new V.History(project);
+    const example = button(
+      "打开示例",
+      async () => {
+        try {
+          const response = await fetch("examples/StudioCard.vina");
+          if (!response.ok) throw new Error("示例读取失败");
+          await importFile(
+            new File([await response.text()], "StudioCard.vina"),
+          );
+        } catch (error) {
+          toast(error.message);
+        }
+      },
+      "btn-ghost",
+    );
+    example.style.pointerEvents = "auto";
+    $("boardEmpty").append(example);
+    for (const type of [
+      "rect",
+      "text",
+      "icon",
+      "image",
+      "button",
+      "path",
+      "content",
+      "glass",
+    ]) {
+      const item = button(
+        "",
+        () => {
+          if (suppressLibraryClick) {
+            suppressLibraryClick = false;
+            return;
+          }
+          addComponent(type);
+        },
+        "comp-item",
+      );
+      item.dataset.type = type;
+      item.title =
+        type === "content"
+          ? "应用内容：由 Pogget 绘制的内容区，例如 Markdown 预览或编辑区；在线画布显示占位"
+          : NAMES[type];
+      if (type === "glass") item.title = "模糊层：背景模糊、高光与着色效果";
+      const glyph = element("span", "comp-glyph");
+      glyph.append(icon(COMPONENT_ICONS[type]));
+      item.append(glyph, element("span", "comp-name", NAMES[type]));
+      item.addEventListener("pointerdown", (event) => {
+        if (running || event.button !== 0) return;
+        drag = {
+          kind: "library",
+          type,
+          startX: event.clientX,
+          startY: event.clientY,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          moved: false,
+        };
+        item.setPointerCapture(event.pointerId);
+      });
+      item.addEventListener("pointermove", pointerMove);
+      item.addEventListener("pointerup", () => {
+        if (drag?.kind === "library") {
+          suppressLibraryClick = drag.moved;
+          finishDrag();
+        }
+      });
+      item.addEventListener("pointercancel", () => finishDrag(true));
+      $("compList").append(item);
+    }
+    $("undoBtn").addEventListener("click", () => undo());
+    $("redoBtn").addEventListener("click", () => undo(true));
+    $("sourceBtn").addEventListener("click", sourceDialog);
+    $("exportBtn").addEventListener("click", exportDialog);
+    $("importBtn").addEventListener("click", () => {
+      inputMode = "project";
+      $("fileInput").click();
+    });
+    $("fileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      event.target.value = "";
+      await importFile(file, inputMode);
+    });
+    $("themeBtn").addEventListener("click", () => {
+      theme(
+        document.documentElement.dataset.theme === "dark" ? "light" : "dark",
+      );
+    });
+    matchMedia("(prefers-color-scheme: dark)").addEventListener(
+      "change",
+      () => {
+        if (document.documentElement.dataset.themeMode === "system")
+          theme("system");
+      },
+    );
+    $("runBtn").addEventListener("click", () => setRunning(!running));
+    $("propertiesTab").addEventListener("click", () => {
+      inspectorTab = "properties";
+      renderInspector();
+    });
+    $("variablesTab").addEventListener("click", () => {
+      inspectorTab = "variables";
+      renderInspector();
+    });
+    $("layerSearch").addEventListener("input", renderLayers);
+    $("showBase").addEventListener("change", renderCanvas);
+    $("previewState").addEventListener("change", () => {
+      hostState = $("previewState").value;
+      hoverStates.clear();
+      runtimeOverrides = {};
+      renderAll();
+    });
+    $("previewSettingsBtn").addEventListener("click", previewSettingsDialog);
+    $("zoomSelect").addEventListener("change", () => {
+      zoom = Number($("zoomSelect").value);
+      renderCanvas();
+    });
+    $("arrangeSelect").addEventListener("change", () => {
+      command($("arrangeSelect").value);
+      $("arrangeSelect").value = "";
+    });
+    for (const [key, id] of [
+      ["w", "boardWInput"],
+      ["h", "boardHInput"],
+    ])
+      $(id).addEventListener("change", () => {
+        const value = Number($(id).value);
+        mutate("修改画板尺寸", (next) => {
+          next.board[key] = value;
+        });
+        $(id).value = project.board[key];
+      });
+    document
+      .querySelectorAll("[data-command]")
+      .forEach((n) =>
+        n.addEventListener("click", () => command(n.dataset.command)),
+      );
+    $("board").addEventListener("pointerdown", pointerDown);
+    $("board").addEventListener("pointermove", pointerMove);
+    $("board").addEventListener("pointerleave", () => {
+      if (running) trackHover(null);
+    });
+    $("board").addEventListener("pointerup", () => finishDrag());
+    $("board").addEventListener("pointercancel", () => finishDrag(true));
+    $("board").addEventListener("lostpointercapture", () => {
+      if (drag) finishDrag(true);
+    });
+    $("canvasWrap").addEventListener("contextmenu", contextMenu);
+    $("board").addEventListener("dblclick", (event) => {
+      if (
+        running ||
+        event.target.closest("[data-point]") ||
+        selection.length !== 1
+      )
+        return;
+      const id = selection[0],
+        f = scene.frames.get(id);
+      if (f?.p.type !== "path" || isLocked(id)) return;
+      const node = idx().byId.get(id);
+      if (V.references(V.expressionOf(V.property(node, "points"))).length)
+        return;
+      const point = boardPoint(event);
+      mutate("添加路径点", (next) => {
+        const points = V.parsePoints(f.p.points, f.p.closed ?? true);
+        points.push({
+          x: ((point.x - f.x) / Math.max(0.001, f.w)) * (f.p.pathWidth || 100),
+          y: ((point.y - f.y) / Math.max(0.001, f.h)) * (f.p.pathHeight || 100),
+        });
+        V.setValue(
+          V.index(next.doc).byId.get(id),
+          "points",
+          V.pointsText(points),
+        );
+      });
+    });
+    $("canvasWrap").addEventListener("dragover", (event) => {
+      if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+    });
+    $("canvasWrap").addEventListener("drop", (event) => {
+      if (event.dataTransfer.files.length) {
+        event.preventDefault();
+        importFile(event.dataTransfer.files[0]);
+      }
+    });
+    window.addEventListener("keydown", keydown);
+    window.addEventListener("keyup", (event) => {
+      if (event.code === "Space") spaceHeld = false;
+      if (keyboardMove && event.key.startsWith("Arrow")) {
+        keyboardMove = false;
+        flush();
+        renderInspector();
+      }
+    });
+    window.addEventListener("blur", () => {
+      spaceHeld = false;
+      finishDrag(true);
+      flush();
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (!event.target.closest(".editor-context")) closeContext();
+    });
+    $("dialogClose").addEventListener("click", () => $("editDialog").close());
+    $("dialogForm").addEventListener("submit", (event) =>
+      event.preventDefault(),
+    );
+    $("versionBadge").addEventListener("click", () =>
+      dialog("CustomVinaEditor · Beta 0.2.0", (body) =>
+        body.append(
+          element(
+            "p",
+            "panel-hint",
+            `基于 ${schema.revision} Pogget Vina 个性化标准。${schema.actions.length} 个原生动作。浏览器预览不替代 Direct2D 的模糊层、字体与应用资源绘制。`,
+          ),
+        ),
+      ),
+    );
+    window.addEventListener("beforeunload", (event) => {
+      finishDrag(true);
+      flush();
+      if (pending) save();
+      if (!saved) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
+    renderAll();
+    status("就绪 · Vina " + schema.revision);
+    $("saveStatus").textContent = "本地自动保存";
+    // Read-only diagnostics make automated browser regressions inspect real state.
+    window.vinaEditor = Object.freeze({
+      get project() {
+        return V.clone(project);
+      },
+      get selection() {
+        return [...selection];
+      },
+      get history() {
+        return {
+          undo: history.canUndo,
+          redo: history.canRedo,
+          length: history.entries.length,
+          position: history.position,
+        };
+      },
+      get source() {
+        return V.serialize(project.doc);
+      },
+      get preview() {
+        return {
+          host: isHostPreset(project.doc),
+          state: hostState,
+          inputs: { ...currentInputs },
+          frames: [...(scene?.frames.values() || [])].map(
+            ({ path, x, y, w, h, p, slot, visible, active, alpha }) => ({
+              path,
+              x,
+              y,
+              w,
+              h,
+              p: { ...p },
+              slot,
+              visible,
+              active,
+              alpha,
+            }),
+          ),
+        };
+      },
+    });
+    document.documentElement.dataset.ready = "true";
+  } catch (error) {
+    status("初始化失败：" + error.message, true);
+    $("inspBody").append(
+      element("p", "panel-hint", "请通过 npm start 或静态网站服务打开编辑器。"),
+      button("重新加载", () => location.reload(), "btn-primary"),
+    );
+  }
+}
+let suppressLibraryClick = false;
+init();

@@ -1,0 +1,634 @@
+{
+  "revision": "2026-11-10",
+  "standardSha256": "dd57661fba9c01a7b722c779690982acf91d21276338a718baad4b1cdc673b17",
+  "actions": [
+    "pogget.action.view.toggle",
+    "pogget.action.view.list",
+    "pogget.action.view.grid",
+    "pogget.action.listViewMenu",
+    "pogget.action.iconViewMenu",
+    "pogget.action.container.lock",
+    "pogget.action.container.personalization",
+    "pogget.action.container.collapse",
+    "pogget.action.container.expand",
+    "pogget.action.container.toggleCollapse",
+    "pogget.action.container.menu",
+    "pogget.action.container.tagMenu",
+    "pogget.action.container.searchMenu",
+    "pogget.action.container.inlineBack",
+    "pogget.action.container.exitInlineSearch",
+    "pogget.action.container.inlineHome",
+    "pogget.action.container.inlineSave",
+    "pogget.action.container.inlineOpen",
+    "pogget.action.container.toggleInlineSearch",
+    "pogget.action.container.hoverCollapse",
+    "pogget.action.container.pin",
+    "pogget.action.container.endTemporarySession",
+    "pogget.action.mergedHostUseVerticalLayout",
+    "pogget.action.mergedHostUseTabLayout",
+    "pogget.action.alwaysOnTopMenu",
+    "pogget.action.normalLayerMenu",
+    "pogget.action.sendToBackMenu",
+    "pogget.action.spacingCompact",
+    "pogget.action.spacingStandard",
+    "pogget.action.spacingLoose",
+    "pogget.action.spacingPaged",
+    "pogget.action.spacingFixed",
+    "pogget.action.spacingDynamic",
+    "pogget.action.personalizationMenu",
+    "pogget.action.pasteBoardCapacityTitle",
+    "pogget.action.pasteBoardCategoryText",
+    "pogget.action.pasteBoardCategoryImage",
+    "pogget.action.pasteBoardCategoryOtherFiles",
+    "pogget.action.pasteBoardFileCategories",
+    "pogget.action.iconSpacingMenu",
+    "pogget.action.sortFree",
+    "pogget.action.sortNameAsc",
+    "pogget.action.sortNameDesc",
+    "pogget.action.sortTimeAsc",
+    "pogget.action.sortTimeDesc",
+    "pogget.action.sortExtAsc",
+    "pogget.action.sortExtDesc",
+    "pogget.action.sortSizeAsc",
+    "pogget.action.sortSizeDesc",
+    "pogget.action.sortFreeGrid",
+    "pogget.action.sortMenu",
+    "pogget.action.unlockLayoutMenu",
+    "pogget.action.lockLayoutAndPosition",
+    "pogget.action.lockLayoutOnly",
+    "pogget.action.lockPositionOnly",
+    "pogget.action.lockLayoutMenu",
+    "pogget.action.containerSettingsMenu",
+    "pogget.action.pasteBoardClearAction",
+    "pogget.action.pasteBoardClearAndCloseAction",
+    "pogget.action.pasteBoardCloseOnlyAction",
+    "pogget.action.containerDeleteSubmenu",
+    "pogget.action.containerDeleteMenu"
+  ],
+  "references": [
+    "pogget.buttonColor",
+    "pogget.collapsed",
+    "pogget.collapsedHeight",
+    "pogget.containerFrame.",
+    "pogget.containerFrame.background",
+    "pogget.containerFrame.borderColor",
+    "pogget.containerFrame.borderOpacity",
+    "pogget.containerFrame.customBorder",
+    "pogget.containerFrame.frame",
+    "pogget.containerFrame.heightPixels",
+    "pogget.containerFrame.mode",
+    "pogget.containerFrame.nativeRadius",
+    "pogget.containerFrame.pointerX",
+    "pogget.containerFrame.pointerY",
+    "pogget.containerFrame.scale",
+    "pogget.containerFrame.spotlight",
+    "pogget.containerFrame.tag",
+    "pogget.containerFrame.tagColor",
+    "pogget.containerFrame.upward",
+    "pogget.containerFrame.widthPixels",
+    "pogget.cornerRadius",
+    "pogget.editor.",
+    "pogget.editor.caretAlpha",
+    "pogget.editor.cursor",
+    "pogget.editor.focused",
+    "pogget.editor.height",
+    "pogget.editor.placeholder",
+    "pogget.editor.scroll",
+    "pogget.editor.selection",
+    "pogget.editor.selectionEnd",
+    "pogget.editor.selectionStart",
+    "pogget.editor.text",
+    "pogget.editor.textWidth",
+    "pogget.editor.width",
+    "pogget.editor.x",
+    "pogget.editor.y",
+    "pogget.fileIcon.",
+    "pogget.fileIcon.alpha",
+    "pogget.fileIcon.clip",
+    "pogget.fileIcon.clipBottom",
+    "pogget.fileIcon.clipLeft",
+    "pogget.fileIcon.clipRight",
+    "pogget.fileIcon.clipTop",
+    "pogget.fileIcon.colorMode",
+    "pogget.fileIcon.cursorX",
+    "pogget.fileIcon.customWidth",
+    "pogget.fileIcon.deform",
+    "pogget.fileIcon.deformAxis",
+    "pogget.fileIcon.detail",
+    "pogget.fileIcon.detailMeasuredWidth",
+    "pogget.fileIcon.detailType",
+    "pogget.fileIcon.dimmed",
+    "pogget.fileIcon.dragX",
+    "pogget.fileIcon.dragY",
+    "pogget.fileIcon.draggedCount",
+    "pogget.fileIcon.drawTitle",
+    "pogget.fileIcon.drawX",
+    "pogget.fileIcon.drawY",
+    "pogget.fileIcon.folder",
+    "pogget.fileIcon.folder0",
+    "pogget.fileIcon.folder1",
+    "pogget.fileIcon.folder2",
+    "pogget.fileIcon.folder3",
+    "pogget.fileIcon.font",
+    "pogget.fileIcon.ghost",
+    "pogget.fileIcon.globalAlpha",
+    "pogget.fileIcon.gridMeasuredHeight",
+    "pogget.fileIcon.gridWrap",
+    "pogget.fileIcon.height",
+    "pogget.fileIcon.hitHeight",
+    "pogget.fileIcon.hitWidth",
+    "pogget.fileIcon.hitX",
+    "pogget.fileIcon.hitY",
+    "pogget.fileIcon.hover",
+    "pogget.fileIcon.hovered",
+    "pogget.fileIcon.inlineView",
+    "pogget.fileIcon.inputX",
+    "pogget.fileIcon.inputY",
+    "pogget.fileIcon.list",
+    "pogget.fileIcon.markdown",
+    "pogget.fileIcon.media",
+    "pogget.fileIcon.network",
+    "pogget.fileIcon.omitOffset",
+    "pogget.fileIcon.padding",
+    "pogget.fileIcon.path",
+    "pogget.fileIcon.pressX",
+    "pogget.fileIcon.previewMode",
+    "pogget.fileIcon.previewText",
+    "pogget.fileIcon.previewTitle",
+    "pogget.fileIcon.previewTitleMeasuredHeight",
+    "pogget.fileIcon.push",
+    "pogget.fileIcon.renderMode",
+    "pogget.fileIcon.searchActive",
+    "pogget.fileIcon.searchExpanded",
+    "pogget.fileIcon.searchLayout",
+    "pogget.fileIcon.searchMaxHeight",
+    "pogget.fileIcon.selected",
+    "pogget.fileIcon.size",
+    "pogget.fileIcon.spacing",
+    "pogget.fileIcon.textPreview",
+    "pogget.fileIcon.textSize",
+    "pogget.fileIcon.thumbnail",
+    "pogget.fileIcon.thumbnailVisible",
+    "pogget.fileIcon.title",
+    "pogget.fileIcon.viewportWidth",
+    "pogget.fileIcon.wrap",
+    "pogget.fileIcon.wrapOverflow",
+    "pogget.fileIcon.x",
+    "pogget.fileIcon.y",
+    "pogget.frame",
+    "pogget.height",
+    "pogget.hoverCollapsed",
+    "pogget.hoverExpanded",
+    "pogget.hoverExpandingAnimation",
+    "pogget.inlineAlpha",
+    "pogget.inlineAvailable",
+    "pogget.inlineColor",
+    "pogget.inlineContent",
+    "pogget.inlineContent.",
+    "pogget.inlineContent.color",
+    "pogget.inlineContent.compatible",
+    "pogget.inlineContent.exitSnapshot",
+    "pogget.inlineContent.exiting",
+    "pogget.inlineContent.height",
+    "pogget.inlineContent.progress",
+    "pogget.inlineContent.scrollDepth",
+    "pogget.inlineContent.search",
+    "pogget.inlineContent.searchChrome",
+    "pogget.inlineContent.searchExtraY",
+    "pogget.inlineContent.startHeight",
+    "pogget.inlineContent.startWidth",
+    "pogget.inlineContent.startX",
+    "pogget.inlineContent.startY",
+    "pogget.inlineContent.switchProgress",
+    "pogget.inlineContent.switchSnapshot",
+    "pogget.inlineContent.switching",
+    "pogget.inlineContent.titleOffset",
+    "pogget.inlineContent.upward",
+    "pogget.inlineContent.visible",
+    "pogget.inlineContent.width",
+    "pogget.inlineEditing",
+    "pogget.inlineNavigation",
+    "pogget.inlineNavigationBack.hover",
+    "pogget.inlineNavigationHome.hover",
+    "pogget.inlineNavigationOffset",
+    "pogget.inlineNavigationOpen.hover",
+    "pogget.inlineNavigationSave.hover",
+    "pogget.inlineNavigationSearch.hover",
+    "pogget.inlinePendingExit",
+    "pogget.inlineSearch",
+    "pogget.inlineSearchBack.hover",
+    "pogget.inlineSearchCancel.hover",
+    "pogget.isListView",
+    "pogget.layoutHidden",
+    "pogget.locked",
+    "pogget.markdownEditor",
+    "pogget.markdownEditor.",
+    "pogget.markdownEditor.background",
+    "pogget.markdownEditor.borderColor",
+    "pogget.markdownEditor.caretHeight",
+    "pogget.markdownEditor.caretOpacity",
+    "pogget.markdownEditor.caretX",
+    "pogget.markdownEditor.caretY",
+    "pogget.markdownEditor.drawX",
+    "pogget.markdownEditor.drawY",
+    "pogget.markdownEditor.editing",
+    "pogget.markdownEditor.hasLayout",
+    "pogget.markdownEditor.height",
+    "pogget.markdownEditor.hintOpacity",
+    "pogget.markdownEditor.horizontalDrag",
+    "pogget.markdownEditor.horizontalHover",
+    "pogget.markdownEditor.layoutScale",
+    "pogget.markdownEditor.masterAlpha",
+    "pogget.markdownEditor.nativeBgAlpha",
+    "pogget.markdownEditor.nativeBorder",
+    "pogget.markdownEditor.nativeBorderAlpha",
+    "pogget.markdownEditor.nativeMargin",
+    "pogget.markdownEditor.nativeRadius",
+    "pogget.markdownEditor.nativeTextSize",
+    "pogget.markdownEditor.placeholder",
+    "pogget.markdownEditor.scale",
+    "pogget.markdownEditor.scrollX",
+    "pogget.markdownEditor.scrollY",
+    "pogget.markdownEditor.selected",
+    "pogget.markdownEditor.selectionHeight",
+    "pogget.markdownEditor.selectionWidth",
+    "pogget.markdownEditor.selectionX",
+    "pogget.markdownEditor.selectionY",
+    "pogget.markdownEditor.staticText",
+    "pogget.markdownEditor.textColor",
+    "pogget.markdownEditor.textHeight",
+    "pogget.markdownEditor.textWidth",
+    "pogget.markdownEditor.verticalDrag",
+    "pogget.markdownEditor.verticalHover",
+    "pogget.markdownEditor.width",
+    "pogget.markdownEditor.wrap",
+    "pogget.markdownEditor.x",
+    "pogget.markdownEditor.y",
+    "pogget.markdownEditor.zoom",
+    "pogget.markdownEditor.zoomEnabled",
+    "pogget.mode",
+    "pogget.nativeCornerRadius",
+    "pogget.pageIndicator.",
+    "pogget.pageIndicator.count",
+    "pogget.pageIndicator.height",
+    "pogget.pageIndicator.index",
+    "pogget.pageIndicator.position",
+    "pogget.pageIndicator.vertical",
+    "pogget.pageIndicator.visible",
+    "pogget.pageIndicator.width",
+    "pogget.pinProgress",
+    "pogget.searchExpand",
+    "pogget.searching",
+    "pogget.shadowPadding",
+    "pogget.staticMaterial",
+    "pogget.tab.",
+    "pogget.tab.accent",
+    "pogget.tab.count",
+    "pogget.tab.cursor",
+    "pogget.tab.displayUnits",
+    "pogget.tab.dragging",
+    "pogget.tab.drawIsland",
+    "pogget.tab.height",
+    "pogget.tab.hover",
+    "pogget.tab.index",
+    "pogget.tab.pressed",
+    "pogget.tab.selected",
+    "pogget.tab.selection",
+    "pogget.tab.text",
+    "pogget.tab.textColor",
+    "pogget.tab.totalWeight",
+    "pogget.tab.width",
+    "pogget.tab.x",
+    "pogget.tab.y",
+    "pogget.tag.active",
+    "pogget.tag.color",
+    "pogget.tag.direction",
+    "pogget.tag.emphasized",
+    "pogget.tag.hover",
+    "pogget.tag.measuredWidth",
+    "pogget.tag.oldText",
+    "pogget.tag.push",
+    "pogget.tag.text",
+    "pogget.tag.textProgress",
+    "pogget.temporaryTopmost",
+    "pogget.theme",
+    "pogget.theme.",
+    "pogget.theme.accent",
+    "pogget.theme.darken",
+    "pogget.theme.darknight",
+    "pogget.theme.midnight",
+    "pogget.theme.midnightplus",
+    "pogget.theme.monochrome",
+    "pogget.theme.white",
+    "pogget.title",
+    "pogget.titleBorderColor",
+    "pogget.titleCollapse.",
+    "pogget.titleCollapse.holdScale",
+    "pogget.titleCollapse.holdY",
+    "pogget.titleCollapse.hover",
+    "pogget.titleCollapse.opacity",
+    "pogget.titleCollapse.pressScale",
+    "pogget.titleColor",
+    "pogget.titleCustomColor",
+    "pogget.titleExtension",
+    "pogget.titleFluidBorderAlpha",
+    "pogget.titleFluidHeight",
+    "pogget.titleFluidRadius",
+    "pogget.titleFluidShadowAlpha",
+    "pogget.titleFluidShadowY",
+    "pogget.titleFluidWidth",
+    "pogget.titleFluidX",
+    "pogget.titleFluidY",
+    "pogget.titleHeight",
+    "pogget.titleHidden",
+    "pogget.titleMore.",
+    "pogget.titleMore.hover",
+    "pogget.titleMore.opacity",
+    "pogget.titleMore.pressScale",
+    "pogget.titleOffsetAnim",
+    "pogget.titlePin.",
+    "pogget.titlePin.hover",
+    "pogget.titlePin.opacity",
+    "pogget.titlePin.pressScale",
+    "pogget.titleProgress",
+    "pogget.titleSearchOptions.",
+    "pogget.titleSearchOptions.hover",
+    "pogget.titleSearchOptions.opacity",
+    "pogget.titleSearchOptions.pressScale",
+    "pogget.titleTextWidth",
+    "pogget.titleTransitioning",
+    "pogget.titleVariant",
+    "pogget.titleY",
+    "pogget.upward",
+    "pogget.width"
+  ],
+  "metadata": [
+    "hover",
+    "pressed",
+    "shadow",
+    "border",
+    "background",
+    "variants",
+    "animation",
+    "motion",
+    "repeat",
+    "editor",
+    "textLayout",
+    "gridLayout",
+    "previewLayout",
+    "hostLayout",
+    "hoverRegion",
+    "backgroundGradient",
+    "borderGradient"
+  ],
+  "bounds": {
+    "x": [
+      -32768,
+      32768
+    ],
+    "y": [
+      -32768,
+      32768
+    ],
+    "width": [
+      0,
+      32768
+    ],
+    "height": [
+      0,
+      32768
+    ],
+    "opacity": [
+      0,
+      1
+    ],
+    "fillOpacity": [
+      0,
+      1
+    ],
+    "radius": [
+      0,
+      32768
+    ],
+    "blur": [
+      0,
+      64
+    ],
+    "imageSourceX": [
+      0,
+      32768
+    ],
+    "imageSourceY": [
+      0,
+      32768
+    ],
+    "imageSourceWidth": [
+      0,
+      32768
+    ],
+    "imageSourceHeight": [
+      0,
+      32768
+    ],
+    "imageScaleX": [
+      0.001,
+      8
+    ],
+    "imageScaleY": [
+      0.001,
+      8
+    ],
+    "imagePivotX": [
+      -32768,
+      32768
+    ],
+    "imagePivotY": [
+      -32768,
+      32768
+    ],
+    "border": [
+      0,
+      64
+    ],
+    "borderOpacity": [
+      0,
+      1
+    ],
+    "shadowOpacity": [
+      0,
+      1
+    ],
+    "shadowX": [
+      -256,
+      256
+    ],
+    "shadowY": [
+      -256,
+      256
+    ],
+    "shadowBlur": [
+      0,
+      128
+    ],
+    "shadowQuality": [
+      1,
+      32
+    ],
+    "contentScale": [
+      0.001,
+      256
+    ],
+    "textSize": [
+      0.001,
+      256
+    ],
+    "textX": [
+      -32768,
+      32768
+    ],
+    "textY": [
+      -32768,
+      32768
+    ],
+    "hitPaddingX": [
+      0,
+      256
+    ],
+    "hitPaddingY": [
+      0,
+      256
+    ],
+    "holdDelay": [
+      0,
+      10
+    ],
+    "transition": [
+      0,
+      10
+    ],
+    "unhoverTransition": [
+      0,
+      10
+    ],
+    "pressDuration": [
+      0,
+      10
+    ],
+    "releaseDuration": [
+      0,
+      10
+    ],
+    "pressScale": [
+      0,
+      8
+    ],
+    "holdDuration": [
+      0,
+      10
+    ],
+    "holdScale": [
+      0,
+      8
+    ],
+    "holdOffset": [
+      -256,
+      256
+    ],
+    "textShadowOpacity": [
+      0,
+      1
+    ],
+    "textShadowScaleX": [
+      0,
+      8
+    ],
+    "textShadowScaleY": [
+      0,
+      8
+    ],
+    "textShadowRingOpacity": [
+      0,
+      1
+    ],
+    "textOmitUnits": [
+      0,
+      32768
+    ],
+    "innerShadowOpacity": [
+      0,
+      1
+    ],
+    "innerShadowInset": [
+      0,
+      256
+    ],
+    "innerShadowDepth": [
+      0,
+      256
+    ],
+    "innerShadowLowerOpacity": [
+      0,
+      1
+    ],
+    "clipRadius": [
+      0,
+      32768
+    ],
+    "textShadowX": [
+      -256,
+      256
+    ],
+    "textShadowY": [
+      -256,
+      256
+    ],
+    "textShadowBlur": [
+      0,
+      128
+    ],
+    "textShadowQuality": [
+      1,
+      32
+    ],
+    "glassOpacity": [
+      0,
+      1
+    ],
+    "glassBorder": [
+      0,
+      64
+    ],
+    "glassPointerX": [
+      -32768,
+      32768
+    ],
+    "glassPointerY": [
+      -32768,
+      32768
+    ],
+    "glassTintAmount": [
+      0,
+      1
+    ],
+    "texture": [
+      0,
+      64
+    ],
+    "z": [
+      -32768,
+      32768
+    ],
+    "pathWidth": [
+      0.001,
+      32768
+    ],
+    "pathHeight": [
+      0.001,
+      32768
+    ],
+    "tension": [
+      0,
+      1
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+// Responsive group, theme variables, gradients, state, controls and native paths.
+Preset { dependsOn: "Pogget_Std" }
+
+StudioCard {
+  label: "Studio card",
+  ui {
+    Accent { label: "Accent", type: "number", control: "color", default: rgb(82,121,251) },
+    Spacing { label: "Spacing", type: "number", control: "slider", min: 12, max: 32, step: 1, default: 24 }
+  },
+  state { expanded: false },
+  view {
+    type: "group", x: 24, y: 36, width: ${pogget.width} - 48, height: 400,
+    radius: 20, clip: true, clipRadius: 20, border: 1,
+    borderColor: ${ui.Accent.value}, borderOpacity: 0.25,
+    backgroundGradient {
+      type: "linear", startX: 0, startY: 0, endX: 0.3, endY: 1,
+      stops {
+        Top { position: 0, color: ${pogget.theme.midnight} },
+        Bottom { position: 1, color: ${pogget.theme.midnight} }
+      }
+    },
+    Hero {
+      type: "rect", width: ${parent.width}, height: 130, radius: 0,
+      backgroundGradient {
+        type: "linear", startX: 0, startY: 0, endX: 1, endY: 1,
+        stops {
+          Start { position: 0, color: ${ui.Accent.value} },
+          End { position: 1, color: rgb(157,115,238) }
+        }
+      }
+    },
+    Eyebrow { type: "text", x: ${ui.Spacing.value}, y: 22, width: 220, height: 18, label: "V I N A   /   S T U D I O", textLiteral: true, textSize: 10, color: rgb(255,255,255), opacity: 0.7, align: "left" },
+    Title { type: "text", x: ${ui.Spacing.value}, y: 49, width: 260, height: 36, label: "Make it yours.", textLiteral: true, textSize: 28, emphasized: true, color: rgb(255,255,255), align: "left" },
+    Subtitle { type: "text", x: ${ui.Spacing.value}, y: 91, width: 260, height: 20, label: "每一处细节，都由你定义。", textLiteral: true, textSize: 12, color: rgb(255,255,255), opacity: 0.8, align: "left" },
+    Mark { type: "path", x: ${ui.Spacing.value}, y: 160, width: 42, height: 42, pathWidth: 100, pathHeight: 100, points: "8,50 38,80 92,16", closed: false, smooth: false, border: 3, borderColor: ${ui.Accent.value}, borderOnly: true },
+    DetailTitle { type: "text", x: ${ui.Spacing.value} + 58, y: 159, width: 200, height: 24, label: "Designed around you", textLiteral: true, textSize: 14, emphasized: true, color: ${pogget.theme.white}, align: "left" },
+    Detail { type: "text", x: ${ui.Spacing.value} + 58, y: 187, width: 210, height: 20, label: "颜色 · 变量 · 矢量路径", textLiteral: true, textSize: 11, color: ${pogget.theme.white}, opacity: 0.5, align: "left" },
+    Divider { type: "solid", x: ${ui.Spacing.value}, y: 230, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 1, background: ${pogget.theme.white}, opacity: 0.08 },
+    Caption { type: "text", x: ${ui.Spacing.value}, y: 249, width: 265, height: 48, label: ${state.expanded} ? "自由组合，实时响应。\n所有编辑，都可以从容撤销。" : "把想法放进画板，\n让个性化拥有更多可能。", textLiteral: true, textSize: 12, color: ${pogget.theme.white}, opacity: 0.65, align: "left" },
+    Explore {
+      type: "button", x: ${ui.Spacing.value}, y: 324, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 42,
+      radius: 10, background: ${ui.Accent.value}, label: ${state.expanded} ? "收起灵感  ↑" : "探索更多  ↗", textLiteral: true,
+      textSize: 12, color: rgb(255,255,255), toggle: "state.expanded", transition: 160ms, unhoverTransition: 220ms,
+      hover { opacity: 0.8 }
+    }
+  }
+}
