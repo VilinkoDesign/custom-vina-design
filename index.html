@@ -12,7 +12,7 @@
       <div class="brand">
         CustomVinaEditor
         <button class="brand-badge" id="versionBadge" title="版本信息">
-          Beta 0.2
+          BETA
         </button>
       </div>
       <div class="topbar-actions">
@@ -258,6 +258,42 @@
         <div class="modal-foot" id="dialogFoot"></div>
       </form>
     </dialog>
+    <div class="modal-mask" id="versionMask" aria-hidden="true">
+      <div
+        class="modal modal-version"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="versionTitle"
+      >
+        <div class="modal-head">
+          <h3 id="versionTitle">版本信息</h3>
+          <button
+            class="icon-btn"
+            id="versionClose"
+            type="button"
+            aria-label="关闭"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="version-body">
+          <div class="version-name">
+            <span class="version-brand">CustomVinaEditor</span>
+          </div>
+          <p class="version-desc">
+            Pogget 个性化组件的可视化编辑器，基于 CustomVina 规范构建。
+          </p>
+          <dl class="version-list">
+            <div class="version-row"><dt>工具版本</dt><dd>Beta 0.2.0</dd></div>
+            <div class="version-row"><dt>构建号</dt><dd>build20261111_rel0_Beta5</dd></div>
+            <div class="version-row"><dt>更新时间</dt><dd>2026-11-11</dd></div>
+          </dl>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-primary" id="versionOk" type="button">我知道了</button>
+        </div>
+      </div>
+    </div>
     <script type="module" src="script.js"></script>
   </body>
 </html>

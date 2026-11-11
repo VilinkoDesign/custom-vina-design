@@ -3243,17 +3243,26 @@ async function init() {
     $("dialogForm").addEventListener("submit", (event) =>
       event.preventDefault(),
     );
-    $("versionBadge").addEventListener("click", () =>
-      dialog("CustomVinaEditor · Beta 0.2.0", (body) =>
-        body.append(
-          element(
-            "p",
-            "panel-hint",
-            `基于 ${schema.revision} Pogget Vina 个性化标准。${schema.actions.length} 个原生动作。浏览器预览不替代 Direct2D 的模糊层、字体与应用资源绘制。`,
-          ),
-        ),
-      ),
-    );
+    const versionMask = $("versionMask");
+    const closeVersionModal = () => {
+      versionMask.classList.remove("show");
+      versionMask.setAttribute("aria-hidden", "true");
+    };
+    const openVersionModal = () => {
+      versionMask.classList.add("show");
+      versionMask.setAttribute("aria-hidden", "false");
+    };
+    $("versionBadge").addEventListener("click", openVersionModal);
+    $("versionClose").addEventListener("click", closeVersionModal);
+    $("versionOk").addEventListener("click", closeVersionModal);
+    versionMask.addEventListener("click", (event) => {
+      if (event.target === versionMask) closeVersionModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && versionMask.classList.contains("show")) {
+        closeVersionModal();
+      }
+    });
     window.addEventListener("beforeunload", (event) => {
       finishDrag(true);
       flush();
