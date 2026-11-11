@@ -1,5 +1,6 @@
 import * as V from "./vina-core.js";
 import * as M from "./vina-model.js";
+import { projectFromLink } from "./vina-link.js";
 import { renderScene } from "./vina-renderer.js";
 import { hitFrame } from "./vina-preview.js";
 import {
@@ -1744,7 +1745,7 @@ function sourceDialog() {
           "应用前完整校验。未通过时保留当前工程；成功应用可一次撤销。",
         ),
       );
-      input = textarea(V.serialize(project.doc));
+      input = textarea(M.projectSource(project));
       body.append(input);
       $("editDialog").classList.add("wide-dialog");
     },
@@ -2288,7 +2289,7 @@ function exportDialog() {
   let source;
   try {
     flush();
-    source = V.serialize(project.doc);
+    source = M.projectSource(project);
     V.parse(source);
   } catch (error) {
     toast(error.message);
@@ -3007,6 +3008,40 @@ function migrateLegacy(data) {
   }
   return next;
 }
+function importLocationHash() {
+  try {
+    const next = projectFromLink(location.hash, standard, inputValues, schema);
+    if (!next) return false;
+    // Commit storage before touching the live project. Quota/privacy failures
+    // leave both the existing canvas and its persisted project intact.
+    localStorage.setItem(STORAGE, JSON.stringify(next));
+    project = next;
+    history = new V.History(project);
+    selection = [];
+    lastSelection = [];
+    pending = null;
+    drag = null;
+    keyboardMove = spaceHeld = false;
+    document.querySelector(".marquee")?.remove();
+    document.querySelector(".library-ghost")?.remove();
+    closeContext();
+    if ($("editDialog").open) $("editDialog").close();
+    runtimeOverrides = {};
+    hoverStates.clear();
+    if (running) setRunning(false);
+    ++importRevision; // Cancel any file import that was still reading.
+    try {
+      // Consume only after a successful commit, so reload never overwrites
+      // subsequent work with the original incoming fragment.
+      window.history.replaceState(null, "", location.pathname + location.search);
+    } catch {}
+    toast("已从 Pogget 导入预设并保存到本地");
+    return true;
+  } catch (error) {
+    toast("链接导入失败，当前工程已保留：" + error.message);
+    return false;
+  }
+}
 async function init() {
   try {
     const assets = await Promise.all(
@@ -3036,8 +3071,17 @@ async function init() {
     } catch (error) {
       toast("本地存档无法读取，原始存档未改动：" + error.message);
     }
+    importLocationHash();
     theme(themeMode);
     history = new V.History(project);
+    window.addEventListener("hashchange", () => {
+      if (!location.hash.startsWith("#c=")) return;
+      if (importLocationHash()) {
+        saved = true;
+        $("saveStatus").textContent = "已保存到本地";
+        renderAll();
+      }
+    });
     const example = button(
       "打开示例",
       async () => {
@@ -3292,7 +3336,7 @@ async function init() {
         };
       },
       get source() {
-        return V.serialize(project.doc);
+        return M.projectSource(project);
       },
       get preview() {
         return {

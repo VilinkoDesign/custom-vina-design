@@ -887,6 +887,12 @@ export function projectFromVina(source, previous) {
       : {}),
   };
 }
+export function projectSource(project) {
+  const canonical = serialize(project.doc);
+  return project.linkedSource?.canonical === canonical
+    ? project.linkedSource.source
+    : canonical;
+}
 export function projectFromJSON(text) {
   const value = JSON.parse(text);
   if (value.version !== 2 || !value.doc || !Array.isArray(value.doc.roots))
@@ -906,6 +912,16 @@ export function projectFromJSON(text) {
   if (value.base) {
     project.base = parse(serialize(value.base));
     project.baseName = String(value.baseName || "");
+  }
+  try {
+    if (
+      typeof value.linkedSource?.source === "string" &&
+      value.linkedSource.canonical === serialize(doc) &&
+      serialize(parse(value.linkedSource.source)) === value.linkedSource.canonical
+    )
+      project.linkedSource = value.linkedSource;
+  } catch {
+    // Optional format metadata must never prevent loading a valid project.
   }
   // IDs are internal. Reassign them on every untrusted file import.
   return project;
