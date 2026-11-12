@@ -178,6 +178,7 @@ function syncHistory() {
   $("newBtn").disabled = running || busy;
   $("importBtn").disabled = running || busy;
   $("exportBtn").disabled = busy;
+  $("menuExport").disabled = busy;
   document.querySelectorAll("[data-command]").forEach((n) => {
     n.disabled = running || busy;
   });
@@ -3632,6 +3633,7 @@ async function init() {
     $("sourceBtn").addEventListener("click", sourceDialog);
     $("newBtn").addEventListener("click", newProjectDialog);
     $("exportBtn").addEventListener("click", exportDialog);
+    $("menuExport").addEventListener("click", exportDialog);
     $("importBtn").addEventListener("click", () => {
       inputMode = "project";
       $("fileInput").click();
@@ -3795,26 +3797,6 @@ async function init() {
     $("dialogForm").addEventListener("submit", (event) =>
       event.preventDefault(),
     );
-    const versionMask = $("versionMask");
-    const closeVersionModal = () => {
-      versionMask.classList.remove("show");
-      versionMask.setAttribute("aria-hidden", "true");
-    };
-    const openVersionModal = () => {
-      versionMask.classList.add("show");
-      versionMask.setAttribute("aria-hidden", "false");
-    };
-    $("versionBadge").addEventListener("click", openVersionModal);
-    $("versionClose").addEventListener("click", closeVersionModal);
-    $("versionOk").addEventListener("click", closeVersionModal);
-    versionMask.addEventListener("click", (event) => {
-      if (event.target === versionMask) closeVersionModal();
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && versionMask.classList.contains("show")) {
-        closeVersionModal();
-      }
-    });
     window.addEventListener("beforeunload", (event) => {
       finishDrag(true);
       flush();

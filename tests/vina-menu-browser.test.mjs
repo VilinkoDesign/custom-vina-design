@@ -49,7 +49,7 @@ test(
       );
       assert.equal(
         await evaluate(
-          'document.querySelectorAll(".topbar-actions #newBtn,.topbar-actions #importBtn,.topbar-actions #exportBtn,.topbar-actions #undoBtn,.topbar-actions #redoBtn").length',
+          'document.querySelectorAll(".topbar-actions #newBtn,.topbar-actions #importBtn,.topbar-actions #undoBtn,.topbar-actions #redoBtn,.brand-badge").length',
         ),
         0,
       );
@@ -64,7 +64,7 @@ test(
       await key(call, "ArrowDown");
       assert.equal(await evaluate("document.activeElement.id"), "importBtn");
       await key(call, "End");
-      assert.equal(await evaluate("document.activeElement.id"), "exportBtn");
+      assert.equal(await evaluate("document.activeElement.id"), "menuExport");
       await key(call, "Home");
       assert.equal(await evaluate("document.activeElement.id"), "newBtn");
       await key(call, "Escape");
@@ -129,6 +129,13 @@ test(
       await waitFor('!document.querySelector("#editDialog").open');
       assert.equal(await evaluate("document.activeElement.id"), "fileMenuBtn");
       await click("#fileMenuBtn");
+      await click("#menuExport");
+      assert.equal(
+        await evaluate('document.querySelector("#dialogTitle").textContent'),
+        "导出预设",
+      );
+      await click("#dialogClose");
+      await waitFor('!document.querySelector("#editDialog").open');
       await click("#exportBtn");
       assert.equal(
         await evaluate('document.querySelector("#dialogTitle").textContent'),
@@ -136,6 +143,7 @@ test(
       );
       await click("#dialogClose");
       await waitFor('!document.querySelector("#editDialog").open');
+      assert.equal(await evaluate("document.activeElement.id"), "exportBtn");
       await call("Page.setInterceptFileChooserDialog", { enabled: true });
       await evaluate(
         'window.__pickerClicks=0;document.querySelector("#fileInput").addEventListener("click",()=>window.__pickerClicks++)',
