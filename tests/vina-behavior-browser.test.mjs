@@ -301,6 +301,7 @@ test(
         await evaluate(
           `(() => {const n=document.querySelector('[aria-label="行为所属组件"]');n.value='TitleButtons';n.dispatchEvent(new Event('change'));})()`,
         );
+        await evaluate(buttonClick("节点明细"));
         const count = await evaluate(
           'document.querySelectorAll(".behavior-node").length',
         );

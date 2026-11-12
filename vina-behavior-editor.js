@@ -2,6 +2,15 @@ import * as V from "./vina-core.js";
 import * as B from "./vina-behavior.js";
 import { effectiveProject, validate } from "./vina-model.js";
 import { icon } from "./icons.js";
+import { showDialog, closeDialog } from "./vina-dialog.js";
+import {
+  behaviorOverview,
+  detailLayout,
+  detailMembers,
+  nodeHeight,
+  nodeWidth,
+  summaryRoutes,
+} from "./vina-behavior-layout.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const WIDTH = 216;
@@ -18,7 +27,7 @@ const btn = (text, title, fn, cls = "mini-btn") => {
   n.addEventListener("click", fn);
   return n;
 };
-const height = (n) => 88 + Math.max(1, B.inputsOf(n).length) * 26;
+const height = nodeHeight;
 const label = (n) =>
   n.path || n.target || n.action || n.code || B.NODE_TYPES[n.type].title;
 const short = (path) => (path.length > 35 ? "…" + path.slice(-34) : path);
@@ -35,6 +44,7 @@ export function openBehaviorEditor({
   const graph = B.createGraph(project, standard, inputs);
   // Bound whole-graph history memory; inherited standard graphs can be large.
   const history = new V.History(graph, 50, 24 * 1024 * 1024);
+  const positionHistory = new WeakMap();
   let draft = graph,
     selected = null,
     selectedEdge = null,
@@ -45,6 +55,12 @@ export function openBehaviorEditor({
     space = false,
     frame = 0,
     closed = false;
+  let mode = "detail",
+    overview = null,
+    selectedSummary = null;
+  let detailScope = null,
+    detailTitle = "",
+    positions = null;
   let changed = false,
     discardArmed = false;
   const effective = effectiveProject(project, standard),
@@ -92,6 +108,25 @@ export function openBehaviorEditor({
     scope.append(option);
   }
   scope.value = component;
+  mode =
+    draft.nodes.filter((node) => node.component === component).length > 24
+      ? "overview"
+      : "detail";
+  const modes = el("div", "behavior-modes");
+  modes.setAttribute("role", "group");
+  modes.setAttribute("aria-label", "行为视图");
+  const overviewButton = btn("交互总览", "按热区、共享计算和交互结果查看", () =>
+    switchMode("overview"),
+  );
+  const detailButton = btn("节点明细", "编辑完整连线与属性", () =>
+    switchMode("detail"),
+  );
+  modes.append(overviewButton, detailButton);
+  const arrangeButton = btn(
+    "自动整理",
+    "按依赖关系排列，减少交叉与重叠",
+    arrange,
+  );
   const undo = btn("↶", "撤销 Ctrl+Z", () => navigate(false));
   undo.setAttribute("aria-label", "撤销节点编辑");
   const redo = btn("↷", "重做 Ctrl+Shift+Z", () => navigate(true));
@@ -103,10 +138,12 @@ export function openBehaviorEditor({
   const summary = el("span", "behavior-count");
   toolbar.append(
     scope,
+    modes,
     nodeSearch,
     undo,
     redo,
     fitButton,
+    arrangeButton,
     zoomOut,
     zoomLabel,
     zoomIn,
@@ -127,8 +164,16 @@ export function openBehaviorEditor({
     addExample,
     "btn-ghost behavior-example",
   );
+  const parametersButton = btn(
+    "参数与样式",
+    "展开布局、颜色与时长参数",
+    () =>
+      drillDown({ title: "参数与样式", members: overviewData().parameters }),
+    "btn-ghost behavior-example",
+  );
   library.append(
     example,
+    parametersButton,
     el(
       "p",
       "behavior-library-note",
@@ -152,6 +197,8 @@ export function openBehaviorEditor({
     btn("创建点击展开示例", "添加完整交互", addExample, "btn-primary"),
   );
   viewport.append(empty);
+  const breadcrumb = el("div", "behavior-breadcrumb");
+  viewport.append(breadcrumb);
   const inspector = el("aside", "behavior-inspector");
   inspector.setAttribute("aria-label", "行为节点属性");
   body.append(library, viewport, inspector);
@@ -183,12 +230,33 @@ export function openBehaviorEditor({
       : views.find((p) => p.split(".")[0] === component) || "";
   }
   function visibleNodes() {
+    if (mode === "overview") {
+      const term = nodeSearch.value.trim().toLowerCase();
+      const all = overviewData().nodes;
+      if (!term) return all;
+      const ids = new Set(
+        all
+          .filter((node) =>
+            (node.title + " " + node.description + " " + node.path)
+              .toLowerCase()
+              .includes(term),
+          )
+          .map((node) => node.id),
+      );
+      const matched = new Set(ids);
+      for (const edge of overviewData().edges)
+        if (matched.has(edge.from) || matched.has(edge.to)) {
+          ids.add(edge.from);
+          ids.add(edge.to);
+        }
+      return all.filter((node) => ids.has(node.id));
+    }
     const term = nodeSearch.value.trim().toLowerCase();
     const visible = new Set(
       draft.nodes
         .filter(
           (n) =>
-            n.component === component &&
+            (detailScope ? detailScope.has(n.id) : n.component === component) &&
             (!term ||
               (B.NODE_TYPES[n.type].title + " " + label(n))
                 .toLowerCase()
@@ -207,10 +275,66 @@ export function openBehaviorEditor({
     // Include external sources directly connected into this component.
     for (const edge of draft.edges)
       if (visible.has(edge.to)) visible.add(edge.from);
-    return draft.nodes.filter((n) => visible.has(n.id));
+    return draft.nodes
+      .filter((n) => visible.has(n.id))
+      .map((node) =>
+        positions?.has(node.id) ? { ...node, ...positions.get(node.id) } : node,
+      );
+  }
+  function overviewData() {
+    if (!overview) overview = behaviorOverview(draft, effective, component);
+    return overview;
+  }
+  function switchMode(next) {
+    mode = next;
+    wire = null;
+    selected = null;
+    selectedEdge = null;
+    selectedSummary = null;
+    detailScope = null;
+    detailTitle = "";
+    nodeSearch.value = "";
+    positions = null;
+    if (next === "detail")
+      positions = detailLayout(visibleNodes(), draft.edges);
+    rememberPositions();
+    render();
+    fit();
+  }
+  function drillDown(card) {
+    mode = "detail";
+    detailScope = detailMembers(draft, card);
+    detailTitle = card.title;
+    nodeSearch.value = "";
+    selectedSummary = null;
+    selected = card.primary || null;
+    selectedEdge = null;
+    wire = null;
+    positions = null;
+    positions = detailLayout(visibleNodes(), draft.edges);
+    rememberPositions();
+    render();
+    fit();
+  }
+  function arrange() {
+    if (mode === "overview") {
+      edit(() => {
+        for (const node of overviewData().nodes)
+          if (draft.overviewPositions) delete draft.overviewPositions[node.id];
+      }, "已按交互关系整理总览");
+    } else {
+      const layout = detailLayout(visibleNodes(), draft.edges);
+      edit(() => {
+        for (const node of draft.nodes)
+          if (layout.has(node.id)) Object.assign(node, layout.get(node.id));
+        positions = null;
+      }, "已按依赖关系整理节点");
+    }
+    fit();
   }
   function record(text) {
     if (history.commit(draft, text)) changed = true;
+    rememberPositions();
     discardArmed = false;
     cancel.textContent = "取消";
     tell(text);
@@ -232,12 +356,28 @@ export function openBehaviorEditor({
     const next = forward ? history.redo() : history.undo();
     if (!next) return;
     draft = next;
+    if (mode === "detail") {
+      const stored = positionHistory.get(history.entries[history.position]);
+      positions = stored
+        ? new Map([...stored].map(([id, point]) => [id, { ...point }]))
+        : null;
+      if (detailScope && !positions)
+        positions = detailLayout(visibleNodes(), draft.edges);
+    }
     changed = true;
     selected = draft.nodes.some((n) => n.id === selected) ? selected : null;
     selectedEdge = null;
     wire = null;
     tell(forward ? "已重做节点编辑" : "已撤销节点编辑");
     render();
+  }
+  function rememberPositions() {
+    positionHistory.set(
+      history.entries[history.position],
+      positions
+        ? new Map([...positions].map(([id, point]) => [id, { ...point }]))
+        : null,
+    );
   }
   function renderCatalog() {
     catalog.replaceChildren();
@@ -256,6 +396,7 @@ export function openBehaviorEditor({
     }
   }
   function add(type) {
+    if (mode === "overview") switchMode("detail");
     nodeSearch.value = "";
     edit(() => {
       const n = B.newNode(
@@ -278,11 +419,17 @@ export function openBehaviorEditor({
         n.path = path;
       }
       draft.nodes.push(n);
+      detailScope?.add(n.id);
+      positions?.set(n.id, { x: n.x, y: n.y });
       selected = n.id;
       selectedEdge = null;
     }, "已添加" + B.NODE_TYPES[type].title);
   }
   function addExample() {
+    if (mode === "overview") switchMode("detail");
+    detailScope = null;
+    detailTitle = "";
+    positions = null;
     nodeSearch.value = "";
     const target = targetView();
     if (!target) {
@@ -407,6 +554,10 @@ export function openBehaviorEditor({
     }, "已连接节点");
   }
   function renderNodes() {
+    if (mode === "overview") {
+      renderOverview();
+      return;
+    }
     nodesLayer.replaceChildren();
     const visible = visibleNodes();
     empty.hidden = visible.length > 0;
@@ -493,7 +644,69 @@ export function openBehaviorEditor({
     summary.textContent = `${visible.length} 节点 · ${draft.edges.filter((e) => visible.some((n) => n.id === e.to)).length} 连线`;
     requestDraw();
   }
+  function selectSummary(id) {
+    selectedSummary = id;
+    selected = null;
+    selectedEdge = null;
+    nodesLayer
+      .querySelectorAll(".behavior-node")
+      .forEach((node) =>
+        node.classList.toggle("selected", node.dataset.behaviorNode === id),
+      );
+    renderInspector();
+    drawWires();
+  }
+  function renderOverview() {
+    nodesLayer.replaceChildren();
+    const data = overviewData(),
+      visible = visibleNodes();
+    empty.hidden = visible.length > 0;
+    for (const node of visible) {
+      const card = el("div", "behavior-node behavior-summary");
+      card.dataset.behaviorNode = node.id;
+      card.dataset.overviewRole = node.role;
+      card.style.left = node.x + "px";
+      card.style.top = node.y + "px";
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute(
+        "aria-label",
+        node.title + "，" + node.description + "，双击展开",
+      );
+      card.classList.toggle("selected", node.id === selectedSummary);
+      const header = el("div", "behavior-node-head");
+      header.append(
+        el(
+          "span",
+          "behavior-node-dot " + (node.role === "hover" ? "event" : ""),
+        ),
+        el("strong", "", node.title),
+      );
+      card.append(
+        header,
+        el("div", "behavior-summary-description", node.description),
+        el("div", "behavior-summary-foot", `${node.count} 项合并 · 双击展开`),
+      );
+      card.addEventListener("click", () => selectSummary(node.id));
+      card.addEventListener("dblclick", () => drillDown(node));
+      card.addEventListener("keydown", (event) => {
+        if (["Enter", " "].includes(event.key)) {
+          event.preventDefault();
+          event.stopPropagation();
+          selectSummary(node.id);
+        }
+      });
+      nodesLayer.append(card);
+    }
+    summary.textContent = `${visible.length} 个行为组 · ${data.total} 个细节节点已折叠`;
+    parametersButton.textContent = `参数与样式 · ${data.parameters.length}`;
+    requestDraw();
+  }
   function drawWires() {
+    if (mode === "overview") {
+      drawOverviewWires();
+      return;
+    }
     svg.replaceChildren();
     const visible = new Map(visibleNodes().map((n) => [n.id, n]));
     for (const edge of draft.edges) {
@@ -545,6 +758,39 @@ export function openBehaviorEditor({
         svg.append(path);
       }
     }
+  }
+  function drawOverviewWires() {
+    svg.replaceChildren();
+    const nodes = new Map(visibleNodes().map((node) => [node.id, node]));
+    const edges = overviewData().edges.filter(
+      (edge) => nodes.has(edge.from) && nodes.has(edge.to),
+    );
+    const routes = summaryRoutes([...nodes.values()], edges);
+    const adjacent = (edge) =>
+      !selectedSummary ||
+      edge.from === selectedSummary ||
+      edge.to === selectedSummary;
+    const draw = (edge) => {
+      const path = document.createElementNS(NS, "path");
+      path.setAttribute("d", routes.get(edge).path);
+      path.setAttribute(
+        "class",
+        "behavior-wire behavior-summary-wire " +
+          (edge.kind === "retain" ? "event " : "") +
+          (selectedSummary ? (adjacent(edge) ? "focused" : "muted") : ""),
+      );
+      const hit = path.cloneNode();
+      hit.setAttribute("class", "behavior-wire-hit");
+      hit.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectSummary(edge.to);
+      });
+      svg.append(path, hit);
+    };
+    // Selected connections paint last so unrelated crossings never obscure them.
+    edges
+      .sort((a, b) => Number(adjacent(a)) - Number(adjacent(b)))
+      .forEach(draw);
   }
   function requestDraw() {
     if (!frame)
@@ -599,6 +845,10 @@ export function openBehaviorEditor({
   }
   function renderInspector() {
     inspector.replaceChildren();
+    if (mode === "overview") {
+      renderOverviewInspector();
+      return;
+    }
     if (selectedEdge) {
       inspector.append(
         el("h4", "", "连线"),
@@ -782,7 +1032,131 @@ export function openBehaviorEditor({
       ),
     );
   }
+  function renderOverviewInspector() {
+    const data = overviewData(),
+      item = data.nodes.find((node) => node.id === selectedSummary);
+    if (!item) {
+      inspector.append(
+        el("h4", "", "交互总览"),
+        el(
+          "p",
+          "behavior-inspector-hint",
+          "每个热区、共享计算和界面区域合并为一个行为组。选择行为组聚焦相关连线，双击展开具体属性和动作。",
+        ),
+        el(
+          "div",
+          "behavior-inspector-rule",
+          `${data.total} 个细节节点已收进 ${data.nodes.length} 个行为组。布局、颜色和动画时长保留在组内，不再逐项铺满画布。`,
+        ),
+      );
+      return;
+    }
+    inspector.append(
+      el("h4", "", item.title),
+      el("p", "behavior-inspector-hint", item.description),
+      btn(
+        "展开此行为组",
+        "查看并编辑完整节点与连线",
+        () => drillDown(item),
+        "btn-ghost behavior-expand",
+      ),
+    );
+    const primary = draft.nodes.find((node) => node.id === item.primary);
+    if (primary?.code !== undefined) {
+      field(
+        primary.type === "state" ? "默认值" : "Vina 表达式",
+        primary.code,
+        (value) => {
+          primary.code = value;
+          draft.edges = draft.edges.filter(
+            (edge) =>
+              edge.to !== primary.id ||
+              B.inputsOf(primary).some((port) => port.key === edge.port),
+          );
+        },
+        { multiline: true },
+      );
+      const sources = draft.edges.filter((edge) => edge.to === primary.id);
+      for (const edge of sources) {
+        const source = draft.nodes.find((node) => node.id === edge.from);
+        inspector.append(
+          el(
+            "div",
+            "behavior-summary-input",
+            `${edge.port} ← ${label(source)}`,
+          ),
+        );
+      }
+    }
+    const members = item.members
+      .map((id) => draft.nodes.find((node) => node.id === id))
+      .filter(Boolean);
+    const editable = members.filter((node) =>
+      ["bind", "action", "toggle", "state"].includes(node.type),
+    );
+    const list = el("details", "behavior-group-properties"),
+      caption = el("summary", "", `属性与动作 · ${editable.length}`);
+    list.append(caption);
+    list.addEventListener("toggle", () => {
+      if (!list.open || list.dataset.built) return;
+      list.dataset.built = "true";
+      for (const node of editable) {
+        const expression =
+          node.type === "bind"
+            ? draft.edges.find(
+                (edge) => edge.to === node.id && edge.port === "value",
+              )?.from
+            : node.id;
+        list.append(
+          btn(
+            short(label(node).replace(component + ".view.", "")),
+            "编辑 " + label(node),
+            () => {
+              drillDown(item);
+              focusNode(expression || node.id);
+            },
+            "behavior-property-link",
+          ),
+        );
+      }
+    });
+    inspector.append(list);
+    const relations = data.edges.filter(
+      (edge) => edge.from === item.id || edge.to === item.id,
+    );
+    if (relations.length)
+      inspector.append(el("h4", "behavior-connections-title", "行为关联"));
+    for (const edge of relations) {
+      const other = data.nodes.find(
+        (node) => node.id === (edge.from === item.id ? edge.to : edge.from),
+      );
+      inspector.append(
+        btn(
+          (edge.from === item.id ? "→ " : "← ") +
+            other.title +
+            (edge.kind === "retain" ? " · 保持区域" : ""),
+          "定位关联行为",
+          () => {
+            selectSummary(other.id);
+          },
+          "behavior-property-link",
+        ),
+      );
+    }
+  }
   function render() {
+    overview = null;
+    overviewButton.classList.toggle("active", mode === "overview");
+    detailButton.classList.toggle("active", mode === "detail");
+    overviewButton.setAttribute("aria-pressed", String(mode === "overview"));
+    detailButton.setAttribute("aria-pressed", String(mode === "detail"));
+    breadcrumb.replaceChildren();
+    if (detailScope)
+      breadcrumb.append(
+        btn("← 交互总览", "返回完整交互总览", () => switchMode("overview")),
+        el("span", "", component + " / " + detailTitle),
+      );
+    breadcrumb.hidden = !detailScope;
     undo.disabled = !history.canUndo;
     redo.disabled = !history.canRedo;
     save.textContent = changed ? "应用行为 *" : "应用行为";
@@ -799,12 +1173,34 @@ export function openBehaviorEditor({
   function focusNode(id) {
     const node = draft.nodes.find((n) => n.id === id);
     if (!node) return;
+    if (mode === "overview") {
+      const item = overviewData().nodes.find((card) =>
+        card.members.includes(id),
+      );
+      if (item) drillDown(item);
+      else switchMode("detail");
+    }
+    if (detailScope && !detailScope.has(id)) {
+      const related = detailMembers(draft, {
+        members: [
+          id,
+          ...draft.edges
+            .filter((edge) => edge.from === id)
+            .map((edge) => edge.to),
+        ],
+      });
+      for (const key of related) detailScope.add(key);
+      positions = detailLayout(visibleNodes(), draft.edges);
+      rememberPositions();
+    }
+    const displayed =
+      visibleNodes().find((candidate) => candidate.id === id) || node;
     selected = id;
     selectedEdge = null;
     scale = 1;
     pan = {
-      x: viewport.clientWidth / 2 - node.x - WIDTH / 2,
-      y: viewport.clientHeight / 2 - node.y - height(node) / 2,
+      x: viewport.clientWidth / 2 - displayed.x - nodeWidth(displayed) / 2,
+      y: viewport.clientHeight / 2 - displayed.y - height(displayed) / 2,
     };
     render();
   }
@@ -831,7 +1227,7 @@ export function openBehaviorEditor({
     }
     const left = Math.min(...nodes.map((n) => n.x)),
       top = Math.min(...nodes.map((n) => n.y));
-    const right = Math.max(...nodes.map((n) => n.x + WIDTH)),
+    const right = Math.max(...nodes.map((n) => n.x + nodeWidth(n))),
       bottom = Math.max(...nodes.map((n) => n.y + height(n)));
     scale = Math.max(
       0.12,
@@ -848,6 +1244,10 @@ export function openBehaviorEditor({
     transform();
   }
   function remove() {
+    if (mode === "overview") {
+      tell("展开行为组后，可编辑或删除其中的具体节点。");
+      return;
+    }
     if (!selected && !selectedEdge) return;
     edit(() => {
       if (selectedEdge)
@@ -883,7 +1283,7 @@ export function openBehaviorEditor({
     if (!next) return;
     if (apply(next)) {
       changed = false;
-      dialog.close();
+      closeDialog(dialog);
       notify("行为节点已应用，可点击“运行”测试交互");
     } else tell("写入未完成。若工程已从外部更新，请关闭弹窗后重新打开。", true);
   }
@@ -898,7 +1298,7 @@ export function openBehaviorEditor({
       cancel.textContent = "放弃修改";
       return;
     }
-    dialog.close();
+    closeDialog(dialog);
   }
   function point(event) {
     const rect = viewport.getBoundingClientRect();
@@ -935,9 +1335,16 @@ export function openBehaviorEditor({
         pan: { ...pan },
       };
     } else if (card && event.button === 0) {
-      selected = card.dataset.behaviorNode;
+      const id = card.dataset.behaviorNode;
+      if (mode === "overview") {
+        selectedSummary = id;
+        selected = null;
+      } else {
+        selected = id;
+        selectedSummary = null;
+      }
       selectedEdge = null;
-      const node = draft.nodes.find((n) => n.id === selected);
+      const node = visibleNodes().find((n) => n.id === id);
       gesture = {
         kind: "node",
         id: event.pointerId,
@@ -949,6 +1356,7 @@ export function openBehaviorEditor({
       };
       viewport.focus();
       renderInspector();
+      drawWires();
       nodesLayer
         .querySelectorAll(".behavior-node")
         .forEach((n) => n.classList.toggle("selected", n === card));
@@ -974,6 +1382,11 @@ export function openBehaviorEditor({
           -100000,
           Math.min(100000, Math.round(gesture.start.y + dy / scale)),
         );
+        if (!gesture.node.summary)
+          positions?.set(gesture.node.id, {
+            x: gesture.node.x,
+            y: gesture.node.y,
+          });
         const card = nodesLayer.querySelector(
           `[data-behavior-node="${gesture.node.id}"]`,
         );
@@ -1008,8 +1421,19 @@ export function openBehaviorEditor({
       if (cancelGesture) {
         g.node.x = g.start.x;
         g.node.y = g.start.y;
+        if (!g.node.summary) positions?.set(g.node.id, g.start);
         render();
-      } else record("已移动节点");
+      } else {
+        if (g.node.summary) {
+          draft.overviewPositions ||= {};
+          draft.overviewPositions[g.node.id] = { x: g.node.x, y: g.node.y };
+        } else
+          Object.assign(
+            draft.nodes.find((node) => node.id === g.node.id),
+            { x: g.node.x, y: g.node.y },
+          );
+        record("已移动节点");
+      }
     }
     if (g.kind === "wire") {
       if (cancelGesture) {
@@ -1138,10 +1562,18 @@ export function openBehaviorEditor({
     selected = null;
     selectedEdge = null;
     wire = null;
+    selectedSummary = null;
+    detailScope = null;
+    detailTitle = "";
+    positions = null;
+    mode =
+      draft.nodes.filter((node) => node.component === component).length > 24
+        ? "overview"
+        : "detail";
     render();
     fit();
   });
-  dialog.showModal();
+  showDialog(dialog);
   renderCatalog();
   render();
   fit();

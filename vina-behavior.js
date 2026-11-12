@@ -158,6 +158,13 @@ export function validateGraphShape(graph) {
     nodes.set(node.id, node);
   }
   const occupied = new Set();
+  if (graph.overviewPositions !== undefined) {
+    if (!graph.overviewPositions || typeof graph.overviewPositions !== "object" || Array.isArray(graph.overviewPositions) || Object.keys(graph.overviewPositions).length > 8192)
+      throw new Error("行为总览布局格式无效");
+    for (const [key, point] of Object.entries(graph.overviewPositions))
+      if (key.length > 1024 || !Number.isFinite(point?.x) || !Number.isFinite(point?.y) || Math.abs(point.x) > 100000 || Math.abs(point.y) > 100000)
+        throw new Error("行为总览位置无效");
+  }
   for (const edge of graph.edges) {
     const source = nodes.get(edge.from),
       target = nodes.get(edge.to),

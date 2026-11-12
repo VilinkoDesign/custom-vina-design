@@ -93,6 +93,9 @@ export async function browserSession(run) {
       throw new Error("Browser condition timed out: " + expression);
     };
     const click = async (selector) => {
+      await waitFor(
+        `(() => {const d=document.querySelector(${JSON.stringify(selector)})?.closest('dialog');return !d || !d.getAnimations().some(a=>a.animationName==='vinaDialogIn' && a.playState==='running')})()`,
+      );
       const p = await evaluate(
         `(() => {const r=document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect();if(!r) throw Error('Missing click target');return {x:r.x+r.width/2,y:r.y+r.height/2}})()`,
       );
@@ -110,8 +113,13 @@ export async function browserSession(run) {
       });
     await call("Runtime.enable");
     await call("Page.enable");
+    // Keep browser focus independent of the desktop foreground window.
+    await call("Emulation.setFocusEmulationEnabled", { enabled: true });
     await call("Emulation.setEmulatedMedia", {
-      features: [{ name: "prefers-color-scheme", value: "light" }],
+      features: [
+        { name: "prefers-color-scheme", value: "light" },
+        { name: "prefers-reduced-motion", value: "no-preference" },
+      ],
     });
     await call("Emulation.setDeviceMetricsOverride", {
       width: 1600,

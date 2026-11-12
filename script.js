@@ -2,6 +2,7 @@ import * as V from "./vina-core.js";
 import * as M from "./vina-model.js";
 import { projectFromLink } from "./vina-link.js";
 import { openBehaviorEditor } from "./vina-behavior-editor.js";
+import { showDialog, closeDialog } from "./vina-dialog.js";
 import { renderScene } from "./vina-renderer.js";
 import { hitFrame } from "./vina-preview.js";
 import {
@@ -1590,7 +1591,7 @@ function dialog(title, build, actions = []) {
   $("editDialog").classList.remove("wide-dialog");
   build($("dialogBody"));
   $("dialogFoot").append(
-    button("关闭", () => $("editDialog").close(), "btn-ghost"),
+    button("关闭", () => closeDialog($("editDialog")), "btn-ghost"),
   );
   for (const { label, run, primary } of actions)
     $("dialogFoot").append(
@@ -1606,7 +1607,7 @@ function dialog(title, build, actions = []) {
         primary ? "btn-primary" : "btn-ghost",
       ),
     );
-  if (!$("editDialog").open) $("editDialog").showModal();
+  if (!$("editDialog").open) showDialog($("editDialog"));
 }
 function previewSettingsDialog() {
   let title, measured, mode, frame, upward;
@@ -1687,7 +1688,7 @@ function previewSettingsDialog() {
         run: () => {
           hostOverrides = {};
           renderAll();
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
       {
@@ -1714,7 +1715,7 @@ function previewSettingsDialog() {
           M.validate(project, standard, { ...inputValues(), ...next }, schema);
           hostOverrides = next;
           renderAll();
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
     ],
@@ -1764,7 +1765,7 @@ function sourceDialog() {
             throw new Error(lastError || "源码校验未通过，请修正后再应用");
           selection = [];
           renderAll();
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
       {
@@ -1778,7 +1779,7 @@ function sourceDialog() {
               allowMissingBase: true,
             })
           ) {
-            $("editDialog").close();
+            closeDialog($("editDialog"));
             selection = [];
             renderAll();
           } else throw new Error(lastError);
@@ -1814,7 +1815,7 @@ function nodeSourceDialog(node) {
             })
           )
             throw new Error("声明未通过校验");
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
     ],
@@ -1929,7 +1930,7 @@ function expressionDialog(node, key) {
             )
           )
             throw new Error(lastError || "表达式未通过校验");
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
     ],
@@ -1962,7 +1963,7 @@ function addPropertyDialog(node) {
             )
           )
             throw new Error("属性未通过校验");
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
     ],
@@ -2136,7 +2137,7 @@ function gradientDialog(node, key) {
             })
           )
             throw new Error(lastError || "渐变未通过校验，请检查位置和表达式");
-          $("editDialog").close();
+          closeDialog($("editDialog"));
         },
       },
     ],
@@ -2268,7 +2269,7 @@ function variableDialog() {
             })
           )
             throw new Error("变量声明未通过校验");
-          $("editDialog").close();
+          closeDialog($("editDialog"));
           inspectorTab = "variables";
           renderInspector();
         },
@@ -3037,7 +3038,7 @@ function importLocationHash() {
     document.querySelector(".marquee")?.remove();
     document.querySelector(".library-ghost")?.remove();
     closeContext();
-    if ($("editDialog").open) $("editDialog").close();
+    if ($("editDialog").open) closeDialog($("editDialog"));
     runtimeOverrides = {};
     hoverStates.clear();
     if (running) setRunning(false);
@@ -3321,7 +3322,11 @@ async function init() {
     document.addEventListener("pointerdown", (event) => {
       if (!event.target.closest(".editor-context")) closeContext();
     });
-    $("dialogClose").addEventListener("click", () => $("editDialog").close());
+    $("dialogClose").addEventListener("click", () => closeDialog($("editDialog")));
+    $("editDialog").addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeDialog($("editDialog"));
+    });
     $("dialogForm").addEventListener("submit", (event) =>
       event.preventDefault(),
     );
