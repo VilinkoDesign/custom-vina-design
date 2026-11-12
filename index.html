@@ -9,39 +9,179 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">
-        CustomVinaEditor
-        <button class="brand-badge" id="versionBadge" title="版本信息">
-          BETA
-        </button>
+      <div class="topbar-start">
+        <div class="brand">
+          CustomVinaEditor
+          <button class="brand-badge" id="versionBadge" title="版本信息">
+            BETA
+          </button>
+        </div>
+        <nav
+          class="tool-menubar"
+          id="toolMenus"
+          role="menubar"
+          aria-label="工具菜单"
+        >
+          <button
+            class="tool-menu-trigger"
+            id="fileMenuBtn"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="fileMenu"
+          >
+            文件
+          </button>
+          <div
+            class="tool-menu"
+            id="fileMenu"
+            role="menu"
+            aria-labelledby="fileMenuBtn"
+            tabindex="-1"
+            hidden
+          >
+            <button
+              class="tool-menu-item"
+              id="newBtn"
+              role="menuitem"
+              tabindex="-1"
+            >
+              <span class="tool-menu-label">新建</span>
+            </button>
+            <button
+              class="tool-menu-item"
+              id="importBtn"
+              role="menuitem"
+              tabindex="-1"
+            >
+              <span class="tool-menu-label">导入</span>
+            </button>
+            <button
+              class="tool-menu-item"
+              id="exportBtn"
+              role="menuitem"
+              tabindex="-1"
+            >
+              <span class="tool-menu-label">导出</span><kbd>Ctrl+S</kbd>
+            </button>
+          </div>
+          <button
+            class="tool-menu-trigger"
+            id="editMenuBtn"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="editMenu"
+            tabindex="-1"
+          >
+            编辑
+          </button>
+          <div
+            class="tool-menu"
+            id="editMenu"
+            role="menu"
+            aria-labelledby="editMenuBtn"
+            tabindex="-1"
+            hidden
+          >
+            <button
+              class="tool-menu-item"
+              id="undoBtn"
+              role="menuitem"
+              tabindex="-1"
+              aria-label="撤销"
+              title="撤销 Ctrl+Z"
+            >
+              <svg class="fa-icon" aria-hidden="true" focusable="false">
+                <use href="vendor/fontawesome/fa6.svg#fa-rotate-left"></use>
+              </svg>
+              <span class="tool-menu-label">撤销</span><kbd>Ctrl+Z</kbd>
+            </button>
+            <button
+              class="tool-menu-item"
+              id="redoBtn"
+              role="menuitem"
+              tabindex="-1"
+              aria-label="重做"
+              title="重做 Ctrl+Shift+Z / Ctrl+Y"
+            >
+              <svg class="fa-icon" aria-hidden="true" focusable="false">
+                <use href="vendor/fontawesome/fa6.svg#fa-rotate-right"></use>
+              </svg>
+              <span class="tool-menu-label">重做</span><kbd>Ctrl+Shift+Z</kbd>
+            </button>
+            <div class="tool-menu-separator" role="separator"></div>
+            <button
+              class="tool-menu-item"
+              id="menuGroup"
+              role="menuitem"
+              tabindex="-1"
+              data-command="group"
+            >
+              <svg class="fa-icon" aria-hidden="true" focusable="false">
+                <use href="vendor/fontawesome/fa6.svg#fa-object-group"></use>
+              </svg>
+              <span class="tool-menu-label">编组</span><kbd>Ctrl+G</kbd>
+            </button>
+            <button
+              class="tool-menu-item"
+              id="menuUngroup"
+              role="menuitem"
+              tabindex="-1"
+              data-command="ungroup"
+            >
+              <svg class="fa-icon" aria-hidden="true" focusable="false">
+                <use href="vendor/fontawesome/fa6.svg#fa-object-ungroup"></use>
+              </svg>
+              <span class="tool-menu-label">解除编组</span
+              ><kbd>Ctrl+Shift+G</kbd>
+            </button>
+          </div>
+          <button
+            class="tool-menu-trigger"
+            id="aboutMenuBtn"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="aboutMenu"
+            tabindex="-1"
+          >
+            关于
+          </button>
+          <div
+            class="tool-menu"
+            id="aboutMenu"
+            role="menu"
+            aria-labelledby="aboutMenuBtn"
+            tabindex="-1"
+            hidden
+          >
+            <a
+              class="tool-menu-item"
+              id="aboutMenuItem"
+              role="menuitem"
+              tabindex="-1"
+              href="about.html"
+              target="_blank"
+              rel="noopener"
+              title="在新标签页打开关于页面"
+              ><span class="tool-menu-label">关于...</span></a
+            >
+          </div>
+        </nav>
       </div>
       <div class="topbar-actions">
         <button
-          class="btn-ghost compact"
-          id="undoBtn"
-          title="撤销 Ctrl+Z"
-          aria-label="撤销"
+          class="btn-ghost behavior-trigger"
+          id="behaviorBtn"
+          title="编辑交互、状态与属性连线"
         >
-          ↶
-        </button>
-        <button
-          class="btn-ghost compact"
-          id="redoBtn"
-          title="重做 Ctrl+Shift+Z / Ctrl+Y"
-          aria-label="重做"
-        >
-          ↷
-        </button>
-        <span class="toolbar-divider"></span>
-        <button class="btn-ghost" id="newBtn" title="新建空白工程">新建</button>
-        <button class="btn-ghost behavior-trigger" id="behaviorBtn" title="编辑交互、状态与属性连线">
           <svg class="fa-icon" aria-hidden="true" focusable="false">
             <use href="vendor/fontawesome/fa6.svg#fa-arrow-pointer"></use>
           </svg>
           行为节点
         </button>
-        <button class="btn-ghost" id="importBtn">导入</button
-        ><button
+        <button
           class="btn-ghost icon-only"
           id="sourceBtn"
           title="查看和编辑源码"
@@ -60,8 +200,7 @@
           <svg class="fa-icon" aria-hidden="true" focusable="false">
             <use href="vendor/fontawesome/fa6.svg#fa-moon"></use>
           </svg></button
-        ><button class="btn-run" id="runBtn">运行</button
-        ><button class="btn-primary" id="exportBtn">导出</button>
+        ><button class="btn-run" id="runBtn">运行</button>
       </div>
     </header>
     <main class="workspace">
@@ -291,13 +430,24 @@
             Pogget 个性化组件的可视化编辑器，基于 CustomVina 规范构建。
           </p>
           <dl class="version-list">
-            <div class="version-row"><dt>工具版本</dt><dd>Beta 0.2.1</dd></div>
-            <div class="version-row"><dt>构建号</dt><dd>build20261111_rel0_Beta6</dd></div>
-            <div class="version-row"><dt>更新时间</dt><dd>2026-11-11</dd></div>
+            <div class="version-row">
+              <dt>工具版本</dt>
+              <dd>Beta 0.2.1</dd>
+            </div>
+            <div class="version-row">
+              <dt>构建号</dt>
+              <dd>build20261111_rel0_Beta6</dd>
+            </div>
+            <div class="version-row">
+              <dt>更新时间</dt>
+              <dd>2026-11-11</dd>
+            </div>
           </dl>
         </div>
         <div class="modal-foot">
-          <button class="btn-primary" id="versionOk" type="button">我知道了</button>
+          <button class="btn-primary" id="versionOk" type="button">
+            我知道了
+          </button>
         </div>
       </div>
     </div>

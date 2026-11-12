@@ -4,6 +4,7 @@ import { projectFromLink } from "./vina-link.js";
 import { openBehaviorEditor } from "./vina-behavior-editor.js";
 import { showDialog, closeDialog } from "./vina-dialog.js";
 import * as I from "./vina-interactions.js";
+import { mountToolMenus } from "./vina-menu.js";
 import { renderScene } from "./vina-renderer.js";
 import { hitFrame } from "./vina-preview.js";
 import {
@@ -172,12 +173,25 @@ function markCommitted(label) {
 }
 function syncHistory() {
   if (!history) return;
-  $("undoBtn").disabled = running || (!pending && !history.canUndo);
-  $("redoBtn").disabled = running || !!pending || !history.canRedo;
+  $("undoBtn").disabled = running || busy || (!pending && !history.canUndo);
+  $("redoBtn").disabled = running || busy || !!pending || !history.canRedo;
   $("newBtn").disabled = running || busy;
+  $("importBtn").disabled = running || busy;
+  $("exportBtn").disabled = busy;
   document.querySelectorAll("[data-command]").forEach((n) => {
-    n.disabled = running;
+    n.disabled = running || busy;
   });
+  const i = idx(),
+    ids = M.selectedRoots(project.doc, selection),
+    editable = !running && !busy && ids.length > 0 && !ids.some(isLocked),
+    parentOf = (id) => {
+      const parent = i.parents.get(id);
+      return parent && i.parents.get(parent.id) ? parent.id : null;
+    };
+  $("menuGroup").disabled =
+    !editable || ids.some((id) => parentOf(id) !== parentOf(ids[0]));
+  $("menuUngroup").disabled =
+    !editable || !ids.every((id) => scene?.frames.get(id)?.p.type === "group");
 }
 function flush() {
   if (!pending) return true;
@@ -3607,6 +3621,12 @@ async function init() {
       item.addEventListener("pointercancel", () => finishDrag(true));
       $("compList").append(item);
     }
+    mountToolMenus($("toolMenus"), {
+      onOpen: () => {
+        closeContext();
+        syncHistory();
+      },
+    });
     $("undoBtn").addEventListener("click", () => undo());
     $("redoBtn").addEventListener("click", () => undo(true));
     $("sourceBtn").addEventListener("click", sourceDialog);

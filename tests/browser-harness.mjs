@@ -93,8 +93,12 @@ export async function browserSession(run) {
       throw new Error("Browser condition timed out: " + expression);
     };
     const click = async (selector) => {
+      const menuTrigger = await evaluate(
+        `(() => {const menu=document.querySelector(${JSON.stringify(selector)})?.closest('.tool-menu');return menu?.hidden ? menu.getAttribute('aria-labelledby') : null})()`,
+      );
+      if (menuTrigger) await click("#" + menuTrigger);
       await waitFor(
-        `(() => {const d=document.querySelector(${JSON.stringify(selector)})?.closest('dialog');return !d || !d.getAnimations().some(a=>a.animationName==='vinaDialogIn' && a.playState==='running')})()`,
+        `(() => {const panel=document.querySelector(${JSON.stringify(selector)})?.closest('dialog,.tool-menu');return !panel || !panel.getAnimations().some(a=>['vinaDialogIn','toolMenuIn'].includes(a.animationName) && a.playState==='running')})()`,
       );
       const p = await evaluate(
         `(() => {const r=document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect();if(!r) throw Error('Missing click target');return {x:r.x+r.width/2,y:r.y+r.height/2}})()`,
