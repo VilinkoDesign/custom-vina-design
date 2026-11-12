@@ -333,15 +333,35 @@ test(
 );
 
 test(
-  "about menu contains only About and opens a themed standalone page without changing the saved project",
+  "About reuses the original version modal and content in place, with its original motion and dismissal controls",
   options,
   async () =>
     browserSession(async (session) => {
-      const { evaluate, click, call, waitFor, origin, errors } = session;
+      const { evaluate, click, call, waitFor, mouse, origin, errors } = session;
       await navigate(session);
       const saved = await evaluate(
         'localStorage.getItem("customvina.project.v2")',
       );
+      const url = await evaluate("location.href");
+      const pages = () =>
+        call("Target.getTargets").then(({ targetInfos }) =>
+          targetInfos
+            .filter((t) => t.type === "page" && t.url.startsWith(origin))
+            .map((t) => t.targetId)
+            .sort(),
+        );
+      const originalPages = await pages();
+      const settled = () =>
+        waitFor(
+          '(() => {const mask=document.querySelector("#versionMask");return getComputedStyle(mask).opacity===(mask.classList.contains("show")?"1":"0") && !mask.getAnimations({subtree:true}).some(a=>a.playState==="running")})()',
+        );
+      const open = async () => {
+        await click("#aboutMenuItem");
+        await waitFor(
+          'document.querySelector("#versionMask").classList.contains("show")',
+        );
+        await settled();
+      };
       await click("#themeBtn");
       await click("#aboutMenuBtn");
       assert.deepEqual(
@@ -350,58 +370,106 @@ test(
         ),
         ["关于..."],
       );
-      await click("#aboutMenuItem");
-      let aboutTarget;
-      for (let i = 0; i < 80; i++) {
-        aboutTarget = (await call("Target.getTargets")).targetInfos.find(
-          (target) => target.url === origin + "/about.html",
-        );
-        if (aboutTarget) break;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-      assert.ok(aboutTarget);
+      await open();
+      assert.equal(await evaluate("location.href"), url);
+      assert.deepEqual(await pages(), originalPages);
       assert.equal(
         await evaluate('document.querySelector("#aboutMenu").hidden'),
         true,
       );
       assert.equal(
-        await evaluate('localStorage.getItem("customvina.project.v2")'),
-        saved,
+        await evaluate(
+          'document.querySelector("#versionMask").getAttribute("aria-hidden")',
+        ),
+        "false",
       );
-      await call("Target.closeTarget", { targetId: aboutTarget.targetId });
-      await call("Page.navigate", { url: origin + "/about.html" });
-      await waitFor(
-        'document.body?.classList.contains("about-page") && document.documentElement?.dataset.ready==="true"',
-      );
-      assert.equal(await evaluate("document.title"), "关于 CustomVinaEditor");
       assert.equal(
-        await evaluate('document.querySelector("h1").textContent'),
+        await evaluate('document.querySelector("#versionTitle").textContent'),
+        "版本信息",
+      );
+      assert.equal(
+        await evaluate('document.querySelector(".version-brand").textContent'),
         "CustomVinaEditor",
       );
+      assert.deepEqual(
+        await evaluate(
+          '[...document.querySelectorAll("#versionMask .version-row")].map(n=>[n.querySelector("dt").textContent,n.querySelector("dd").textContent])',
+        ),
+        [
+          ["工具版本", "Beta 0.2.1"],
+          ["构建号", "build20261111_rel0_Beta6"],
+          ["更新时间", "2026-11-11"],
+        ],
+      );
       assert.equal(
-        await evaluate("document.documentElement.dataset.theme"),
-        "dark",
-      );
-      await screenshot(session, "about-dark");
-      await evaluate(
-        'localStorage.setItem("customvina.theme","light");window.dispatchEvent(new StorageEvent("storage",{key:"customvina.theme"}))',
+        await evaluate(
+          'getComputedStyle(document.querySelector("#versionMask")).transitionDuration',
+        ),
+        "0.18s, 0.18s",
       );
       assert.equal(
-        await evaluate("document.documentElement.dataset.theme"),
-        "light",
+        await evaluate(
+          'getComputedStyle(document.querySelector(".modal-version")).transitionDuration',
+        ),
+        "0.18s",
       );
+      await screenshot(session, "about-original-modal-dark");
+      assert.equal(await evaluate("document.activeElement.id"), "versionClose");
+      await key(call, "Tab", { modifiers: 8 });
+      assert.equal(await evaluate("document.activeElement.id"), "versionOk");
+      await key(call, "Tab");
+      assert.equal(await evaluate("document.activeElement.id"), "versionClose");
+      await key(call, "F10");
+      assert.equal(await evaluate("document.activeElement.id"), "versionClose");
+      await click("#versionClose");
+      await settled();
+      assert.equal(
+        await evaluate(
+          'document.querySelector("#versionMask").getAttribute("aria-hidden")',
+        ),
+        "true",
+      );
+      assert.equal(await evaluate("document.activeElement.id"), "aboutMenuBtn");
+      await click("#themeBtn");
       await call("Emulation.setDeviceMetricsOverride", {
         width: 390,
         height: 844,
         deviceScaleFactor: 1,
         mobile: false,
       });
+      await open();
       assert.ok(
         await evaluate(
-          'document.querySelector(".about-shell").getBoundingClientRect().right<=innerWidth',
+          'document.querySelector(".modal-version").getBoundingClientRect().right<=innerWidth',
         ),
       );
-      await screenshot(session, "about-light-narrow");
+      await screenshot(session, "about-original-modal-light-narrow");
+      await click("#versionOk");
+      await settled();
+      await open();
+      for (const type of ["mouseMoved", "mousePressed", "mouseReleased"])
+        await mouse(type, { x: 8, y: 8 });
+      await settled();
+      assert.equal(
+        await evaluate(
+          'document.querySelector("#versionMask").classList.contains("show")',
+        ),
+        false,
+      );
+      await click("#runBtn");
+      await open();
+      await key(call, "Escape");
+      await settled();
+      assert.equal(
+        await evaluate(
+          'document.querySelector("#versionMask").classList.contains("show")',
+        ),
+        false,
+      );
+      assert.equal(
+        await evaluate('document.querySelector("#runBtn").textContent'),
+        "停止",
+      );
       assert.equal(
         await evaluate('localStorage.getItem("customvina.project.v2")'),
         saved,

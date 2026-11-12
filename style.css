@@ -307,20 +307,8 @@ body.is-crashed{ overflow: hidden; }
 .tool-menu-item:disabled { opacity: .38; cursor: default; }
 .tool-menu-separator { margin: 5px 4px; border-top: 1px solid var(--line-soft); }
 @keyframes toolMenuIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
-.about-page { overflow-y: auto; user-select: text; -webkit-user-select: text; background: var(--panel-soft); }
-.about-shell { width: min(640px, calc(100% - 40px)); margin: 64px auto; padding: 30px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--panel); box-shadow: var(--board-shadow); }
-.about-back, .about-credits a { color: var(--accent); text-decoration: none; font-size: 12px; }
-.about-back:hover, .about-credits a:hover { text-decoration: underline; }
-.about-header { margin: 32px 0 24px; }
-.about-eyebrow { color: var(--ink-faint); font-size: 12px; margin: 0 0 10px; }
-.about-header h1 { font-size: 26px; font-weight: 600; margin: 0 0 12px; overflow-wrap: anywhere; }
-.about-credits { margin-top: 26px; border-top: 1px solid var(--line-soft); padding-top: 20px; }
-.about-credits h2 { font-size: 13px; font-weight: 600; margin: 0 0 10px; }
-.about-credits p { color: var(--ink-dim); font-size: 12px; line-height: 1.8; margin: 0; }
-.about-footer { margin-top: 30px; color: var(--ink-faint); font-size: 11px; }
-.about-shell .version-row dd { min-width: 0; overflow-wrap: anywhere; }
 @media(max-width:1000px) { .topbar-start { gap: 12px; } .tool-menu-trigger { padding: 0 8px; } }
-@media(max-width:650px) { .topbar { gap: 6px; } .topbar-start { gap: 4px; } .topbar-start .brand { font-size: 10px; letter-spacing: 0; } .tool-menubar { gap: 0; } .tool-menu-trigger { font-size: 11px; padding: 0 6px; } .topbar-actions { flex-shrink: 0; } .about-shell { margin: 24px auto; padding: 22px; } }
+@media(max-width:650px) { .topbar { gap: 6px; } .topbar-start { gap: 4px; } .topbar-start .brand { font-size: 10px; letter-spacing: 0; } .tool-menubar { gap: 0; } .tool-menu-trigger { font-size: 11px; padding: 0 6px; } .topbar-actions { flex-shrink: 0; } }
 
 .btn-primary{
   display: inline-flex;

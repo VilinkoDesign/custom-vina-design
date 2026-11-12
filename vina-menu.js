@@ -154,7 +154,7 @@ export function mountToolMenus(root, { onOpen = () => {} } = {}) {
         event.ctrlKey ||
         event.metaKey ||
         event.altKey ||
-        document.querySelector("dialog[open]")
+        document.querySelector("dialog[open], #versionMask.show")
       )
         return;
       event.preventDefault();

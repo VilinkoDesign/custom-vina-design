@@ -3315,6 +3315,7 @@ function setRunning(on) {
 let spaceHeld = false,
   keyboardMove = false;
 function keydown(event) {
+  if ($("versionMask").classList.contains("show")) return;
   if (document.getElementById("behaviorDialog")?.open) return;
   const editable = event.target.closest(
     'input,textarea,select,[contenteditable="true"]',
@@ -3796,6 +3797,50 @@ async function init() {
     });
     $("dialogForm").addEventListener("submit", (event) =>
       event.preventDefault(),
+    );
+    const versionMask = $("versionMask");
+    const closeVersionModal = () => {
+      versionMask.classList.remove("show");
+      versionMask.setAttribute("aria-hidden", "true");
+      $("aboutMenuBtn").focus();
+    };
+    const openVersionModal = () => {
+      versionMask.classList.add("show");
+      versionMask.setAttribute("aria-hidden", "false");
+      Promise.allSettled(
+        versionMask.getAnimations().map((a) => a.finished),
+      ).then(() => {
+        if (
+          versionMask.classList.contains("show") &&
+          !versionMask.contains(document.activeElement)
+        )
+          $("versionClose").focus();
+      });
+    };
+    $("aboutMenuItem").addEventListener("click", openVersionModal);
+    $("versionClose").addEventListener("click", closeVersionModal);
+    $("versionOk").addEventListener("click", closeVersionModal);
+    versionMask.addEventListener("click", (event) => {
+      if (event.target === versionMask) closeVersionModal();
+    });
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (!versionMask.classList.contains("show")) return;
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closeVersionModal();
+        } else if (event.key === "Tab") {
+          event.preventDefault();
+          const next =
+            document.activeElement === $("versionClose")
+              ? $("versionOk")
+              : $("versionClose");
+          next.focus();
+        }
+      },
+      { capture: true },
     );
     window.addEventListener("beforeunload", (event) => {
       finishDrag(true);
