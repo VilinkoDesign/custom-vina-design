@@ -71,6 +71,7 @@ test("browser hash import replaces storage atomically and consumes only valid li
     assert.equal(await evaluate("window.vinaEditor.source"), first);
     assert.equal(await evaluate(`JSON.parse(localStorage.getItem(${JSON.stringify(key)})).linkedSource.source`), first);
     assert.equal(await evaluate("location.hash"), "");
+    await evaluate('delete document.documentElement.dataset.ready');
     await call("Page.reload");
     await waitFor('document.documentElement.dataset.ready === "true"');
     assert.equal(await evaluate("window.vinaEditor.source"), first);

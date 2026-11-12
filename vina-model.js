@@ -913,6 +913,12 @@ export function projectFromJSON(text) {
     project.base = parse(serialize(value.base));
     project.baseName = String(value.baseName || "");
   }
+  // Optional graph data is bounded and verified against source when opened.
+  if (
+    value.behaviorGraph &&
+    JSON.stringify(value.behaviorGraph).length <= 4 * 1024 * 1024
+  )
+    project.behaviorGraph = value.behaviorGraph;
   try {
     if (
       typeof value.linkedSource?.source === "string" &&

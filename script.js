@@ -1,6 +1,7 @@
 import * as V from "./vina-core.js";
 import * as M from "./vina-model.js";
 import { projectFromLink } from "./vina-link.js";
+import { openBehaviorEditor } from "./vina-behavior-editor.js";
 import { renderScene } from "./vina-renderer.js";
 import { hitFrame } from "./vina-preview.js";
 import {
@@ -2516,14 +2517,15 @@ function finishDrag(cancel = false) {
   }
   if (d.kind === "pan") return;
   if (d.kind === "run") {
-    if (cancel) return;
+    if (cancel || d.cancelled) return;
     const f = scene?.frames.get(d.id),
       point = d.last || d.start;
     if (!f || !hitFrame(scene, d.id, point)) return;
     const p = f.p,
       held = (performance.now() - d.time) / 1000 >= (p.holdDelay ?? 0.4);
+    const previousOverrides = { ...runtimeOverrides };
     const action = held && p.holdAction ? p.holdAction : p.action;
-    if (p.toggle) {
+    if (p.toggle && !(held && p.holdAction)) {
       const state = p.toggle.startsWith("state.")
         ? f.path.split(".")[0] + "." + p.toggle
         : p.toggle;
@@ -2548,6 +2550,12 @@ function finishDrag(cancel = false) {
       else if (action === "pogget.action.container.expand")
         runtimeOverrides["pogget.collapsed"] = false;
       else toast("在 Pogget 内执行：" + action);
+    }
+    try {
+      M.validate(project, standard, inputValues(), schema);
+    } catch (error) {
+      runtimeOverrides = previousOverrides;
+      toast("交互未应用：" + error.message);
     }
     renderCanvas();
     renderInspector();
@@ -2742,6 +2750,7 @@ function pointerMove(event) {
   const point = boardPoint(event);
   d.last = point;
   if (d.kind === "run") {
+    if (!hitFrame(scene, d.id, point)) d.cancelled = true;
     trackHover(point);
     return;
   }
@@ -2842,7 +2851,9 @@ function setRunning(on) {
   $("runBtn").textContent = on ? "停止" : "运行";
   $("runBtn").classList.toggle("is-running", on);
   $("board").classList.toggle("running", on);
-  for (const id of ["importBtn", "sourceBtn", "boardWInput", "boardHInput"])
+  for (const id of [
+    "importBtn", "sourceBtn", "behaviorBtn", "boardWInput", "boardHInput",
+  ])
     $(id).disabled = on;
   renderAll();
   status(on ? "交互预览 · 状态不写入工程" : "编辑模式");
@@ -2850,6 +2861,7 @@ function setRunning(on) {
 let spaceHeld = false,
   keyboardMove = false;
 function keydown(event) {
+  if (document.getElementById("behaviorDialog")?.open) return;
   const editable = event.target.closest(
     'input,textarea,select,[contenteditable="true"]',
   );
@@ -3178,6 +3190,32 @@ async function init() {
       },
     );
     $("runBtn").addEventListener("click", () => setRunning(!running));
+    $("behaviorBtn").addEventListener("click", () => {
+      if (running || busy || !flush()) return;
+      try {
+        const behaviorSource = V.serialize(project.doc);
+        openBehaviorEditor({
+          project: V.clone(project),
+          standard,
+          schema,
+          inputs: inputValues(),
+          selectedPath: selection.length ? idx().paths.get(selection[0]) : "",
+          apply: (next) => {
+            if (V.serialize(project.doc) !== behaviorSource) {
+              toast("工程已从外部更新，请关闭行为节点后重新打开。");
+              return false;
+            }
+            return mutate("应用行为节点", (target) => {
+              target.doc = next.doc;
+              target.behaviorGraph = next.behaviorGraph;
+            });
+          },
+          notify: toast,
+        });
+      } catch (error) {
+        toast("行为节点打开失败：" + error.message);
+      }
+    });
     $("propertiesTab").addEventListener("click", () => {
       inspectorTab = "properties";
       renderInspector();

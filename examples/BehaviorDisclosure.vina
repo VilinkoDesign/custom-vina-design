@@ -1,0 +1,20 @@
+// Native CustomVina interaction. Click to keep expanded; click again to collapse.
+Disclosure {
+  state { expanded: false },
+  view {
+    type: "button",
+    x: 32, y: 48,
+    width: ${state.expanded} ? 260 : 140,
+    height: 52,
+    radius: 12,
+    background: rgb(82, 121, 251),
+    color: rgb(255, 255, 255),
+    label: ${state.expanded} ? "再次点击收起" : "点击展开",
+    textLiteral: true,
+    textSize: 14,
+    toggle: "state.expanded",
+    transition: 160ms,
+    unhoverTransition: 120ms,
+    hover { background: rgb(59, 92, 217) }
+  }
+}
