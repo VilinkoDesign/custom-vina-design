@@ -3,6 +3,7 @@ import * as M from "./vina-model.js";
 import { projectFromLink } from "./vina-link.js";
 import { openBehaviorEditor } from "./vina-behavior-editor.js";
 import { showDialog, closeDialog } from "./vina-dialog.js";
+import * as I from "./vina-interactions.js";
 import { renderScene } from "./vina-renderer.js";
 import { hitFrame } from "./vina-preview.js";
 import {
@@ -173,6 +174,7 @@ function syncHistory() {
   if (!history) return;
   $("undoBtn").disabled = running || (!pending && !history.canUndo);
   $("redoBtn").disabled = running || !!pending || !history.canRedo;
+  $("newBtn").disabled = running || busy;
   document.querySelectorAll("[data-command]").forEach((n) => {
     n.disabled = running;
   });
@@ -1170,7 +1172,9 @@ function renderInspector() {
       "opacity",
       "visible",
       "enabled",
+      "toggle",
     ]);
+  renderInteractionInspector(node, path, p);
   if (type === "content")
     hint(
       "嵌入由 Pogget 绘制的应用内容，例如 Markdown 预览或编辑区。source 指定内容来源，在线画布显示占位。",
@@ -1222,6 +1226,11 @@ function renderInspector() {
     ])
       propertyField(hot, key, details);
     details.append(
+      button(
+        "添加悬停属性",
+        () => hoverPropertyDialog(node),
+        "btn-ghost full-width",
+      ),
       button(
         "编辑 hover 完整声明",
         () => nodeSourceDialog(hot),
@@ -1293,6 +1302,362 @@ function renderInspector() {
       ),
     );
   }
+}
+function renderInteractionInspector(node, path, values) {
+  section("交互");
+  const doc = effective(),
+    states = I.booleanStates(doc),
+    target = values.toggle
+      ? V.resolveReference(values.toggle, path + ".toggle")
+      : "";
+  const toggle = selectControl(
+    target,
+    [
+      { value: "", label: "不切换状态" },
+      ...states.map((value) => ({ value, label: value })),
+    ],
+    (value) =>
+      mutate("修改点击切换", (next) =>
+        I.setClickToggle(next, standard, node.id, value),
+      ),
+  );
+  toggle.setAttribute("aria-label", "点击切换变量");
+  field("点击切换", toggle);
+  if (target && states.includes(target)) {
+    const initial = new V.Runtime(doc).get(target);
+    const control = selectControl(
+      String(initial),
+      [
+        { value: "false", label: "关闭（false）" },
+        { value: "true", label: "开启（true）" },
+      ],
+      (value) =>
+        mutate("修改开关默认值", (next) =>
+          I.setBooleanDefault(next, standard, target, value === "true"),
+        ),
+    );
+    control.setAttribute("aria-label", "开关默认值");
+    field("默认状态", control);
+  }
+  $("inspBody").append(
+    button(
+      "新建开关变量",
+      () => booleanStateDialog(node, path),
+      "btn-ghost full-width",
+    ),
+  );
+  hint("点击后保持开关状态；可在其他组件的交互绑定中使用此变量。");
+  const effectiveNode = V.index(doc).byPath.get(path);
+  for (const def of I.INTERACTION_PROPERTIES) {
+    const binding = I.interactionBinding(doc, effectiveNode, def.key);
+    if (!binding) continue;
+    const row = element("div", "interaction-binding");
+    row.dataset.interactionProperty = def.key;
+    const label = element("span", "", `${def.label} ← ${binding.source}`);
+    label.title = label.textContent;
+    row.append(
+      label,
+      button("编辑", () => interactionBindingDialog(node, binding), "mini-btn"),
+      button(
+        "解除",
+        () =>
+          mutate("解除交互绑定", (next) => {
+            const runtime = new V.Runtime(
+              M.effectiveProject(next, standard),
+              inputValues(),
+            );
+            V.setValue(
+              V.index(next.doc).byId.get(node.id),
+              def.key,
+              runtime.get(path + "." + def.key),
+            );
+          }),
+        "mini-btn",
+      ),
+    );
+    $("inspBody").append(row);
+  }
+  $("inspBody").append(
+    button(
+      "添加交互绑定",
+      () => interactionBindingDialog(node),
+      "btn-ghost full-width",
+    ),
+  );
+  hint("选择开关变量或悬停来源，设置属性在两种状态下的值。");
+}
+function booleanStateDialog(node, path) {
+  let name, initial;
+  const component = path.split(".")[0],
+    existing = V.index(effective()).byPath;
+  let suggested = "expanded",
+    suffix = 1;
+  while (existing.has(`${component}.state.${suggested}`))
+    suggested = "expanded" + ++suffix;
+  dialog(
+    "新建开关变量",
+    (body) => {
+      body.append(
+        element(
+          "p",
+          "panel-hint",
+          `在 ${component} 中创建开关，并绑定当前组件的点击。`,
+        ),
+      );
+      name = textControl(suggested, () => {});
+      name.setAttribute("aria-label", "开关变量名");
+      initial = selectControl(
+        "false",
+        [
+          { value: "false", label: "关闭（false）" },
+          { value: "true", label: "开启（true）" },
+        ],
+        () => {},
+      );
+      initial.setAttribute("aria-label", "开关初始值");
+      field("变量名称", name, "", body);
+      field("默认状态", initial, "", body);
+    },
+    [
+      {
+        label: "创建并绑定点击",
+        primary: true,
+        run: () => {
+          if (
+            !mutate("创建点击开关", (next) => {
+              const state = I.createBooleanState(
+                next,
+                standard,
+                component,
+                name.value.trim(),
+                initial.value === "true",
+              );
+              I.setClickToggle(next, standard, node.id, state);
+            })
+          )
+            throw new Error(lastError || "创建开关失败");
+          closeDialog($("editDialog"));
+        },
+      },
+    ],
+  );
+}
+function interactionValueControl(raw, def, label) {
+  let expr;
+  try {
+    expr = V.parseExpression(raw);
+    if (!V.references(expr).length)
+      expr = { value: V.evaluateExpression(expr) };
+  } catch {}
+  let control, read;
+  if (expr && "value" in expr) {
+    if (def.kind === "boolean") {
+      control = selectControl(
+        String(expr.value),
+        [
+          { value: "false", label: "否（false）" },
+          { value: "true", label: "是（true）" },
+        ],
+        () => {},
+      );
+      read = () => control.value;
+    } else if (def.kind === "color") {
+      control = textControl(V.colorHex(expr.value), () => {}, "color");
+      read = () => V.colorRaw(control.value);
+    } else {
+      control = textControl(
+        expr.value,
+        () => {},
+        def.kind === "number" ? "number" : "text",
+      );
+      if (def.kind === "number") {
+        const bounds = schema.bounds[def.key];
+        if (bounds) [control.min, control.max] = bounds.map(String);
+      }
+      read = () => {
+        return def.kind === "number"
+          ? control.value.trim()
+          : V.literal(control.value);
+      };
+    }
+  } else {
+    control = textControl(raw, () => {});
+    control.title = "Vina 表达式";
+    read = () => control.value.trim();
+  }
+  control.setAttribute("aria-label", label);
+  return { control, read };
+}
+function interactionBindingDialog(node, initial = null) {
+  const doc = effective(),
+    index = V.index(doc),
+    states = I.booleanStates(doc),
+    views = V.viewNodes(doc).map(({ node }) => index.paths.get(node.id));
+  let config = initial
+    ? { ...initial }
+    : {
+        key: "visible",
+        kind: "state",
+        source: states[0] || "",
+        off: "false",
+        on: "true",
+      };
+  let off, on;
+  const build = (body) => {
+    body.replaceChildren();
+    const def = I.INTERACTION_PROPERTIES.find(
+      (item) => item.key === config.key,
+    );
+    const property = selectControl(
+      config.key,
+      I.INTERACTION_PROPERTIES.map((item) => ({
+        value: item.key,
+        label: item.label,
+      })),
+      (key) => {
+        const info = I.interactionBinding(
+            doc,
+            index.byPath.get(idx().paths.get(node.id)),
+            key,
+          ),
+          next = I.INTERACTION_PROPERTIES.find((item) => item.key === key);
+        config = info || {
+          ...config,
+          key,
+          off: V.literal(next.off),
+          on: V.literal(next.on),
+        };
+        build(body);
+      },
+    );
+    property.disabled = !!initial;
+    property.setAttribute("aria-label", "交互目标属性");
+    field("目标属性", property, "", body);
+    const kind = selectControl(
+      config.kind,
+      [
+        { value: "state", label: "点击开关状态" },
+        { value: "hover", label: "悬停状态" },
+      ],
+      (value) => {
+        config.off = off.read();
+        config.on = on.read();
+        config.kind = value;
+        config.source =
+          value === "state"
+            ? states[0] || ""
+            : (views.find((path) => path !== idx().paths.get(node.id)) ||
+                views[0]) + ".hovered";
+        build(body);
+      },
+    );
+    kind.setAttribute("aria-label", "交互驱动类型");
+    field("驱动方式", kind, "", body);
+    const options =
+      config.kind === "state" ? states : views.map((path) => path + ".hovered");
+    const source = selectControl(
+      config.source,
+      options.map((value) => ({
+        value,
+        label: value.replace(/\.hovered$/, ""),
+      })),
+      (value) => {
+        config.source = value;
+      },
+    );
+    source.setAttribute("aria-label", "交互来源");
+    field(config.kind === "state" ? "开关变量" : "悬停组件", source, "", body);
+    body.append(
+      element(
+        "p",
+        "panel-hint",
+        config.kind === "state"
+          ? states.length
+            ? "开关可由按钮点击切换，也可被多个组件共享。"
+            : "请先选择触发按钮，在属性面板中点击“新建开关变量”。"
+          : "指针进入来源组件时启用，移出时恢复。点击开关状态不受悬停影响。",
+      ),
+    );
+    off = interactionValueControl(config.off, def, "交互关闭值");
+    on = interactionValueControl(config.on, def, "交互开启值");
+    field(
+      config.kind === "state" ? "关闭时" : "未悬停时",
+      off.control,
+      "",
+      body,
+    );
+    field(config.kind === "state" ? "开启时" : "悬停时", on.control, "", body);
+  };
+  dialog(initial ? "编辑交互绑定" : "添加交互绑定", build, [
+    {
+      label: "应用交互绑定",
+      primary: true,
+      run: () => {
+        const nextConfig = { ...config, off: off.read(), on: on.read() };
+        if (
+          !mutate("绑定交互属性", (next) =>
+            I.bindInteraction(
+              next,
+              standard,
+              node.id,
+              nextConfig,
+              inputValues(),
+              schema,
+            ),
+          )
+        )
+          throw new Error(lastError || "交互绑定未通过校验");
+        closeDialog($("editDialog"));
+      },
+    },
+  ]);
+}
+function hoverPropertyDialog(node) {
+  let key, value;
+  dialog(
+    "添加悬停属性",
+    (body) => {
+      const options = I.INTERACTION_PROPERTIES.filter((item) =>
+        ["number", "color"].includes(item.kind),
+      );
+      const valueBox = element("div");
+      const update = () => {
+        valueBox.replaceChildren();
+        const def = options.find((item) => item.key === key.value);
+        value = interactionValueControl(V.literal(def.on), def, "悬停属性值");
+        field("悬停时", value.control, "", valueBox);
+      };
+      key = selectControl(
+        "opacity",
+        options.map((item) => ({ value: item.key, label: item.label })),
+        update,
+      );
+      key.setAttribute("aria-label", "悬停属性");
+      field("属性", key, "", body);
+      body.append(valueBox);
+      update();
+    },
+    [
+      {
+        label: "应用悬停属性",
+        primary: true,
+        run: () => {
+          const raw = value.read();
+          V.parseExpression(raw);
+          if (
+            !mutate("修改悬停属性", (next) => {
+              const target = V.index(next.doc).byId.get(node.id);
+              let hot = V.block(target, "hover");
+              if (!hot) target.members.push((hot = V.makeBlock("hover")));
+              V.setRaw(hot, key.value, raw);
+            })
+          )
+            throw new Error(lastError || "悬停属性无效");
+          closeDialog($("editDialog"));
+        },
+      },
+    ],
+  );
 }
 function gradientEditor(node, key, title, target = $("inspBody")) {
   const gradient = V.block(node, key),
@@ -1608,6 +1973,74 @@ function dialog(title, build, actions = []) {
       ),
     );
   if (!$("editDialog").open) showDialog($("editDialog"));
+}
+function newProjectDialog() {
+  if (running || busy || !flush()) return;
+  let name, width, height;
+  dialog(
+    "新建工程",
+    (body) => {
+      body.append(
+        element(
+          "p",
+          "panel-hint",
+          "创建空白画板。当前工程会保留在撤销记录中，可用 Ctrl+Z 恢复。",
+        ),
+      );
+      name = textControl("未命名", () => {});
+      name.maxLength = 80;
+      name.setAttribute("aria-label", "工程名称");
+      width = textControl(360, () => {}, "number");
+      height = textControl(480, () => {}, "number");
+      for (const [label, control] of [
+        ["画板宽度", width],
+        ["画板高度", height],
+      ]) {
+        control.min = "120";
+        control.max = "32768";
+        control.setAttribute("aria-label", label);
+      }
+      field("名称", name, "", body);
+      field("宽度", width, "", body);
+      field("高度", height, "", body);
+    },
+    [
+      {
+        label: "创建工程",
+        primary: true,
+        run: () => {
+          if (!name.value.trim()) throw new Error("请输入工程名称");
+          if (
+            !mutate("新建工程", (next) => {
+              for (const key of Object.keys(next)) delete next[key];
+              Object.assign(next, {
+                version: 2,
+                name: name.value.trim(),
+                board: { w: Number(width.value), h: Number(height.value) },
+                doc: { roots: [] },
+                locks: [],
+              });
+              selection = [];
+            })
+          )
+            throw new Error(lastError || "新建失败");
+          ++importRevision;
+          lastSelection = [];
+          runtimeOverrides = {};
+          hostOverrides = {};
+          hoverStates.clear();
+          collapsed.clear();
+          inspectorTab = "properties";
+          variableSearch = "";
+          dependenciesExpanded = false;
+          $("layerSearch").value = "";
+          closeContext();
+          renderAll();
+          closeDialog($("editDialog"));
+        },
+      },
+    ],
+  );
 }
 function previewSettingsDialog() {
   let title, measured, mode, frame, upward;
@@ -2441,7 +2874,8 @@ function command(name) {
     }[name] || "排列组件",
     (next) => {
       if (name === "delete") {
-        M.remove(next.doc, ids);
+        M.removeViews(next, ids, standard, modelInputs());
+        next.locks = next.locks.filter((id) => V.index(next.doc).byId.has(id));
         selection = [];
       } else if (name === "duplicate")
         selection = M.duplicate(next.doc, ids, modelInputs());
@@ -2853,7 +3287,11 @@ function setRunning(on) {
   $("runBtn").classList.toggle("is-running", on);
   $("board").classList.toggle("running", on);
   for (const id of [
-    "importBtn", "sourceBtn", "behaviorBtn", "boardWInput", "boardHInput",
+    "importBtn",
+    "sourceBtn",
+    "behaviorBtn",
+    "boardWInput",
+    "boardHInput",
   ])
     $(id).disabled = on;
   renderAll();
@@ -3046,7 +3484,11 @@ function importLocationHash() {
     try {
       // Consume only after a successful commit, so reload never overwrites
       // subsequent work with the original incoming fragment.
-      window.history.replaceState(null, "", location.pathname + location.search);
+      window.history.replaceState(
+        null,
+        "",
+        location.pathname + location.search,
+      );
     } catch {}
     toast("已从 Pogget 导入预设并保存到本地");
     return true;
@@ -3168,6 +3610,7 @@ async function init() {
     $("undoBtn").addEventListener("click", () => undo());
     $("redoBtn").addEventListener("click", () => undo(true));
     $("sourceBtn").addEventListener("click", sourceDialog);
+    $("newBtn").addEventListener("click", newProjectDialog);
     $("exportBtn").addEventListener("click", exportDialog);
     $("importBtn").addEventListener("click", () => {
       inputMode = "project";
@@ -3322,7 +3765,9 @@ async function init() {
     document.addEventListener("pointerdown", (event) => {
       if (!event.target.closest(".editor-context")) closeContext();
     });
-    $("dialogClose").addEventListener("click", () => closeDialog($("editDialog")));
+    $("dialogClose").addEventListener("click", () =>
+      closeDialog($("editDialog")),
+    );
     $("editDialog").addEventListener("cancel", (event) => {
       event.preventDefault();
       closeDialog($("editDialog"));

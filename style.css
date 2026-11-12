@@ -676,6 +676,9 @@ body.is-crashed{ overflow: hidden; }
   overflow-y: auto;
   padding: 14px 16px 28px;
 }
+.interaction-binding { display: flex; align-items: center; gap: 6px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
+.interaction-binding > span { flex: 1; min-width: 0; font: 11px var(--font); color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.interaction-binding .mini-btn { flex-shrink: 0; }
 .insp-el-head{
   display: flex;
   align-items: center;

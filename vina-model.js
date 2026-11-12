@@ -18,6 +18,7 @@ import {
   createView,
   clone,
   uid,
+  literal,
   META,
   TYPES,
   parsePoints,
@@ -451,6 +452,19 @@ function rewriteMoved(doc, before, compensations = new Map()) {
       const oldOwner = before.paths.get(id);
       if (!oldOwner) continue;
       let raw = p.raw;
+      if (p.name === "toggle") {
+        const expr = parseExpression(raw);
+        if (typeof expr.value === "string") {
+          const old = resolveReference(expr.value, oldOwner),
+            mapping = mappings.find(
+              ([from]) => old === from || old.startsWith(from + "."),
+            );
+          if (mapping || oldOwner !== after.paths.get(id))
+            raw = literal(
+              mapping ? mapping[1] + old.slice(mapping[0].length) : old,
+            );
+        }
+      }
       for (const span of referenceSpans(raw).reverse()) {
         const old = resolveReference(span.ref, oldOwner),
           mapping = mappings.find(
@@ -656,8 +670,75 @@ export function ungroup(doc, ids, inputs = {}) {
   }
   return result;
 }
-export function remove(doc, ids) {
-  for (const id of selectedRoots(doc, ids)) detach(doc, id);
+function removeReferenced(doc, ids, inputs, effectiveDoc) {
+  const before = new Runtime(effectiveDoc(doc), inputs),
+    next = clone(doc),
+    own = index(next);
+  const roots = selectedRoots(next, ids).map((id) => {
+    const parent = own.parents.get(id);
+    return parent &&
+      !own.parents.get(parent.id) &&
+      own.byId.get(id).name === "view"
+      ? parent.id
+      : id;
+  });
+  for (const id of selectedRoots(next, roots)) detach(next, id);
+  const after = new Runtime(effectiveDoc(next), inputs);
+  const exists = (runtime, path) => {
+    const actual = runtime.aliases.get(path) || path;
+    return (
+      runtime.idx.byPath.has(actual) ||
+      (/\.(hovered|hoverProgress)$/.test(path) &&
+        runtime.idx.byPath.has(path.slice(0, path.lastIndexOf("."))))
+    );
+  };
+  let disconnected = 0;
+  const surviving = index(next);
+  for (const [path, p] of surviving.byPath) {
+    if (p.kind !== "property") continue;
+    let raw = p.raw;
+    if (p.name === "toggle") {
+      const expr = parseExpression(raw);
+      if (typeof expr.value === "string") {
+        const target = resolveReference(expr.value, path);
+        if (exists(before, target) && !exists(after, target)) {
+          const parent = surviving.parents.get(p.id);
+          parent.members = parent.members.filter(
+            (member) => member.id !== p.id,
+          );
+          disconnected++;
+          continue;
+        }
+      }
+    }
+    for (const span of referenceSpans(raw).reverse()) {
+      const target = resolveReference(span.ref, path);
+      if (exists(before, target) && !exists(after, target)) {
+        raw =
+          raw.slice(0, span.start) +
+          "(" +
+          literal(before.get(target)) +
+          ")" +
+          raw.slice(span.end);
+        disconnected++;
+      }
+    }
+    p.raw = raw;
+  }
+  // Plan on a clone so unresolved values never leave a half-deleted document.
+  new Runtime(effectiveDoc(next), inputs).validateReferences();
+  doc.roots = next.roots;
+  return disconnected;
+}
+export function remove(doc, ids, inputs = {}) {
+  return removeReferenced(doc, ids, inputs, (value) => value);
+}
+export function removeViews(project, ids, standard, inputs = {}) {
+  const disconnected = removeReferenced(project.doc, ids, inputs, (doc) =>
+    effectiveProject({ ...project, doc }, standard),
+  );
+  delete project.behaviorGraph;
+  return disconnected;
 }
 export function duplicate(doc, ids, inputs = {}) {
   const result = [];
@@ -690,6 +771,17 @@ export function duplicate(doc, ids, inputs = {}) {
       const p = after.byId.get(newId);
       if (p.kind !== "property") continue;
       const owner = before.paths.get(old);
+      if (p.name === "toggle") {
+        const expr = parseExpression(p.raw);
+        if (typeof expr.value === "string") {
+          const target = resolveReference(expr.value, owner);
+          p.raw = literal(
+            target === oldPrefix || target.startsWith(oldPrefix + ".")
+              ? newPrefix + target.slice(oldPrefix.length)
+              : target,
+          );
+        }
+      }
       for (const span of referenceSpans(p.raw).reverse()) {
         const ref = resolveReference(span.ref, owner);
         const target =
@@ -749,6 +841,17 @@ export function copySelection(doc, ids, inputs = {}) {
     for (const [newId, owner] of mappings) {
       const p = after.byId.get(newId);
       if (p.kind !== "property") continue;
+      if (p.name === "toggle") {
+        const expr = parseExpression(p.raw);
+        if (typeof expr.value === "string") {
+          const target = resolveReference(expr.value, owner);
+          p.raw = literal(
+            target.startsWith(component.name + ".state.")
+              ? root.name + target.slice(component.name.length)
+              : target,
+          );
+        }
+      }
       for (const span of referenceSpans(p.raw).reverse()) {
         let target = resolveReference(span.ref, owner);
         if (target === oldView || target.startsWith(oldView + "."))
@@ -923,7 +1026,8 @@ export function projectFromJSON(text) {
     if (
       typeof value.linkedSource?.source === "string" &&
       value.linkedSource.canonical === serialize(doc) &&
-      serialize(parse(value.linkedSource.source)) === value.linkedSource.canonical
+      serialize(parse(value.linkedSource.source)) ===
+        value.linkedSource.canonical
     )
       project.linkedSource = value.linkedSource;
   } catch {

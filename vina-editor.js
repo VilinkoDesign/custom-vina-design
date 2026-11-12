@@ -196,10 +196,9 @@ export function propertyGroups(node, p) {
       "interaction",
       "action",
       "holdAction",
-      "toggle",
       "transition",
       "unhoverTransition",
-      ...(p.action || p.holdAction
+      ...(p.action || p.holdAction || p.toggle
         ? ["pressDuration", "releaseDuration", "pressScale"]
         : []),
       ...(p.holdAction
