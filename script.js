@@ -1707,8 +1707,10 @@ function gradientEditor(node, key, title, target = $("inspBody")) {
 }
 function renderVariables(preview = false) {
   if (preview) {
-    const previewDoc = effective();
-    const read = () => ({ doc: previewDoc, inputs: inputValues(project, previewDoc) });
+    const read = () => {
+      const doc = effective();
+      return { doc, inputs: inputValues(project, doc) };
+    };
     const change = (path, value, field = null) => {
       const prior = runtimeOverrides[path];
       try {
@@ -1763,6 +1765,59 @@ function renderVariables(preview = false) {
     return;
   }
   if (!preview) {
+    const editDoc = effective(),
+      sourceIndex = V.index(project.doc),
+      localGroups = new Set(
+        editDoc.roots
+          .filter((root) => sourceIndex.byPath.has(root.name) && V.block(root, "ui"))
+          .map((root) => root.name),
+      );
+    if (localGroups.size) {
+      $("inspBody").append(
+        element("div", "insp-section", "个性化预览"),
+        element("p", "panel-hint", "自定义折叠分组始终可展开；控件值会直接写入当前预设。"),
+      );
+      const editRead = () => {
+        const doc = effective();
+        return { doc, inputs: inputValues(project, doc) };
+      };
+      const editChange = (path, value, field = null) => {
+        const ownerPath = path.endsWith(".value") ? path.slice(0, -6) : path,
+          owner = V.index(project.doc).byPath.get(ownerPath),
+          defaultProperty = owner && V.property(owner, "default");
+        if (!owner || owner.kind !== "block" || !defaultProperty) return false;
+        const before = V.clone(project);
+        try {
+          if (!pending) pending = V.clone(project);
+          V.setValue(owner, "default", field ? normalizeUiValue(field, value) : value);
+          M.validate(project, standard, inputValues(), schema);
+          renderCanvas();
+          renderLayers();
+          syncHistory();
+          return true;
+        } catch (error) {
+          project = before;
+          toast(error.message);
+          return false;
+        }
+      };
+      mountPersonalization($("inspBody"), {
+        read: editRead,
+        change: editChange,
+        commit: () => flush(),
+        editable: (field) => {
+          const owner = sourceIndex.byPath.get(field.path);
+          return owner?.kind === "block" && !!V.property(owner, "default");
+        },
+        filterGroup: (group) => localGroups.has(group.path),
+        mode: "edit",
+        catalog: nativeLabels,
+        expanded: personalizationExpanded,
+        query: personalizationSearch,
+        language: document.documentElement.lang || "zh-CN",
+        action: value => toast("动作仅在运行预览中执行：" + (value || "按钮动作")),
+      });
+    }
     $("inspBody").append(
       button("新增变量 / 个性化控件", variableDialog, "btn-primary full-width"),
     );
@@ -3228,6 +3283,13 @@ function pointerDown(event) {
   }
   $("board").setPointerCapture(event.pointerId);
 }
+function canvasWrapPointerDown(event) {
+  if (event.button !== 0 || running || busy) return;
+  // The board handles its own blank-area marquee.  This path covers the
+  // surrounding canvas workspace where there is no board child to receive it.
+  if (event.target.closest("#board")) return;
+  select([]);
+}
 function pointerMove(event) {
   const d = drag;
   if (!d) {
@@ -3790,6 +3852,7 @@ async function init() {
         n.addEventListener("click", () => command(n.dataset.command)),
       );
     $("board").addEventListener("pointerdown", pointerDown);
+    $("canvasWrap").addEventListener("pointerdown", canvasWrapPointerDown);
     $("board").addEventListener("pointermove", pointerMove);
     $("board").addEventListener("pointerleave", () => {
       if (running) trackHover(null);

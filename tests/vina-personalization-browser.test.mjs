@@ -7,19 +7,32 @@ import { personalizationSource as source } from "./fixtures/personalization.mjs"
 test("native personalization: wrapped disclosures, internal labels, all controls, live visibility, HSL capture, search restoration and themes", {
   skip: !process.env.CHROME_PATH && "Set CHROME_PATH to a Chromium executable", timeout: 60000,
 }, async () => browserSession(async ({ call, evaluate, waitFor, click, mouse, origin, errors }) => {
+  const set = async (label, value, event = "change") => evaluate(`(() => {const n=document.querySelector('[aria-label="${label}"]');n.value=${JSON.stringify(value)};n.dispatchEvent(new Event('${event}',{bubbles:true}));})()`);
   await call("Page.navigate", { url: origin + "/index.html#c=" + Buffer.from(source).toString("base64url") });
   await waitFor('document.documentElement.dataset.ready === "true"');
+  await click("#variablesTab");
+  assert.equal(await evaluate('document.querySelectorAll(".personal-group").length'), 1);
+  const editGroup = '[data-group="Custom"]';
+  await click(editGroup + " > summary");
+  await waitFor(`document.querySelector('${editGroup}').open`);
+  await set("Custom.ui.Text.value", "编辑模式文本");
+  assert.match(await evaluate('window.vinaEditor.source'), /编辑模式文本/);
+  await click("#undoBtn");
+  assert.equal(await evaluate('window.vinaEditor.source'), source);
+  await click(".layer-row");
+  assert.ok((await evaluate('window.vinaEditor.selection')).length > 0);
+  const outside = await evaluate(`(() => {const c=document.querySelector('#canvasWrap').getBoundingClientRect(),b=document.querySelector('#board').getBoundingClientRect();const x=b.right+Math.min(40,Math.max(8,c.right-b.right-8));const y=Math.max(c.top+8,Math.min(c.bottom-8,b.top+8));return {x,y}})()`);
+  await mouse("mouseMoved", outside); await mouse("mousePressed", outside); await mouse("mouseReleased", outside);
+  assert.deepEqual(await evaluate('window.vinaEditor.selection'), []);
   await click("#runBtn");
   assert.equal(await evaluate('document.querySelectorAll(".personal-group").length'), 5);
-  assert.equal(await evaluate('[...document.querySelectorAll(".personal-group")].every(n=>!n.open)'), true);
+  assert.equal(await evaluate(`document.querySelector('${editGroup}').open`), true);
   assert.deepEqual(await evaluate('document.querySelector(".personalization-panel").textContent.match(/pogget\\.label\\.\\w+/g)||[]'), []);
   const group = '[data-group="Custom"]';
-  await click(group + " > summary");
   await waitFor(`document.querySelector('${group}').open`);
   const geometry = await evaluate(`(() => {const n=document.querySelector('${group}'),h=n.querySelector('summary').getBoundingClientRect(),t=n.querySelector('.personal-group-description').getBoundingClientRect(),b=n.querySelector('.personal-group-body').getBoundingClientRect();return {header:h.height,inside:t.bottom<=h.bottom,body:b.top>=h.bottom-1,overflow:n.scrollWidth>n.clientWidth+1}})()`);
   assert.ok(geometry.header > 100, JSON.stringify(geometry));
   assert.equal(geometry.inside, true); assert.equal(geometry.body, true); assert.equal(geometry.overflow, false);
-  const set = async (label, value, event = "change") => evaluate(`(() => {const n=document.querySelector('[aria-label="${label}"]');n.value=${JSON.stringify(value)};n.dispatchEvent(new Event('${event}',{bubbles:true}));})()`);
   await set("Custom.ui.Width.value", "75", "input");
   assert.equal(await evaluate('window.vinaEditor.preview.frames.find(f=>f.path==="Custom.view").w'), 216);
   await evaluate(`document.querySelector('[aria-label="Custom.ui.Enabled.value"]').click()`);

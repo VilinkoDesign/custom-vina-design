@@ -1197,6 +1197,8 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .personal-field[data-control="color"] { min-height: 70px; padding-bottom: 8px; }
 .personal-field[data-control="color"]:has(.personal-hsl:not([hidden])) { padding-bottom: 18px; }
 .personal-field-label { display: block; font-size: var(--personal-labelSize); line-height: 18px; opacity: .8; overflow-wrap: anywhere; white-space: pre-wrap; }
+.personal-readonly { opacity: .58; }
+.personal-readonly .personal-option, .personal-readonly .personal-range { cursor: default; }
 .personal-option {
   width: 100%; height: var(--personal-optionHeight); margin-top: 2px;
   border: 0; border-radius: 8px; padding: 0 12px;

@@ -116,7 +116,7 @@ function chooseFont(value, label, commit) {
   document.body.append(dialog); update(); showDialog(dialog); input.focus();
 }
 
-export function mountPersonalization(target, { read, change, action, catalog, language = "zh-CN", expanded = new Map(), query = { value: "" } }) {
+export function mountPersonalization(target, { read, change, action, commit = () => {}, editable = () => true, filterGroup = () => true, mode = "preview", catalog, language = "zh-CN", expanded = new Map(), query = { value: "" } }) {
   const label = key => nativeLabel("pogget.label." + key, catalog, language),
     panel = node("div", "personalization-panel"), search = node("input", "ctl personal-search"),
     list = node("div", "personal-groups"), empty = node("p", "panel-hint", "没有匹配的设置"), views = [];
@@ -137,7 +137,7 @@ export function mountPersonalization(target, { read, change, action, catalog, la
     const { doc, inputs } = snapshot;
     return personalizationGroups(doc, inputs, catalog, language);
   };
-  for (const group of currentGroups()) {
+  for (const group of currentGroups().filter(filterGroup)) {
     const details = node("details", "personal-group"), summary = node("summary", "personal-group-header"),
       glyph = node("span", "personal-group-icon", group.icon), text = node("span", "personal-group-text"),
       title = node("span", "personal-group-title", group.title), description = node("span", "personal-group-description", group.description),
@@ -152,7 +152,9 @@ export function mountPersonalization(target, { read, change, action, catalog, la
         notice = node("div", "personal-notice", field.notice);
       row.dataset.variable = field.valuePath; row.dataset.control = field.kind;
       row.append(caption); body.append(row);
+      const canEdit = editable(field);
       const apply = value => {
+        if (!canEdit) return false;
         const ok = change(field.valuePath, value, field);
         refresh(); return ok;
       };
@@ -165,6 +167,7 @@ export function mountPersonalization(target, { read, change, action, catalog, la
           const value = field.min + Number(control.value) * (field.max - field.min) / 100;
           apply(field.min + Math.round((value - field.min) / field.step) * field.step);
         });
+        control.addEventListener("change", commit);
         sync = f => {
           const percent = f.max > f.min ? (Number(f.value) - f.min) * 100 / (f.max - f.min) : 0;
           caption.textContent = sliderTitle(f, catalog, language);
@@ -176,7 +179,7 @@ export function mountPersonalization(target, { read, change, action, catalog, la
       } else if (["switch", "toggle"].includes(field.kind)) {
         control = node("button", "personal-switch"); control.type = "button"; control.setAttribute("role", "switch");
         row.classList.add("personal-toggle-row"); row.prepend(control);
-        control.addEventListener("click", () => apply(control.getAttribute("aria-checked") !== "true"));
+        control.addEventListener("click", () => { if (apply(control.getAttribute("aria-checked") !== "true")) commit(); });
         sync = f => control.setAttribute("aria-checked", String(Boolean(f.value)));
       } else if (field.kind === "color") {
         const editor = hslEditor(field, label, apply);
@@ -189,7 +192,7 @@ export function mountPersonalization(target, { read, change, action, catalog, la
           const names = field.bind === "TitleBarColor" ? ["colorSourceTheme", "colorSourceTag", "colorSourceCustom"] : ["colorSourceTheme", "colorSourceCustom"];
           names.forEach((name, i) => {
             const tab = node("button", "", label(name)); tab.type = "button";
-            tab.addEventListener("click", () => { change(sourceKey, i); refresh(); }); tabs.append(tab);
+            tab.addEventListener("click", () => { if (canEdit) { change(sourceKey, i); commit(); refresh(); } }); tabs.append(tab);
           });
           row.append(tabs);
         }
@@ -200,19 +203,20 @@ export function mountPersonalization(target, { read, change, action, catalog, la
           control.hidden = bound && source !== tabs.children.length - 1;
           editor.sync(f.value);
         };
+        control.addEventListener("change", commit);
       } else if (field.kind === "font") {
         control = node("button", "personal-option"); control.type = "button";
-        control.addEventListener("click", () => chooseFont(field.value, label, apply));
+        control.addEventListener("click", () => chooseFont(field.value, label, value => { const ok = apply(value); if (ok) commit(); }));
         sync = f => { control.textContent = String(f.value); };
       } else if (["text", "edit"].includes(field.kind)) {
         control = node("input", "personal-option personal-text"); control.type = "text";
-        control.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); apply(control.value); } });
-        control.addEventListener("change", () => apply(control.value));
+        control.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); if (apply(control.value)) commit(); } });
+        control.addEventListener("change", () => { if (apply(control.value)) commit(); });
         sync = f => { if (document.activeElement !== control) control.value = f.value; };
       } else if (field.choices.length) {
         control = node("select", "personal-option");
         field.choices.forEach((text, i) => { const option = node("option", "", text); option.value = i; control.append(option); });
-        control.addEventListener("change", () => apply(field.invert ? 1 - Number(control.value) : Number(control.value)));
+        control.addEventListener("change", () => { if (apply(field.invert ? 1 - Number(control.value) : Number(control.value))) commit(); });
         sync = f => {
           const selected = f.type === "boolean" ? (f.value ? 1 : 0) : Number(f.value);
           control.value = Math.max(0, Math.min(f.choices.length - 1, f.invert ? 1 - selected : selected));
@@ -223,6 +227,11 @@ export function mountPersonalization(target, { read, change, action, catalog, la
         control.addEventListener("click", () => { action(field.action); refresh(); }); sync = () => {};
       }
       if (field.kind !== "color" && !control.parentNode) row.append(control);
+      if (!canEdit && field.kind !== "button") {
+        control.disabled = true;
+        control.querySelectorAll?.("input,button,select").forEach((input) => { input.disabled = true; });
+        row.classList.add("personal-readonly");
+      }
       control.setAttribute("aria-label", field.valuePath);
       const id = "personal-" + field.path.replace(/\./g, "-"); control.id = id; caption.htmlFor = id;
       if (field.notice) row.append(notice);
@@ -235,7 +244,7 @@ export function mountPersonalization(target, { read, change, action, catalog, la
     const terms = search.value.normalize("NFKC").toLowerCase().trim().split(/\s+/).filter(Boolean);
     const wasSearching = searching; searching = terms.length > 0;
     let count = 0;
-    for (const group of currentGroups()) {
+    for (const group of currentGroups().filter(filterGroup)) {
       const view = views.find(v => v.path === group.path); if (!view) continue;
       let visible = 0;
       for (const field of group.fields) {
@@ -255,5 +264,6 @@ export function mountPersonalization(target, { read, change, action, catalog, la
   }
   search.addEventListener("input", refresh);
   refresh();
+  panel.dataset.mode = mode;
   return { refresh };
 }
