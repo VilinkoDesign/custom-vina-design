@@ -31,3 +31,7 @@ FA6 图标及字体由 Fonticons, Inc. 提供，许可证见 [vendor/fontawesome
 行为使用原生 CustomVina 的 `state`、`toggle`、`action`、`holdAction`、悬停和属性表达式，不执行 JavaScript。每个组件支持一个短按状态切换和一个短按动作，以及一个长按动作；宿主动作在 Pogget 中执行。编辑继承行为只生成当前工程的覆盖；基础预设中的 `toggle` 若需删除，须先导出独立预设再导入编辑。导出 `.vina` 包含实际交互语法，重新导入时重建连线；工程 JSON 和本地自动保存同时保留节点布局和未连接的节点。
 
 运行 `npm test` 执行模型和导入回归。设置 `CHROME_PATH` 为 Chromium / Edge 的可执行文件路径后，同一命令还会验证真实浏览器连线、弹窗校验、预览点击、保存重载及浅深色和窄屏布局。测试文件串行执行，避免 Windows 上多个浏览器争抢原生鼠标捕获。
+
+运行模式的右侧个性化面板按照 Pogget 的组件顺序生成可折叠分组，读取原生标题、说明、选项、提示与条件显隐。滑块、开关、颜色来源及 HSL 三轨道直接驱动画布；搜索结束后恢复原折叠状态。预览值不写入预设默认值，导出仍使用原生 `.vina` 声明。字体按钮可选择常用字体或输入字体名称，实际字形由运行环境已安装的字体决定。
+
+`data/pogget-labels.json` 来自 Pogget 的实际多语言目录。更新原生文案后，运行 `node tools/sync-pogget-labels.mjs <VinaApp目录>` 同步。Windows 上设置 `VINA_NATIVE_ROOT` 为原生 VinaApp 仓库目录，再运行 `npm test`，会使用 Visual Studio 2022 编译实际 C++ 对照程序，校验三种语言、继承分组、选项、颜色、显隐条件及在线修改后的导出预设，完成原生 → 在线 → 原生回归。

@@ -6,6 +6,8 @@ import { showDialog, closeDialog } from "./vina-dialog.js";
 import * as I from "./vina-interactions.js";
 import { mountToolMenus } from "./vina-menu.js";
 import { renderScene } from "./vina-renderer.js";
+import { mountPersonalization } from "./vina-personalization-ui.js";
+import { personalizationInputs, normalizeUiValue } from "./vina-personalization.js";
 import { hitFrame } from "./vina-preview.js";
 import {
   orderedLayers,
@@ -53,6 +55,7 @@ let project = V.createProject(),
 let standard,
   schema,
   defaults,
+  nativeLabels,
   currentInputs = {},
   runtimeOverrides = {},
   lastSelection = [],
@@ -60,6 +63,7 @@ let standard,
   lastError = "",
   importRevision = 0;
 const collapsed = new Set();
+const personalizationExpanded = new Map(), personalizationSearch = { value: "" };
 const hoverStates = new Map();
 let previewFrame = 0;
 let hostState = "expanded",
@@ -103,8 +107,8 @@ function status(message, error = false) {
 const idx = () => V.index(project.doc);
 const selected = () =>
   selection.map((id) => idx().byId.get(id)).filter(Boolean);
-function inputValues(target = project) {
-  const inputs = previewInputs(
+function inputValues(target = project, personalizationDoc) {
+  let inputs = previewInputs(
     defaults,
     target.board,
     document.documentElement.dataset.theme === "dark",
@@ -112,6 +116,8 @@ function inputValues(target = project) {
     hostState,
     { ...hostOverrides, ...runtimeOverrides },
   );
+  try { inputs = personalizationInputs(personalizationDoc || M.effectiveProject(target, standard), inputs); }
+  catch { /* Missing dependencies are reported by the validator. */ }
   if (isHostPreset(target.doc) && hostState === "search") {
     try {
       return hostPreviewInputs(
@@ -1700,6 +1706,62 @@ function gradientEditor(node, key, title, target = $("inspBody")) {
   target.append(row);
 }
 function renderVariables(preview = false) {
+  if (preview) {
+    const previewDoc = effective();
+    const read = () => ({ doc: previewDoc, inputs: inputValues(project, previewDoc) });
+    const change = (path, value, field = null) => {
+      const prior = runtimeOverrides[path];
+      try {
+        runtimeOverrides[path] = field ? normalizeUiValue(field, value) : value;
+        M.validate(project, standard, inputValues(), schema);
+        renderCanvas();
+        return true;
+      } catch (error) {
+        if (prior === undefined) delete runtimeOverrides[path];
+        else runtimeOverrides[path] = prior;
+        toast(error.message);
+        return false;
+      }
+    };
+    mountPersonalization($("inspBody"), {
+      read, change, catalog: nativeLabels, expanded: personalizationExpanded, query: personalizationSearch,
+      language: document.documentElement.lang || "zh-CN",
+      action: value => {
+        const inputs = inputValues();
+        const actions = {
+          "pogget.action.view.list": ["pogget.isListView", true],
+          "pogget.action.view.grid": ["pogget.isListView", false],
+          "pogget.action.view.toggle": ["pogget.isListView", !inputs["pogget.isListView"]],
+          "pogget.action.container.lock": ["pogget.locked", !inputs["pogget.locked"]],
+          "pogget.action.container.collapse": ["pogget.collapsed", true],
+          "pogget.action.container.expand": ["pogget.collapsed", false],
+          "pogget.action.container.toggleCollapse": ["pogget.collapsed", !inputs["pogget.collapsed"]],
+        };
+        if (actions[value]) change(...actions[value]);
+        else toast("在 Pogget 内执行：" + (value || "按钮动作"));
+      },
+    });
+    // Keep the existing runtime variable tools available below the native UI.
+    const extra = element("details", "dependency-variables"),
+      summary = element("summary", "", "运行时变量");
+    extra.append(summary);
+    const rt = new V.Runtime(effective(), inputValues());
+    let count = 0;
+    for (const root of effective().roots)
+      for (const scope of ["vars", "state"])
+        for (const p of V.block(root, scope)?.members || []) {
+          if (p.kind !== "property") continue;
+          const path = root.name + "." + scope + "." + p.name,
+            value = rt.get(path), row = element("div", "variable-card");
+          const control = typeof value === "boolean"
+            ? selectControl(String(value), ["true", "false"], v => change(path, v === "true"))
+            : textControl(value, v => change(path, typeof value === "number" ? Number(v) : v), typeof value === "number" ? "number" : "text");
+          control.setAttribute("aria-label", path);
+          row.append(element("div", "variable-title", path), control); extra.append(row); count++;
+        }
+    if (count) $("inspBody").append(extra);
+    return;
+  }
   if (!preview) {
     $("inspBody").append(
       button("新增变量 / 个性化控件", variableDialog, "btn-primary full-width"),
@@ -3494,6 +3556,7 @@ function importLocationHash() {
     closeContext();
     if ($("editDialog").open) closeDialog($("editDialog"));
     runtimeOverrides = {};
+    personalizationExpanded.clear(); personalizationSearch.value = "";
     hoverStates.clear();
     if (running) setRunning(false);
     ++importRevision; // Cancel any file import that was still reading.
@@ -3520,6 +3583,7 @@ async function init() {
         "data/Pogget_Std.vina",
         "data/schema.json",
         "data/preview-inputs.json",
+        "data/pogget-labels.json",
       ].map(async (url) => {
         const response = await fetch(url);
         if (!response.ok) throw new Error("无法读取 " + url);
@@ -3529,6 +3593,7 @@ async function init() {
     standard = V.parse(assets[0]);
     schema = JSON.parse(assets[1]);
     defaults = JSON.parse(assets[2]);
+    nativeLabels = JSON.parse(assets[3]);
     let themeMode = "system";
     try {
       themeMode = localStorage.getItem("customvina.theme") || "system";
