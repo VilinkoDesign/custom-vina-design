@@ -19,7 +19,8 @@ test("native personalization: wrapped disclosures, internal labels, all controls
   assert.match(await evaluate('window.vinaEditor.source'), /编辑模式文本/);
   await click("#undoBtn");
   assert.equal(await evaluate('window.vinaEditor.source'), source);
-  await click(".layer-row");
+  const controlPoint = await evaluate(`(() => {const r=document.querySelector('#scene .el')?.getBoundingClientRect();return r&&{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+  await mouse("mouseMoved", controlPoint); await mouse("mousePressed", controlPoint); await mouse("mouseReleased", controlPoint);
   assert.ok((await evaluate('window.vinaEditor.selection')).length > 0);
   const outside = await evaluate(`(() => {const c=document.querySelector('#canvasWrap').getBoundingClientRect(),b=document.querySelector('#board').getBoundingClientRect();const x=b.right+Math.min(40,Math.max(8,c.right-b.right-8));const y=Math.max(c.top+8,Math.min(c.bottom-8,b.top+8));return {x,y}})()`);
   await mouse("mouseMoved", outside); await mouse("mousePressed", outside); await mouse("mouseReleased", outside);

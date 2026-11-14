@@ -124,6 +124,44 @@ test(
 );
 
 test(
+  "variable creation adapts fields by type and adds optional personalization controls",
+  options,
+  async () =>
+    browserSession(async (session) => {
+      const { evaluate, click, waitFor } = session;
+      const { navigate, set, press, closed } = helpers(session);
+      await navigate();
+      await click("#variablesTab");
+      await click("#inspBody .btn-primary");
+      await waitFor('document.querySelector("#editDialog").open');
+      assert.equal(await evaluate('document.querySelector("[aria-label=类型]").value'), "vars");
+      assert.equal(await evaluate('document.querySelector("[aria-label=形式]").value'), "slider");
+      assert.equal(await evaluate('document.querySelector("[aria-label=添加为个性化控件]").checked'), false);
+      assert.equal(await evaluate('document.querySelector("[aria-label=最小值]").hidden'), true);
+      await set("值类型", "boolean");
+      assert.equal(await evaluate('document.querySelector("[aria-label=形式]").value'), "switch");
+      assert.equal(await evaluate('document.querySelector("[aria-label=最小值]").hidden'), true);
+      await evaluate('document.querySelector("[aria-label=添加为个性化控件]").click()');
+      assert.equal(await evaluate('document.querySelector("[aria-label=形式]").hidden'), false);
+      assert.equal(await evaluate('document.querySelector("[aria-label=最小值]").hidden'), true);
+      await set("值类型", "number");
+      assert.equal(await evaluate('document.querySelector("[aria-label=形式]").value'), "slider");
+      assert.equal(await evaluate('document.querySelector("[aria-label=最小值]").hidden'), false);
+      await set("变量名", "Speed");
+      await set("变量默认值", "5");
+      await set("最小值", "0");
+      await set("最大值", "10");
+      await set("步长", "1");
+      await press("#dialogFoot", "创建");
+      await closed();
+      const source = await evaluate("window.vinaEditor.source");
+      assert.match(source, /vars\s*\{[\s\S]*Speed:\s*5/);
+      assert.match(source, /ui\s*\{[\s\S]*Speed\s*\{[\s\S]*control:\s*"slider"/);
+      assert.match(source, /min:\s*0[\s\S]*max:\s*10[\s\S]*step:\s*1/);
+    }),
+);
+
+test(
   "ordinary inspector authors button toggles, rectangle visibility, hover styles and bindings, graph round trip and referenced-group deletion",
   options,
   async () =>

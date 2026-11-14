@@ -1284,6 +1284,7 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .reference-option { display: block; width: 100%; padding: 8px 10px; text-align: left; background: var(--panel); color: var(--ink-dim); font: 11px var(--mono); border: 0; border-bottom: 1px solid var(--line-soft); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reference-option:hover { background: var(--accent-soft); color: var(--accent); }
 .dialog-grid { display: grid; grid-template-columns: 130px 1fr; gap: 9px 12px; align-items: center; font-size: 12px; margin: 10px 0 18px; }
+.dialog-grid input[type="checkbox"].ctl { width: 18px; height: 18px; padding: 0; justify-self: start; accent-color: var(--accent); }
 .options-editor { height: 75px; }
 .gradient-stop { display: grid; grid-template-columns: 52px 58px 32px 1fr 52px 30px; align-items: center; gap: 6px; margin: 9px 0; }
 .gradient-stop .ctl { min-width: 0; padding: 0 5px; font: 11px var(--mono); }

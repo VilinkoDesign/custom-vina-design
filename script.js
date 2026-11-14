@@ -2709,131 +2709,158 @@ function gradientDialog(node, key) {
   );
 }
 function variableDialog() {
-  let component, scope, name, type, control, value, min, max, step, options;
+  let component, kind, name, valueType, form, value, min, max, step, options, personalized;
+  let valueSlot, formSlot, formRow, rangeRows, optionsRow;
+  const forms = {
+    number: [
+      { value: "slider", label: "滑块" },
+      { value: "number", label: "数值输入" },
+    ],
+    boolean: [
+      { value: "switch", label: "开关" },
+      { value: "choice", label: "选项" },
+    ],
+    text: [
+      { value: "text", label: "文本" },
+      { value: "font", label: "字体" },
+    ],
+    color: [{ value: "color", label: "颜色" }],
+  };
+  const defaultFor = (type) =>
+    type === "boolean" ? "false" : type === "color" ? "#5a8cc8" : type === "text" ? "" : "0";
+  const rawDefault = () => {
+    if (valueType.value === "text") return V.literal(value.value);
+    if (valueType.value === "color") return V.colorRaw(value.value);
+    return value.value;
+  };
+  const addVariable = (next) => {
+    let root = next.doc.roots.find((n) => n.name === component.value);
+    if (!root) {
+      root = V.makeBlock(component.value);
+      next.doc.roots.push(root);
+    }
+    let group = V.block(root, kind.value);
+    if (!group) {
+      group = V.makeBlock(kind.value);
+      root.members.push(group);
+    }
+    if (group.members.some((n) => n.name === name.value)) throw new Error("变量名重复");
+    const raw = rawDefault();
+    V.setRaw(group, name.value, raw);
+    if (!personalized.checked) return;
+    let ui = V.block(root, "ui");
+    if (!ui) {
+      ui = V.makeBlock("ui");
+      root.members.push(ui);
+    }
+    if (ui.members.some((n) => n.name === name.value)) throw new Error("个性化控件名重复");
+    const field = V.makeBlock(name.value, {
+      label: name.value,
+      type: valueType.value === "color" ? "number" : valueType.value,
+      control: form.value,
+    });
+    // Keep the optional control linked to the variable's initial value. The
+    // editor can later author an explicit UI default independently.
+    V.setRaw(field, "default", `\${${kind.value}.${name.value}}`);
+    if (valueType.value === "number") {
+      V.setRaw(field, "min", min.value);
+      V.setRaw(field, "max", max.value);
+      V.setRaw(field, "step", step.value);
+    }
+    if (["choice", "select"].includes(form.value)) {
+      const labels = options.value.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (!labels.length) throw new Error("请声明选项");
+      field.members.push(V.makeBlock("choices", Object.fromEntries(labels.map((s, i) => ["c" + i, s]))));
+    }
+    ui.members.push(field);
+  };
   dialog(
     "新增变量或个性化控件",
     (body) => {
       const grid = element("div", "dialog-grid"),
         roots = project.doc.roots.filter((n) => n.name !== "Preset");
-      const add = (label, n) => grid.append(element("label", "", label), n);
-      component = selectControl(
-        roots[0]?.name || "Variables",
-        roots.length ? roots.map((n) => n.name) : ["Variables"],
-        () => {},
-      );
+      const add = (label, n) => {
+        const lb = element("label", "", label);
+        grid.append(lb, n);
+        return { label: lb, control: n };
+      };
+      const updateValue = () => {
+        valueSlot.replaceChildren();
+        const type = valueType.value;
+        value = type === "boolean"
+          ? selectControl("false", [{ value: "false", label: "否（false）" }, { value: "true", label: "是（true）" }], () => {})
+          : type === "color"
+            ? textControl(defaultFor(type), () => {}, "color")
+            : textControl(defaultFor(type), () => {}, type === "number" ? "number" : "text");
+        value.setAttribute("aria-label", "变量默认值");
+        valueSlot.append(value);
+      };
+      const updateForm = () => {
+        formSlot.replaceChildren();
+        form = selectControl(forms[valueType.value][0].value, forms[valueType.value], updateVisibility);
+        form.setAttribute("aria-label", "形式");
+        formSlot.append(form);
+        updateVisibility();
+      };
+      const updateVisibility = () => {
+        const number = valueType.value === "number";
+        const showRange = personalized.checked && number;
+        rangeRows.forEach((row) => { row.label.hidden = row.control.hidden = !showRange; });
+        optionsRow.label.hidden = optionsRow.control.hidden = !(personalized.checked && ["choice", "select"].includes(form?.value));
+        formRow.label.hidden = formRow.control.hidden = !personalized.checked;
+      };
+      component = selectControl(roots[0]?.name || "Variables", roots.length ? roots.map((n) => n.name) : ["Variables"], () => {});
+      component.setAttribute("aria-label", "所属组件");
       add("所属组件", component);
-      scope = selectControl(
-        "vars",
-        [
-          { value: "vars", label: "vars · 表达式变量" },
-          { value: "state", label: "state · 运行时状态" },
-          { value: "ui", label: "ui · 个性化控件" },
-        ],
-        () => {},
-      );
-      add("作用域", scope);
+      kind = selectControl("vars", [
+        { value: "vars", label: "表达式变量" },
+        { value: "state", label: "运行时状态" },
+      ], () => {});
+      kind.setAttribute("aria-label", "类型");
+      add("类型", kind);
       name = textControl("Value1", () => {});
+      name.setAttribute("aria-label", "变量名");
       add("变量名", name);
-      type = selectControl(
-        "number",
-        ["number", "boolean", "text", "color"],
-        () => {},
-      );
-      add("值类型", type);
-      control = selectControl(
-        "slider",
-        [
-          "slider",
-          "number",
-          "switch",
-          "choice",
-          "select",
-          "text",
-          "color",
-          "font",
-          "button",
-        ],
-        () => {},
-      );
-      add("ui 控件", control);
-      value = textControl("12", () => {});
-      value.setAttribute("aria-label", "变量默认值");
-      add("默认值 / 表达式", value);
+      valueType = selectControl("number", [
+        { value: "number", label: "数值" },
+        { value: "boolean", label: "布尔" },
+        { value: "text", label: "文本" },
+        { value: "color", label: "颜色" },
+      ], () => { updateValue(); updateForm(); });
+      valueType.setAttribute("aria-label", "值类型");
+      add("值类型", valueType);
+      personalized = element("input", "ctl"); personalized.type = "checkbox"; personalized.checked = false;
+      personalized.setAttribute("aria-label", "添加为个性化控件");
+      personalized.addEventListener("change", updateVisibility);
+      add("添加为个性化控件", personalized);
+      const formLabel = element("label", "", "形式");
+      formSlot = element("div");
+      grid.append(formLabel, formSlot);
+      formRow = { label: formLabel, control: formSlot };
+      valueSlot = element("div");
+      grid.append(element("label", "", "默认值"), valueSlot);
       min = textControl("0", () => {});
       max = textControl("100", () => {});
       step = textControl("1", () => {});
-      add("最小值", min);
-      add("最大值", max);
-      add("步长", step);
+      min.setAttribute("aria-label", "最小值");
+      max.setAttribute("aria-label", "最大值");
+      step.setAttribute("aria-label", "步长");
+      rangeRows = [add("最小值", min), add("最大值", max), add("步长", step)];
       options = textarea("选项一\n选项二");
       options.classList.add("options-editor");
-      add("choice/select 选项", options);
-      body.append(
-        grid,
-        element(
-          "p",
-          "panel-hint",
-          "文本默认值直接输入文字。状态变量只能使用字面量。ui 的 choice/select 默认值是从 0 开始的选项序号。",
-        ),
-      );
+      options.setAttribute("aria-label", "choice/select 选项");
+      optionsRow = add("choice/select 选项", options);
+      body.append(grid, element("p", "panel-hint", "类型决定默认值和可用形式。数值才有最小值、最大值和步长；勾选后会在 ui 中创建对应的个性化控件。"));
+      updateValue();
+      updateForm();
     },
     [
       {
         label: "创建",
         primary: true,
         run: () => {
-          if (!/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name.value))
-            throw new Error("变量名无效");
-          if (
-            !mutate("创建变量", (next) => {
-              let root = next.doc.roots.find((n) => n.name === component.value);
-              if (!root) {
-                root = V.makeBlock(component.value);
-                next.doc.roots.push(root);
-              }
-              let group = V.block(root, scope.value);
-              if (!group) {
-                group = V.makeBlock(scope.value);
-                root.members.push(group);
-              }
-              if (group.members.some((n) => n.name === name.value))
-                throw new Error("变量名重复");
-              const raw =
-                type.value === "text"
-                  ? V.literal(value.value)
-                  : type.value === "color" && value.value.startsWith("#")
-                    ? V.colorRaw(value.value)
-                    : value.value;
-              if (scope.value === "ui") {
-                const field = V.makeBlock(name.value, {
-                  label: name.value,
-                  type: type.value === "color" ? "number" : type.value,
-                  control: control.value,
-                });
-                V.setRaw(field, "default", raw);
-                if (["number", "slider"].includes(control.value)) {
-                  V.setRaw(field, "min", min.value);
-                  V.setRaw(field, "max", max.value);
-                  V.setRaw(field, "step", step.value);
-                }
-                if (["choice", "select"].includes(control.value)) {
-                  const labels = options.value
-                    .split("\n")
-                    .map((s) => s.trim())
-                    .filter(Boolean);
-                  if (!labels.length) throw new Error("请声明选项");
-                  field.members.push(
-                    V.makeBlock(
-                      "choices",
-                      Object.fromEntries(labels.map((s, i) => ["c" + i, s])),
-                    ),
-                  );
-                }
-                group.members.push(field);
-              } else V.setRaw(group, name.value, raw);
-            })
-          )
-            throw new Error("变量声明未通过校验");
+          if (!/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name.value)) throw new Error("变量名无效");
+          if (!mutate("创建变量", addVariable)) throw new Error("变量声明未通过校验");
           closeDialog($("editDialog"));
           inspectorTab = "variables";
           renderInspector();
@@ -3202,13 +3229,22 @@ function pointerDown(event) {
   }
   const dot = target.closest("[data-point]"),
     resize = target.closest("[data-resize]"),
+    canvasElement = target.closest(".el"),
     picked = pickScene(
       scene,
       point,
       { x: event.clientX, y: event.clientY },
       running,
     );
-  let id = dot?.dataset.id || resize?.dataset.resize || picked?.node.id;
+  const sourceIndex = idx(),
+    pickedPath = picked && scene?.runtime.idx.paths.get(picked.node.id),
+    pickedId = pickedPath ? sourceIndex.byPath.get(pickedPath)?.id : null,
+    canvasPath = canvasElement?.dataset.path,
+    canvasId = canvasPath ? sourceIndex.byPath.get(canvasPath)?.id : canvasElement?.dataset.id;
+  // Paint hit testing can intentionally ignore transparent or SVG-only paint.
+  // The DOM element is still an unambiguous authoring target, so use its id as
+  // the editor fallback and keep selection usable for every visible control.
+  let id = dot?.dataset.id || resize?.dataset.resize || pickedId || canvasId;
   if (running) {
     trackHover(point);
     const frame = picked;
@@ -3852,7 +3888,7 @@ async function init() {
         n.addEventListener("click", () => command(n.dataset.command)),
       );
     $("board").addEventListener("pointerdown", pointerDown);
-    $("canvasWrap").addEventListener("pointerdown", canvasWrapPointerDown);
+    $("canvasWrap").addEventListener("pointerdown", canvasWrapPointerDown, { capture: true });
     $("board").addEventListener("pointermove", pointerMove);
     $("board").addEventListener("pointerleave", () => {
       if (running) trackHover(null);
