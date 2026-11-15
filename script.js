@@ -162,9 +162,15 @@ function iconPreviewHost(control) {
   control.dataset.iconPreviewReady = "true";
   control.classList.add("icon-text-input");
   const refresh = () => {
-    const host = control.parentElement;
-    if (!host) return;
-    host.classList.add("icon-text-host");
+    let host = control.__iconPreviewHost;
+    if (!host) {
+      const parent = control.parentElement;
+      if (!parent) return;
+      host = element("span", "icon-text-host");
+      parent.insertBefore(host, control);
+      host.append(control);
+      control.__iconPreviewHost = host;
+    }
     let preview = host.querySelector(":scope > .icon-text-preview");
     if (!preview) {
       preview = element("span", "icon-text-preview");
