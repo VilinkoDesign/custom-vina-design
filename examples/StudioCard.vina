@@ -7,9 +7,10 @@ StudioCard {
     Accent { label: "Accent", type: "number", control: "color", default: rgb(82,121,251) },
     Spacing { label: "Spacing", type: "number", control: "slider", min: 12, max: 32, step: 1, default: 24 }
   },
-  state { expanded: false },
+  state { expanded: false, closed: false },
   view {
     type: "group", x: 24, y: 36, width: ${pogget.width} - 48, height: 400,
+    opacity: ${state.closed} ? 0 : 1,
     radius: 20, clip: true, clipRadius: 20, border: 1,
     borderColor: ${ui.Accent.value}, borderOpacity: 0.25,
     backgroundGradient {
@@ -32,6 +33,13 @@ StudioCard {
     Eyebrow { type: "text", x: ${ui.Spacing.value}, y: 22, width: 220, height: 18, label: "V I N A   /   E X A M P L E", textLiteral: true, textSize: 10, color: rgb(255,255,255), opacity: 0.7, align: "left" },
     Title { type: "text", x: ${ui.Spacing.value}, y: 49, width: 260, height: 36, label: "Make it yours.", textLiteral: true, textSize: 28, emphasized: true, color: rgb(255,255,255), align: "left" },
     Subtitle { type: "text", x: ${ui.Spacing.value}, y: 91, width: 260, height: 20, label: "每一处细节，都由你定义。", textLiteral: true, textSize: 12, color: rgb(255,255,255), opacity: 0.8, align: "left" },
+    Close {
+      type: "button", x: ${parent.width} - 48, y: 16, width: 28, height: 28,
+      radius: 14, background: ${pogget.theme.white}, label: ":\uf00d:", textLiteral: true,
+      textSize: 12, color: ${pogget.theme.midnight}, toggle: "state.closed",
+      transition: 180ms, unhoverTransition: 220ms,
+      hover { opacity: 0.72 }
+    },
     Mark { type: "path", x: ${ui.Spacing.value}, y: 160, width: 42, height: 42, pathWidth: 100, pathHeight: 100, points: "8,50 38,80 92,16", closed: false, smooth: false, border: 3, borderColor: ${ui.Accent.value}, borderOnly: true },
     DetailTitle { type: "text", x: ${ui.Spacing.value} + 58, y: 159, width: 200, height: 24, label: "Designed around you", textLiteral: true, textSize: 14, emphasized: true, color: ${pogget.theme.white}, align: "left" },
     Detail { type: "text", x: ${ui.Spacing.value} + 58, y: 187, width: 210, height: 20, label: "颜色 · 变量 · 矢量路径", textLiteral: true, textSize: 11, color: ${pogget.theme.white}, opacity: 0.5, align: "left" },

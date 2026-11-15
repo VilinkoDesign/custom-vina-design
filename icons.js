@@ -73,6 +73,55 @@ export const FA6_ICONS = [
   ["square", "\uf0c8", "方形"],
   ["circle", "\uf111", "圆形"],
   ["triangle-exclamation", "\uf071", "警告"],
+  ["address-book", "\uf2b9", "通讯录"],
+  ["bell", "\uf0f3", "通知"],
+  ["bookmark", "\uf02e", "书签"],
+  ["calendar", "\uf133", "日历"],
+  ["camera", "\uf030", "相机"],
+  ["cart-shopping", "\uf07a", "购物车"],
+  ["chart-line", "\uf201", "趋势"],
+  ["circle-check", "\uf058", "圆形完成"],
+  ["circle-xmark", "\uf057", "圆形关闭"],
+  ["cloud", "\uf0c2", "云"],
+  ["comment", "\uf075", "评论"],
+  ["comments", "\uf086", "评论组"],
+  ["database", "\uf1c0", "数据库"],
+  ["desktop", "\uf108", "桌面"],
+  ["display", "\uf390", "显示器"],
+  ["envelope", "\uf0e0", "邮件"],
+  ["file", "\uf15b", "文件"],
+  ["filter", "\uf0b0", "筛选"],
+  ["fire", "\uf06d", "火焰"],
+  ["flag", "\uf024", "旗帜"],
+  ["globe", "\uf0ac", "地球"],
+  ["grip", "\uf58d", "拖拽"],
+  ["keyboard", "\uf11c", "键盘"],
+  ["list", "\uf03a", "列表"],
+  ["list-check", "\uf0ae", "清单"],
+  ["location-dot", "\uf3c5", "位置"],
+  ["message", "\uf27a", "消息"],
+  ["microphone", "\uf130", "麦克风"],
+  ["mobile-screen", "\uf3cd", "手机"],
+  ["paperclip", "\uf0c6", "附件"],
+  ["share", "\uf064", "分享"],
+  ["shield", "\uf132", "盾牌"],
+  ["sort", "\uf0dc", "排序"],
+  ["spinner", "\uf110", "加载"],
+  ["tag", "\uf02b", "标签"],
+  ["terminal", "\uf120", "终端"],
+  ["thumbs-up", "\uf164", "赞"],
+  ["thumbs-down", "\uf165", "踩"],
+  ["user", "\uf007", "用户"],
+  ["users", "\uf0c0", "用户组"],
+  ["wand-magic-sparkles", "\ue2ca", "魔法"],
+  ["window-maximize", "\uf2d0", "最大化"],
+  ["circle-plus", "\uf055", "圆形添加"],
+  ["circle-minus", "\uf056", "圆形减少"],
+  ["clock", "\uf017", "时钟"],
+  ["circle-question", "\uf059", "圆形帮助"],
+  ["bug", "\uf188", "问题"],
+  ["book", "\uf02d", "书本"],
+  ["check-double", "\uf560", "双重完成"],
 ];
 
 export const FA6_BY_NAME = new Map(
@@ -92,6 +141,24 @@ export function fa6Tokens(text) {
     result.push({ start: match.index, end: token.lastIndex, glyph: match[1] });
   }
   return result;
+}
+
+// Return editable icon ranges for both the native :glyph: token form and the
+// direct PUA form used by icon properties. Keeping the ranges in source-string
+// coordinates lets the editor replace only the clicked icon while leaving the
+// surrounding text in the input untouched.
+export function fa6IconRanges(text) {
+  const value = String(text ?? "");
+  const ranges = fa6Tokens(value).map((token) => ({ ...token, token: true }));
+  for (let i = 0; i < value.length; ) {
+    const code = value.codePointAt(i);
+    const size = code > 0xffff ? 2 : 1;
+    const insideToken = ranges.some((range) => i >= range.start && i < range.end);
+    if (!insideToken && code >= 0xe000 && code <= 0xf8ff)
+      ranges.push({ start: i, end: i + size, glyph: String.fromCodePoint(code), token: false });
+    i += size;
+  }
+  return ranges.sort((a, b) => a.start - b.start);
 }
 
 export function fa6Glyph(glyph) {
@@ -122,6 +189,22 @@ export function renderFa6Text(container, value) {
     cursor = token.lastIndex;
   }
   if (cursor < text.length) appendFa6Plain(container, text.slice(cursor));
+  return container;
+}
+
+// Render only the icon portions of a value. This is used by editor controls so
+// ordinary text remains in the native input and only :glyph: segments become
+// clickable previews.
+export function renderFa6Icons(container, value) {
+  container.replaceChildren();
+  for (const range of fa6IconRanges(value)) {
+    const glyph = fa6Glyph(range.glyph);
+    glyph.classList.add("vina-fa-token");
+    glyph.dataset.tokenStart = String(range.start);
+    glyph.dataset.tokenEnd = String(range.end);
+    glyph.dataset.glyph = range.glyph;
+    container.append(glyph);
+  }
   return container;
 }
 

@@ -22,7 +22,8 @@ import {
   COMPONENT_ICONS,
   FA6_ICONS,
   fa6Token,
-  fa6Tokens,
+  fa6IconRanges,
+  renderFa6Icons,
   renderFa6Text,
 } from "./icons.js";
 import {
@@ -34,7 +35,6 @@ const $ = (id) => document.getElementById(id);
 const STORAGE = "customvina.project.v2",
   RECOVERY = "customvina.recovery.v2",
   RECENT = "customvina.recent.v1",
-  EXAMPLE_DISMISSED = "customvina.example.dismissed.v1",
   RECENT_LIMIT = 5;
 const NAMES = {
   rect: "矩形",
@@ -78,7 +78,6 @@ const collapsed = new Set();
 const personalizationExpanded = new Map(), personalizationSearch = { value: "" };
 const hoverStates = new Map();
 let previewFrame = 0;
-let exampleDismissed = false;
 let hostState = "expanded",
   hostOverrides = {},
   lastHostPreset = false;
@@ -106,7 +105,7 @@ function iconButton(name, handler, className, label) {
 
 function iconTokenAt(control, position = control.selectionStart ?? 0) {
   const value = String(control.value ?? "");
-  return fa6Tokens(value).find((token) => position >= token.start && position < token.end) || null;
+  return fa6IconRanges(value).find((token) => position >= token.start && position < token.end) || null;
 }
 
 function replaceIconToken(control, glyph, token = null) {
@@ -161,9 +160,21 @@ function iconPreviewHost(control) {
   if (!control || control.dataset.iconPreviewReady === "true") return;
   control.dataset.iconPreviewReady = "true";
   control.classList.add("icon-text-input");
+  const unwrap = () => {
+    const host = control.__iconPreviewHost;
+    if (!host || !host.parentElement) return;
+    host.parentElement.insertBefore(control, host);
+    host.remove();
+    delete control.__iconPreviewHost;
+  };
   const refresh = () => {
+    const ranges = fa6IconRanges(control.value);
+    if (!ranges.length) {
+      unwrap();
+      return;
+    }
     let host = control.__iconPreviewHost;
-    if (!host) {
+    if (!host || !host.parentElement) {
       const parent = control.parentElement;
       if (!parent) return;
       host = element("span", "icon-text-host");
@@ -184,8 +195,8 @@ function iconPreviewHost(control) {
         } : iconTokenAt(control));
       });
     }
-    renderFa6Text(preview, control.value);
-    preview.hidden = !preview.querySelector(".vina-fa-glyph");
+    renderFa6Icons(preview, control.value);
+    preview.hidden = false;
   };
   control.addEventListener("input", refresh);
   control.addEventListener("change", refresh);
@@ -583,12 +594,12 @@ function renderCanvas() {
     } else $("scene").replaceChildren(next.fragment);
     scene = next;
     const empty = ![...scene.frames.values()].some((f) => f.rendered);
-    setBoardEmptyVisible(empty && !exampleDismissed);
+    setBoardEmptyVisible(empty);
     renderOverlays();
     syncHistory();
   } catch (error) {
     status(error.message, true);
-    setBoardEmptyVisible(!scene?.nodes.size && !exampleDismissed);
+    setBoardEmptyVisible(!scene?.nodes.size);
   }
 }
 function setBoardEmptyVisible(visible) {
@@ -596,9 +607,7 @@ function setBoardEmptyVisible(visible) {
   if (!empty) return;
   if (visible) {
     empty.style.display = "flex";
-    requestAnimationFrame(() => empty.classList.add("is-visible"));
   } else {
-    empty.classList.remove("is-visible");
     empty.style.display = "none";
   }
 }
@@ -4069,7 +4078,6 @@ function importLocationHash() {
     if (running) setRunning(false);
     const hadRecentId = !!project.recentId;
     ensureProjectIdentity(project);
-    try { exampleDismissed = localStorage.getItem(EXAMPLE_DISMISSED) === "1"; } catch {}
     if (!hadRecentId) save();
     rememberCurrentProject();
     ++importRevision; // Cancel any file import that was still reading.
@@ -4151,18 +4159,7 @@ async function init() {
       "btn-ghost",
     );
     example.style.pointerEvents = "auto";
-    $("exampleCard").insertBefore(example, $("exampleClose"));
-    $("exampleClose").addEventListener("click", () => {
-      exampleDismissed = true;
-      try { localStorage.setItem(EXAMPLE_DISMISSED, "1"); } catch {}
-      const empty = $("boardEmpty");
-      empty.classList.remove("is-visible");
-      empty.classList.add("is-closing");
-      setTimeout(() => {
-        empty.classList.remove("is-closing");
-        empty.style.display = "none";
-      }, 220);
-    });
+    $("boardEmpty").append(example);
     for (const type of [
       "rect",
       "text",

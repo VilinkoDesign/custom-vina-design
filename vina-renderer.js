@@ -87,7 +87,12 @@ export function renderScene(doc, inputs, options = {}) {
     el.dataset.id = node.id;
     el.dataset.path = path;
     el.dataset.type = type;
+    el.dataset.component = component?.name || "";
+    const studioComponent = component?.name === "StudioCard";
+    const exampleRootMotion = studioComponent && !parent;
+    if (exampleRootMotion) el.classList.add("studio-example-root");
     el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${frame.stackZ};`;
+    if (exampleRootMotion) el.style.opacity = String(frame.alpha);
     el.classList.toggle(
       "selected",
       !options.running && options.selection?.includes(node.id),
@@ -107,10 +112,18 @@ export function renderScene(doc, inputs, options = {}) {
     body.style.borderRadius = (p.radius || 0) + "px";
     // Native ViewTree multiplies opacity into each paint primitive; applying
     // opacity to the DOM group would composite overlapping children differently.
-    body.style.opacity = String(frame.alpha);
+    body.style.opacity = studioComponent
+      ? exampleRootMotion
+        ? "1"
+        : String(p.opacity ?? 1)
+      : String(frame.alpha);
     frame.paintVisible =
       frame.visible && frame.active && w > 0 && h > 0 && frame.alpha > 0.001;
-    if (!frame.paintVisible) body.style.display = "none";
+    // Keep the StudioCard subtree mounted while its close state animates. The
+    // root opacity transition then fades the whole card without replacing it
+    // or exposing a flash of empty content.
+    if (!frame.paintVisible && !(studioComponent && options.running))
+      body.style.display = "none";
     el.append(body);
     const surface = svg("svg", {
       width: "100%",
