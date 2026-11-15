@@ -4190,7 +4190,7 @@ async function init() {
     $("canvasWrap").addEventListener(
       "wheel",
       (event) => {
-        if (!event.ctrlKey || running || busy) return;
+        if (running || busy) return;
         event.preventDefault();
         const factor = Math.exp(-event.deltaY * 0.0015);
         setZoom(zoom * factor, event);

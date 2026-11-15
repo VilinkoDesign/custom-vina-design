@@ -70,7 +70,7 @@ test("file menu keeps five recent projects with compact hints and restores one",
     assert.deepEqual(errors, []);
   }));
 
-test("ctrl-wheel zoom stays anchored and keeps editor control points screen-sized", options, async () =>
+test("canvas wheel zoom stays anchored and keeps editor control points screen-sized", options, async () =>
   browserSession(async (session) => {
     const { call, click, evaluate, waitFor, errors } = session;
     await navigate(
@@ -84,7 +84,7 @@ test("ctrl-wheel zoom stays anchored and keeps editor control points screen-size
     const rectBefore = await evaluate('document.querySelector(".resize-handle[data-corner=\\"se\\"]").getBoundingClientRect().width');
     await click('#scene .el[data-type="path"]');
     await waitFor('document.querySelectorAll(".path-point").length === 3');
-    await call("Input.dispatchMouseEvent", { type: "mouseWheel", x: before.point.x, y: before.point.y, deltaX: 0, deltaY: -240, modifiers: 2 });
+    await call("Input.dispatchMouseEvent", { type: "mouseWheel", x: before.point.x, y: before.point.y, deltaX: 0, deltaY: -240 });
     await waitFor('Number(document.querySelector("#zoomSelect").value) > 1');
     const after = await evaluate(`(() => {const p=document.querySelector('.path-point'),r=p.getBoundingClientRect();return {point:{x:r.x+r.width/2,y:r.y+r.height/2,w:r.width}}})()`);
     assert.ok(Math.hypot(after.point.x - before.point.x, after.point.y - before.point.y) < 2, JSON.stringify({ before, after }));
