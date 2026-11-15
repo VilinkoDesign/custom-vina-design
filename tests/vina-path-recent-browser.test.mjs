@@ -70,7 +70,7 @@ test("file menu keeps five recent projects with compact hints and restores one",
     assert.deepEqual(errors, []);
   }));
 
-test("canvas wheel zoom stays anchored and keeps editor control points screen-sized", options, async () =>
+test("ctrl-wheel zoom stays anchored, while ordinary wheel scrolling remains available", options, async () =>
   browserSession(async (session) => {
     const { call, click, evaluate, waitFor, errors } = session;
     await navigate(
@@ -85,12 +85,33 @@ test("canvas wheel zoom stays anchored and keeps editor control points screen-si
     await click('#scene .el[data-type="path"]');
     await waitFor('document.querySelectorAll(".path-point").length === 3');
     await call("Input.dispatchMouseEvent", { type: "mouseWheel", x: before.point.x, y: before.point.y, deltaX: 0, deltaY: -240 });
+    assert.equal(await evaluate('document.querySelector("#zoomSelect").value'), "1");
+    await call("Input.dispatchMouseEvent", { type: "mouseWheel", x: before.point.x, y: before.point.y, deltaX: 0, deltaY: -240, modifiers: 2 });
     await waitFor('Number(document.querySelector("#zoomSelect").value) > 1');
     const after = await evaluate(`(() => {const p=document.querySelector('.path-point'),r=p.getBoundingClientRect();return {point:{x:r.x+r.width/2,y:r.y+r.height/2,w:r.width}}})()`);
     assert.ok(Math.hypot(after.point.x - before.point.x, after.point.y - before.point.y) < 2, JSON.stringify({ before, after }));
     assert.ok(Math.abs(after.point.w - before.point.w) < 1, JSON.stringify({ before, after }));
+    await evaluate('document.querySelector("#zoomSelect").value="4";document.querySelector("#zoomSelect").dispatchEvent(new Event("change",{bubbles:true}))');
+    await waitFor('document.querySelector("#zoomSelect").value === "4"');
+    const maxZoomPoint = await evaluate('document.querySelector(".path-point").getBoundingClientRect().width');
+    assert.ok(Math.abs(maxZoomPoint - before.point.w) < 1, `${before.point.w} -> ${maxZoomPoint}`);
     await click('#scene .el[data-type="rect"]');
     const rectAfter = await evaluate('document.querySelector(".resize-handle[data-corner=\\"se\\"]").getBoundingClientRect().width');
     assert.ok(Math.abs(rectAfter - rectBefore) < 1, `${rectBefore} -> ${rectAfter}`);
+    assert.deepEqual(errors, []);
+  }));
+
+test("the bundled StudioCard example uses the EXAMPLE eyebrow and FA6 arrow glyphs", options, async () =>
+  browserSession(async (session) => {
+    const { click, evaluate, waitFor, errors } = session;
+    await navigate(session, 'Preset { dependsOn: "Pogget_Std" }');
+    await click("#boardEmpty button");
+    await waitFor('window.vinaEditor.source.includes("E X A M P L E")');
+    assert.equal(await evaluate('window.vinaEditor.source.includes("S T U D I O")'), false);
+    assert.equal(await evaluate('[...document.querySelectorAll(".vina-fa-glyph")].some(n=>n.textContent.codePointAt(0)===0xf35d)'), true);
+    await click("#runBtn");
+    await click('#scene .el[data-type="button"]');
+    await waitFor('[...document.querySelectorAll(".vina-fa-glyph")].some(n=>n.textContent.codePointAt(0)===0xf062)');
+    assert.equal(await evaluate('[...document.querySelectorAll(".vina-fa-glyph")].some(n=>n.textContent.codePointAt(0)===0xf062)'), true);
     assert.deepEqual(errors, []);
   }));

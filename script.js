@@ -501,7 +501,7 @@ function syncZoomSelect() {
   select.value = value;
 }
 function setZoom(next, anchor = null) {
-  const value = Math.max(0.25, Math.min(2, Number(next)));
+  const value = Math.max(0.25, Math.min(4, Number(next)));
   if (!Number.isFinite(value) || Math.abs(value - zoom) < 0.0001) return;
   const before = $("board").getBoundingClientRect(),
     anchorX = anchor ? anchor.clientX : before.left + before.width / 2,
@@ -4190,7 +4190,7 @@ async function init() {
     $("canvasWrap").addEventListener(
       "wheel",
       (event) => {
-        if (running || busy) return;
+        if (!event.ctrlKey || running || busy) return;
         event.preventDefault();
         const factor = Math.exp(-event.deltaY * 0.0015);
         setZoom(zoom * factor, event);

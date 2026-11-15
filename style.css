@@ -1102,6 +1102,7 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .el.inherited { cursor: default; }
 .surface { display: block; position: absolute; inset: 0; }
 .paint-text { position: absolute; inset: 0; display: flex; align-items: center; overflow: hidden; line-height: 1.2; }
+.vina-fa-glyph { font-family: "Font Awesome 6 Free Solid"; font-style: normal; font-weight: 900; }
 .el-body > img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .group-outline { outline: 1px dashed var(--line-mid); outline-offset: -1px; }
 .glass-preview { background-image: linear-gradient(135deg, rgba(255,255,255,.15), transparent); }

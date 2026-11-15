@@ -263,7 +263,16 @@ export function renderScene(doc, inputs, options = {}) {
     if (p.icon != null || p.label != null || p.text != null) {
       const text = document.createElement("div");
       text.className = "paint-text";
-      text.textContent = p.icon || p.label || p.text || "";
+      const label = String(p.icon || p.label || p.text || "");
+      for (const character of label) {
+        const code = character.codePointAt(0);
+        if (code >= 0xe000 && code <= 0xf8ff) {
+          const glyph = document.createElement("span");
+          glyph.className = "vina-fa-glyph";
+          glyph.textContent = character;
+          text.append(glyph);
+        } else text.append(document.createTextNode(character));
+      }
       text.style.color = cssColor(
         p.color ?? inputs["pogget.theme.white"],
         "#ffffff",
