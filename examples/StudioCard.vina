@@ -34,9 +34,9 @@ StudioCard {
     Title { type: "text", x: ${ui.Spacing.value}, y: 49, width: 260, height: 36, label: "Make it yours.", textLiteral: true, textSize: 28, emphasized: true, color: rgb(255,255,255), align: "left" },
     Subtitle { type: "text", x: ${ui.Spacing.value}, y: 91, width: 260, height: 20, label: "每一处细节，都由你定义。", textLiteral: true, textSize: 12, color: rgb(255,255,255), opacity: 0.8, align: "left" },
     Close {
-      type: "button", x: ${parent.width} - 48, y: 16, width: 28, height: 28,
-      radius: 14, background: ${pogget.theme.white}, fillOpacity: 0, label: ":\uf00d:", textLiteral: true,
-      textSize: 12, color: ${pogget.theme.midnight}, toggle: "state.closed",
+      type: "text", x: ${parent.width} - 48, y: 16, width: 28, height: 28,
+      label: ":\uf00d:", textLiteral: true, textSize: 12,
+      color: ${pogget.theme.white}, toggle: "state.closed",
       transition: 180ms, unhoverTransition: 220ms,
       hover { opacity: 0.72 }
     },

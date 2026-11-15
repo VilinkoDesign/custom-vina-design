@@ -92,7 +92,13 @@ export function renderScene(doc, inputs, options = {}) {
     const exampleRootMotion = studioComponent && !parent;
     if (exampleRootMotion) el.classList.add("studio-example-root");
     el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${frame.stackZ};`;
-    if (exampleRootMotion) el.style.opacity = String(frame.alpha);
+    if (exampleRootMotion) {
+      el.style.opacity = String(frame.alpha);
+      el.style.setProperty(
+        "--studio-accent",
+        cssColor(p.borderColor ?? p.background, "#5279fb"),
+      );
+    }
     el.classList.toggle(
       "selected",
       !options.running && options.selection?.includes(node.id),
