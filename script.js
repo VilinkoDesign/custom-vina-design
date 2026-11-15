@@ -47,6 +47,7 @@ let project = V.createProject(),
   selection = [],
   running = false,
   zoom = 1,
+  cameraOffset = { x: 0, y: 0 },
   scene = null,
   drag = null,
   clipboard = null,
@@ -425,6 +426,11 @@ function renderCanvas() {
   $("board").style.width = project.board.w + "px";
   $("board").style.height = project.board.h + "px";
   $("board").style.transform = `scale(${zoom})`;
+  $("board").style.setProperty("--camera-zoom", String(zoom));
+  $("boardSizer").style.transform =
+    cameraOffset.x || cameraOffset.y
+      ? `translate(${cameraOffset.x}px, ${cameraOffset.y}px)`
+      : "";
   $("boardSizer").style.width = project.board.w * zoom + "px";
   $("boardSizer").style.height = project.board.h * zoom + "px";
   currentInputs = inputValues();
@@ -478,6 +484,39 @@ function renderCanvas() {
   } catch (error) {
     status(error.message, true);
     $("boardEmpty").style.display = scene?.nodes.size ? "none" : "flex";
+  }
+}
+function syncZoomSelect() {
+  const select = $("zoomSelect"),
+    value = String(+zoom.toFixed(4));
+  let option = [...select.options].find((item) => item.value === value);
+  if (!option) {
+    option = [...select.options].find((item) => item.dataset.cameraZoom === "true");
+    if (option) option.remove();
+    option = element("option", "", Math.round(zoom * 100) + "%");
+    option.value = value;
+    option.dataset.cameraZoom = "true";
+    select.append(option);
+  }
+  select.value = value;
+}
+function setZoom(next, anchor = null) {
+  const value = Math.max(0.25, Math.min(2, Number(next)));
+  if (!Number.isFinite(value) || Math.abs(value - zoom) < 0.0001) return;
+  const before = $("board").getBoundingClientRect(),
+    anchorX = anchor ? anchor.clientX : before.left + before.width / 2,
+    anchorY = anchor ? anchor.clientY : before.top + before.height / 2,
+    worldX = (anchorX - before.left) / zoom,
+    worldY = (anchorY - before.top) / zoom;
+  if (!anchor) cameraOffset = { x: 0, y: 0 };
+  zoom = value;
+  syncZoomSelect();
+  renderCanvas();
+  if (anchor) {
+    const after = $("board").getBoundingClientRect();
+    cameraOffset.x += anchorX - (after.left + worldX * zoom);
+    cameraOffset.y += anchorY - (after.top + worldY * zoom);
+    renderCanvas();
   }
 }
 function animatePreview(time) {
@@ -2358,6 +2397,9 @@ function newProjectDialog() {
             })
           )
             throw new Error(lastError || "新建失败");
+          // Keep a newly created project in the recent list immediately,
+          // including projects that have not been exported as files yet.
+          rememberCurrentProject();
           ++importRevision;
           lastSelection = [];
           runtimeOverrides = {};
@@ -4044,6 +4086,7 @@ async function init() {
     mountToolMenus($("toolMenus"), {
       onOpen: () => {
         closeContext();
+        flush();
         syncHistory();
         renderRecentProjects();
       },
@@ -4120,8 +4163,7 @@ async function init() {
     });
     $("previewSettingsBtn").addEventListener("click", previewSettingsDialog);
     $("zoomSelect").addEventListener("change", () => {
-      zoom = Number($("zoomSelect").value);
-      renderCanvas();
+      setZoom(Number($("zoomSelect").value));
     });
     $("arrangeSelect").addEventListener("change", () => {
       command($("arrangeSelect").value);
@@ -4145,6 +4187,16 @@ async function init() {
       );
     $("board").addEventListener("pointerdown", pointerDown);
     $("canvasWrap").addEventListener("pointerdown", canvasWrapPointerDown, { capture: true });
+    $("canvasWrap").addEventListener(
+      "wheel",
+      (event) => {
+        if (!event.ctrlKey || running || busy) return;
+        event.preventDefault();
+        const factor = Math.exp(-event.deltaY * 0.0015);
+        setZoom(zoom * factor, event);
+      },
+      { passive: false },
+    );
     $("board").addEventListener("pointermove", pointerMove);
     $("board").addEventListener("pointerleave", () => {
       if (running) trackHover(null);

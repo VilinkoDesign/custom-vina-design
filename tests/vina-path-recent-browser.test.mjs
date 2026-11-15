@@ -58,6 +58,7 @@ test("file menu keeps five recent projects with compact hints and restores one",
     assert.equal(await evaluate('document.querySelector("#recentProjects").scrollHeight > document.querySelector("#recentProjects").clientHeight'), true);
     assert.equal(await evaluate('document.querySelector("#recentProjects [data-recent-index=\\"0\\"] strong").textContent'), "工程7");
     assert.match(await evaluate('document.querySelector("#recentProjects [data-recent-index=\\"0\\"] small").textContent'), /360 × 480/);
+    await evaluate('document.querySelector("#recentProjects [data-recent-index=\\"4\\"]").scrollIntoView({ block: "nearest" })');
     await click('#recentProjects [data-recent-index="4"]');
     await waitFor('window.vinaEditor.project.name === "工程3"');
     assert.equal(await evaluate('document.querySelector("#fileMenu").hidden'), true);
@@ -66,5 +67,30 @@ test("file menu keeps five recent projects with compact hints and restores one",
     assert.equal(await evaluate('window.vinaEditor.project.name'), "工程3");
     await click("#fileMenuBtn");
     assert.equal(await evaluate('document.querySelector("#recentProjects [data-recent-index=\\"0\\"] strong").textContent'), "工程3");
+    assert.deepEqual(errors, []);
+  }));
+
+test("ctrl-wheel zoom stays anchored and keeps editor control points screen-sized", options, async () =>
+  browserSession(async (session) => {
+    const { call, click, evaluate, waitFor, errors } = session;
+    await navigate(
+      session,
+      'Rect { view { type: "rect", x: 20, y: 20, width: 120, height: 80, background: rgb(30,120,220) } } Path { view { type: "path", x: 190, y: 20, width: 140, height: 120, points: "5,5 95,5 50,95", pathWidth: 100, pathHeight: 100, border: 3, borderOnly: true, borderColor: rgb(255,80,40), closed: false } }',
+    );
+    await click('#scene .el[data-type="path"]');
+    await waitFor('document.querySelectorAll(".path-point").length === 3');
+    const before = await evaluate(`(() => {const p=document.querySelector('.path-point'),r=p.getBoundingClientRect();const h=document.querySelector('.resize-handle');return {point:{x:r.x+r.width/2,y:r.y+r.height/2,w:r.width},handle:h?.getBoundingClientRect().width||0}})()`);
+    await click('#scene .el[data-type="rect"]');
+    const rectBefore = await evaluate('document.querySelector(".resize-handle[data-corner=\\"se\\"]").getBoundingClientRect().width');
+    await click('#scene .el[data-type="path"]');
+    await waitFor('document.querySelectorAll(".path-point").length === 3');
+    await call("Input.dispatchMouseEvent", { type: "mouseWheel", x: before.point.x, y: before.point.y, deltaX: 0, deltaY: -240, modifiers: 2 });
+    await waitFor('Number(document.querySelector("#zoomSelect").value) > 1');
+    const after = await evaluate(`(() => {const p=document.querySelector('.path-point'),r=p.getBoundingClientRect();return {point:{x:r.x+r.width/2,y:r.y+r.height/2,w:r.width}}})()`);
+    assert.ok(Math.hypot(after.point.x - before.point.x, after.point.y - before.point.y) < 2, JSON.stringify({ before, after }));
+    assert.ok(Math.abs(after.point.w - before.point.w) < 1, JSON.stringify({ before, after }));
+    await click('#scene .el[data-type="rect"]');
+    const rectAfter = await evaluate('document.querySelector(".resize-handle[data-corner=\\"se\\"]").getBoundingClientRect().width');
+    assert.ok(Math.abs(rectAfter - rectBefore) < 1, `${rectBefore} -> ${rectAfter}`);
     assert.deepEqual(errors, []);
   }));
