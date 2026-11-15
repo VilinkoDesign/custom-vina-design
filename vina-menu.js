@@ -8,6 +8,7 @@ export function mountToolMenus(root, { onOpen = () => {} } = {}) {
     active
       ? [...panelFor(active).querySelectorAll('[role="menuitem"]')].filter(
           (item) =>
+            !item.closest('[role="group"]') &&
             !item.disabled && item.getAttribute("aria-disabled") !== "true",
         )
       : [];

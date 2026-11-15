@@ -25,7 +25,9 @@ import {
 } from "./vina-scene.js";
 const $ = (id) => document.getElementById(id);
 const STORAGE = "customvina.project.v2",
-  RECOVERY = "customvina.recovery.v2";
+  RECOVERY = "customvina.recovery.v2",
+  RECENT = "customvina.recent.v1",
+  RECENT_LIMIT = 5;
 const NAMES = {
   rect: "矩形",
   solid: "实色块",
@@ -52,6 +54,7 @@ let project = V.createProject(),
   inputMode = "project",
   saved = true,
   pending = null;
+let lastPathClick = null;
 let standard,
   schema,
   defaults,
@@ -162,6 +165,131 @@ function save() {
     $("saveStatus").textContent = "本地空间不足，请导出工程";
   }
 }
+function ensureProjectIdentity(target = project) {
+  if (!target.recentId)
+    target.recentId =
+      "p-" +
+      Date.now().toString(36) +
+      "-" +
+      Math.random().toString(36).slice(2, 10);
+  return target.recentId;
+}
+function readRecentProjects() {
+  try {
+    const value = JSON.parse(localStorage.getItem(RECENT) || "[]");
+    return Array.isArray(value)
+      ? value.filter(
+          (entry) =>
+            entry &&
+            typeof entry.id === "string" &&
+            typeof entry.project === "string" &&
+            typeof entry.name === "string",
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+function writeRecentProjects(entries) {
+  try {
+    localStorage.setItem(RECENT, JSON.stringify(entries.slice(0, RECENT_LIMIT)));
+  } catch {
+    // Recent history is best-effort and must never block editing or saving.
+  }
+}
+function projectComponentCount(target) {
+  try {
+    return V.viewNodes(target.doc).length;
+  } catch {
+    return 0;
+  }
+}
+function recentTime(timestamp) {
+  const elapsed = Math.max(0, Date.now() - Number(timestamp || 0));
+  if (elapsed < 60_000) return "刚刚";
+  if (elapsed < 3_600_000) return Math.floor(elapsed / 60_000) + " 分钟前";
+  if (elapsed < 86_400_000) return Math.floor(elapsed / 3_600_000) + " 小时前";
+  return new Date(timestamp).toLocaleDateString("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+  });
+}
+function rememberCurrentProject() {
+  ensureProjectIdentity(project);
+  let snapshot;
+  try {
+    snapshot = JSON.stringify(project);
+  } catch {
+    return;
+  }
+  const entry = {
+    id: project.recentId,
+    name: project.name || "未命名工程",
+    board: { w: project.board.w, h: project.board.h },
+    count: projectComponentCount(project),
+    updatedAt: Date.now(),
+    project: snapshot,
+  };
+  const entries = [entry, ...readRecentProjects().filter((item) => item.id !== entry.id)];
+  writeRecentProjects(entries);
+  renderRecentProjects();
+}
+function renderRecentProjects() {
+  const root = $("recentProjects");
+  if (!root) return;
+  root.replaceChildren();
+  const entries = readRecentProjects();
+  if (!entries.length) {
+    root.append(element("div", "recent-empty", "暂无最近工程"));
+    return;
+  }
+  for (const [index, entry] of entries.slice(0, RECENT_LIMIT).entries()) {
+    const item = button("", () => openRecentProject(index), "tool-menu-item recent-project-item");
+    item.dataset.recentIndex = String(index);
+    item.setAttribute("role", "menuitem");
+    item.tabIndex = -1;
+    item.disabled = running || busy;
+    item.title = `${entry.name} · ${entry.board?.w || "?"} × ${entry.board?.h || "?"}`;
+    const label = element("span", "recent-project-label"),
+      title = element("strong", "", entry.name),
+      hint = element(
+        "small",
+        "",
+        `${recentTime(entry.updatedAt)} · ${entry.board?.w || "?"} × ${entry.board?.h || "?"} · ${entry.count || 0} 个组件`,
+      );
+    label.append(title, hint);
+    item.append(label);
+    root.append(item);
+  }
+}
+function openRecentProject(index) {
+  if (running || busy || !flush()) return;
+  const entry = readRecentProjects()[index];
+  if (!entry) return;
+  const previousOverrides = runtimeOverrides;
+  try {
+    const next = M.projectFromJSON(entry.project);
+    ensureProjectIdentity(next);
+    runtimeOverrides = {};
+    M.validate(next, standard, inputValues(next), schema);
+    project = next;
+    history = new V.History(project);
+    selection = [];
+    lastSelection = [];
+    pending = null;
+    drag = null;
+    runtimeOverrides = {};
+    hoverStates.clear();
+    closeContext();
+    save();
+    rememberCurrentProject();
+    renderAll();
+    toast("已打开最近工程：" + (project.name || "未命名工程"));
+  } catch (error) {
+    runtimeOverrides = previousOverrides;
+    toast("最近工程无法打开：" + error.message);
+  }
+}
 function checkpoint() {
   try {
     localStorage.setItem(
@@ -171,10 +299,12 @@ function checkpoint() {
   } catch {}
 }
 function markCommitted(label) {
+  ensureProjectIdentity(project);
   if (history.commit(project, label)) {
     save();
     status(label);
   }
+  rememberCurrentProject();
   syncHistory();
 }
 function syncHistory() {
@@ -449,6 +579,87 @@ function renderOverlays() {
   )
     renderPathPoints(selection[0]);
 }
+function addPathPointAt(event, preferredId = null) {
+  if (running || !scene) return false;
+  const target = event.target.closest(".el"),
+    path = target?.dataset.path,
+    sourceIndex = idx(),
+    id = preferredId || (path ? sourceIndex.byPath.get(path)?.id : null) ||
+      (selection.length === 1 ? selection[0] : null),
+    f = id ? scene.frames.get(id) : null;
+  if (!id || !f || f.p.type !== "path" || isLocked(id)) {
+    return false;
+  }
+  const node = sourceIndex.byId.get(id),
+    pointsProperty = V.property(node, "points");
+  if (!node || !pointsProperty) {
+    return false;
+  }
+  if (V.references(V.expressionOf(pointsProperty)).length) {
+    toast("点列已绑定变量，请先解除绑定或编辑变量");
+    return false;
+  }
+  let points;
+  try {
+    points = V.parsePoints(f.p.points, f.p.closed ?? true);
+  } catch {
+    return false;
+  }
+  const pathWidth = f.p.pathWidth || 100,
+    pathHeight = f.p.pathHeight || 100,
+    local = {
+      x: ((boardPoint(event).x - f.x) / Math.max(0.001, f.w)) * pathWidth,
+      y: ((boardPoint(event).y - f.y) / Math.max(0.001, f.h)) * pathHeight,
+    };
+  let best = { distance: Infinity, index: points.length - 1, point: local };
+  const segmentCount = f.p.closed ? points.length : points.length - 1;
+  for (let i = 0; i < segmentCount; i++) {
+    const a = points[i],
+      b = points[(i + 1) % points.length],
+      dx = b.x - a.x,
+      dy = b.y - a.y,
+      length2 = dx * dx + dy * dy,
+      t = length2 ? Math.max(0, Math.min(1, ((local.x - a.x) * dx + (local.y - a.y) * dy) / length2)) : 0,
+      projected = { x: a.x + dx * t, y: a.y + dy * t },
+      distance = (projected.x - local.x) ** 2 + (projected.y - local.y) ** 2;
+    if (distance < best.distance)
+      best = { distance, index: i, point: projected };
+  }
+  const before = [...selection];
+  selection = [id];
+  const applied = mutate("添加路径点", (next) => {
+    const nextPoints = V.parsePoints(
+      f.p.points,
+      f.p.closed ?? true,
+    );
+    nextPoints.splice(best.index + 1, 0, best.point);
+    V.setValue(
+      V.index(next.doc).byId.get(id),
+      "points",
+      V.pointsText(nextPoints),
+    );
+  });
+  if (!applied) selection = before;
+  return applied;
+}
+function removePathPoint(id, pointIndex) {
+  if (running || isLocked(id)) return false;
+  const node = idx().byId.get(id),
+    pointsProperty = V.property(node, "points"),
+    f = scene?.frames.get(id);
+  if (!node || !pointsProperty || !f) return false;
+  if (V.references(V.expressionOf(pointsProperty)).length) {
+    toast("点列已绑定变量，请先解除绑定或编辑变量");
+    return false;
+  }
+  return mutate("删除路径点", (next) => {
+    const points = V.parsePoints(f.p.points, f.p.closed ?? true);
+    if (points.length <= (f.p.closed ? 3 : 2))
+      throw new Error(f.p.closed ? "闭合路径至少需要三个点" : "路径至少需要两个点");
+    points.splice(pointIndex, 1);
+    V.setValue(V.index(next.doc).byId.get(id), "points", V.pointsText(points));
+  });
+}
 function renderPathPoints(id) {
   const f = scene.frames.get(id);
   let points;
@@ -470,16 +681,7 @@ function renderPathPoints(id) {
     dot.style.top = f.y + (point.y / (f.p.pathHeight || 100)) * f.h + "px";
     dot.addEventListener("dblclick", (event) => {
       event.stopPropagation();
-      mutate("删除路径点", (next) => {
-        const node = V.index(next.doc).byId.get(id);
-        const pts = V.parsePoints(
-          scene.frames.get(id).p.points,
-          f.p.closed ?? true,
-        );
-        pts.splice(i, 1);
-        V.parsePoints(V.pointsText(pts), f.p.closed ?? true);
-        V.setValue(node, "points", V.pointsText(pts));
-      });
+      removePathPoint(id, i);
     });
     $("overlays").append(dot);
   });
@@ -2915,6 +3117,7 @@ function exportDialog() {
         label: "保存工程",
         run: () => {
           let data = V.clone(project);
+          delete data.recentId;
           if (
             !data.base &&
             project.doc.roots.some((n) => n.name === "Preset")
@@ -3260,6 +3463,50 @@ function pointerDown(event) {
     return;
   }
   flush();
+  const now = performance.now(),
+    pathTarget = id && scene.frames.get(id)?.p.type === "path";
+  if (dot && pathTarget) {
+    const prior = lastPathClick,
+      closeEnough =
+        prior &&
+        prior.id === id &&
+        prior.pointIndex === Number(dot.dataset.point) &&
+        now - prior.time < 480 &&
+        Math.hypot(event.clientX - prior.x, event.clientY - prior.y) < 10;
+    if (closeEnough) {
+      lastPathClick = null;
+      if (removePathPoint(id, Number(dot.dataset.point))) {
+        event.preventDefault();
+        return;
+      }
+    }
+    lastPathClick = {
+      id,
+      pointIndex: Number(dot.dataset.point),
+      time: now,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  } else if (!dot && !resize && pathTarget) {
+    const prior = lastPathClick,
+      closeEnough =
+        prior &&
+        prior.id === id &&
+        now - prior.time < 480 &&
+        Math.hypot(event.clientX - prior.x, event.clientY - prior.y) < 10;
+    if (closeEnough) {
+      lastPathClick = null;
+      if (addPathPointAt(event, id)) {
+        event.preventDefault();
+        return;
+      }
+    }
+    lastPathClick = { id, time: now, x: event.clientX, y: event.clientY };
+  } else lastPathClick = null;
+  if (event.detail >= 2 && !dot && !resize && addPathPointAt(event, id)) {
+    event.preventDefault();
+    return;
+  }
   if (id && !idx().byId.has(id)) {
     select([]);
     toast(
@@ -3657,6 +3904,10 @@ function importLocationHash() {
     personalizationExpanded.clear(); personalizationSearch.value = "";
     hoverStates.clear();
     if (running) setRunning(false);
+    const hadRecentId = !!project.recentId;
+    ensureProjectIdentity(project);
+    if (!hadRecentId) save();
+    rememberCurrentProject();
     ++importRevision; // Cancel any file import that was still reading.
     try {
       // Consume only after a successful commit, so reload never overwrites
@@ -3708,6 +3959,10 @@ async function init() {
     importLocationHash();
     theme(themeMode);
     history = new V.History(project);
+    const hadRecentId = !!project.recentId;
+    ensureProjectIdentity(project);
+    if (!hadRecentId) save();
+    rememberCurrentProject();
     window.addEventListener("hashchange", () => {
       if (!location.hash.startsWith("#c=")) return;
       if (importLocationHash()) {
@@ -3790,6 +4045,7 @@ async function init() {
       onOpen: () => {
         closeContext();
         syncHistory();
+        renderRecentProjects();
       },
     });
     $("undoBtn").addEventListener("click", () => undo());
@@ -3899,33 +4155,6 @@ async function init() {
       if (drag) finishDrag(true);
     });
     $("canvasWrap").addEventListener("contextmenu", contextMenu);
-    $("board").addEventListener("dblclick", (event) => {
-      if (
-        running ||
-        event.target.closest("[data-point]") ||
-        selection.length !== 1
-      )
-        return;
-      const id = selection[0],
-        f = scene.frames.get(id);
-      if (f?.p.type !== "path" || isLocked(id)) return;
-      const node = idx().byId.get(id);
-      if (V.references(V.expressionOf(V.property(node, "points"))).length)
-        return;
-      const point = boardPoint(event);
-      mutate("添加路径点", (next) => {
-        const points = V.parsePoints(f.p.points, f.p.closed ?? true);
-        points.push({
-          x: ((point.x - f.x) / Math.max(0.001, f.w)) * (f.p.pathWidth || 100),
-          y: ((point.y - f.y) / Math.max(0.001, f.h)) * (f.p.pathHeight || 100),
-        });
-        V.setValue(
-          V.index(next.doc).byId.get(id),
-          "points",
-          V.pointsText(points),
-        );
-      });
-    });
     $("canvasWrap").addEventListener("dragover", (event) => {
       if (event.dataTransfer.types.includes("Files")) event.preventDefault();
     });

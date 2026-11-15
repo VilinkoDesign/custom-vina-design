@@ -985,6 +985,7 @@ export function projectFromVina(source, previous) {
     ),
     doc,
     locks: [],
+    ...(previous?.recentId ? { recentId: previous.recentId } : {}),
     ...(previous?.base
       ? { base: previous.base, baseName: previous.baseName }
       : {}),
@@ -1011,6 +1012,7 @@ export function projectFromJSON(text) {
       .map((id) => newIndex.byPath.get(oldIndex.paths.get(id))?.id)
       .filter(Boolean),
     name: typeof value.name === "string" ? value.name : undefined,
+    ...(typeof value.recentId === "string" ? { recentId: value.recentId } : {}),
   };
   if (value.base) {
     project.base = parse(serialize(value.base));
