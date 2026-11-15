@@ -114,7 +114,8 @@ export function renderScene(doc, inputs, options = {}) {
       el.style.pointerEvents = "none";
     const body = document.createElement("div");
     body.className = "el-body";
-    body.style.overflow = "visible";
+    if (exampleRootMotion) body.classList.add("studio-example-surface");
+    body.style.overflow = exampleRootMotion ? "hidden" : "visible";
     body.style.borderRadius = (p.radius || 0) + "px";
     // Native ViewTree multiplies opacity into each paint primitive; applying
     // opacity to the DOM group would composite overlapping children differently.
