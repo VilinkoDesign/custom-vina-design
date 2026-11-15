@@ -36,7 +36,7 @@ StudioCard {
     Close {
       type: "text", x: ${parent.width} - 48, y: 16, width: 28, height: 28,
       label: ":\uf00d:", textLiteral: true, textSize: 12,
-      color: ${pogget.theme.white}, toggle: "state.closed",
+      color: rgb(255,255,255), toggle: "state.closed",
       transition: 180ms, unhoverTransition: 220ms,
       hover { opacity: 0.72 }
     },

@@ -361,11 +361,15 @@ function renderRecentProjects() {
     return;
   }
   for (const [index, entry] of entries.slice(0, RECENT_LIMIT).entries()) {
-    const item = button("", () => openRecentProject(index), "tool-menu-item recent-project-item");
+    const item = element("div", "tool-menu-item recent-project-item");
     item.dataset.recentIndex = String(index);
     item.setAttribute("role", "menuitem");
     item.tabIndex = -1;
+    item.addEventListener("click", () => {
+      if (!running && !busy) openRecentProject(index);
+    });
     item.disabled = running || busy;
+    item.setAttribute("aria-disabled", String(running || busy));
     item.title = `${entry.name} · ${entry.board?.w || "?"} × ${entry.board?.h || "?"}`;
     const label = element("span", "recent-project-label"),
       title = element("strong", "", entry.name),
@@ -375,9 +379,30 @@ function renderRecentProjects() {
         `${recentTime(entry.updatedAt)} · ${entry.board?.w || "?"} × ${entry.board?.h || "?"} · ${entry.count || 0} 个组件`,
       );
     label.append(title, hint);
-    item.append(label);
+    const remove = button(
+      "×",
+      (event) => {
+        event.stopPropagation();
+        removeRecentProject(index);
+      },
+      "recent-project-remove",
+      "从最近工程移除",
+    );
+    remove.setAttribute("aria-label", "从最近工程移除");
+    remove.disabled = running || busy;
+    item.append(label, remove);
     root.append(item);
   }
+}
+function removeRecentProject(index) {
+  if (running || busy) return;
+  const entries = readRecentProjects();
+  if (!entries[index]) return;
+  const name = entries[index].name || "未命名工程";
+  entries.splice(index, 1);
+  writeRecentProjects(entries);
+  renderRecentProjects();
+  toast("已从最近工程移除：" + name);
 }
 function openRecentProject(index) {
   if (running || busy || !flush()) return;

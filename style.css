@@ -308,10 +308,15 @@ body.is-crashed{ overflow: hidden; }
 .tool-menu-separator { margin: 5px 4px; border-top: 1px solid var(--line-soft); }
 .tool-menu-section-label { padding: 10px 10px 5px; color: var(--ink-faint); font-size: 10.5px; letter-spacing: .04em; }
 .recent-projects { max-height: 230px; overflow-y: auto; overscroll-behavior: contain; padding: 2px 0 3px; }
-.recent-project-item { align-items: flex-start; min-height: 52px; padding: 9px 10px 9px 12px; border-radius: 7px; }
+.recent-project-item { position: relative; align-items: flex-start; min-height: 52px; padding: 9px 36px 9px 12px; border-radius: 7px; cursor: pointer; }
+.recent-project-item:hover, .recent-project-item:focus-visible { background: var(--accent-soft); color: var(--accent); outline: none; }
 .recent-project-label { flex: 1; min-width: 0; }
 .recent-project-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
 .recent-project-item small { display: block; margin-top: 4px; color: var(--ink-faint); font-size: 10px; font-weight: 400; white-space: nowrap; }
+.recent-project-remove { position: absolute; top: 50%; right: 8px; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-faint); font: 16px/1 var(--font); transform: translateY(-50%); opacity: 0; cursor: pointer; transition: opacity .15s ease, background-color .15s ease, color .15s ease; }
+.recent-project-item:hover .recent-project-remove, .recent-project-item:focus-within .recent-project-remove { opacity: 1; }
+.recent-project-remove:hover, .recent-project-remove:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+.recent-project-remove:disabled { opacity: 0; cursor: default; }
 .recent-empty { padding: 10px 12px 11px; color: var(--ink-faint); font-size: 11px; }
 @keyframes toolMenuIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 @media(max-width:1000px) { .topbar-start { gap: 12px; } .tool-menu-trigger { padding: 0 8px; } }
@@ -1097,10 +1102,10 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .el { touch-action: none; }
 .studio-example-root { transform-origin: center; transition: opacity .24s ease, transform .24s cubic-bezier(.2,.8,.2,1); }
 .canvas-board.running .studio-example-root { animation: studioExampleIn .32s cubic-bezier(.2,.8,.2,1); }
-.studio-example-root::after { content: ""; position: absolute; inset: 0; z-index: 20; pointer-events: none; border-radius: inherit; opacity: 0; background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--studio-accent, #5279fb) 72%, #ffffff 28%), transparent 68%); mix-blend-mode: screen; filter: blur(5px); transform: scale(.28); transform-origin: 50% 44%; }
-.canvas-board.running .studio-example-root::after { animation: studioExampleGradientIn .62s cubic-bezier(.16,.72,.2,1) both; }
+.studio-example-root::after { content: ""; position: absolute; inset: -12%; z-index: 20; pointer-events: none; border-radius: inherit; opacity: 0; background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--studio-accent, #5279fb) 84%, #ffffff 16%) 0%, color-mix(in srgb, var(--studio-accent, #5279fb) 48%, transparent) 36%, transparent 72%); mix-blend-mode: screen; filter: blur(3px); transform: scale(.16); transform-origin: 50% 44%; }
+.canvas-board.running .studio-example-root::after { animation: studioExampleGradientIn .9s cubic-bezier(.16,.72,.2,1) both; }
 @keyframes studioExampleIn { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
-@keyframes studioExampleGradientIn { 0% { opacity: .72; transform: scale(.28); } 62% { opacity: .3; } 100% { opacity: 0; transform: scale(1.55); } }
+@keyframes studioExampleGradientIn { 0% { opacity: .98; transform: scale(.16); } 38% { opacity: .78; } 72% { opacity: .34; } 100% { opacity: 0; transform: scale(1.8); } }
 @media (prefers-reduced-motion: reduce) { .studio-example-root, .studio-example-root::after { animation: none !important; transition: none; } }
 .el-body { position: absolute; inset: 0; pointer-events: none; }
 .el.selected > .el-body { outline: none; }
