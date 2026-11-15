@@ -1102,12 +1102,8 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .el { touch-action: none; }
 .studio-example-root { transform-origin: center; transition: opacity .24s ease, transform .24s cubic-bezier(.2,.8,.2,1); }
 .canvas-board.running .studio-example-root { animation: studioExampleIn .32s cubic-bezier(.2,.8,.2,1); }
-.studio-example-surface { overflow: hidden !important; }
-.studio-example-surface::after { content: ""; position: absolute; inset: 0; z-index: 20; pointer-events: none; border-radius: inherit; opacity: 0; background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--studio-accent, #5279fb) 84%, #ffffff 16%) 0%, color-mix(in srgb, var(--studio-accent, #5279fb) 48%, transparent) 36%, transparent 72%); mix-blend-mode: screen; filter: blur(3px); transform: scale(.16); transform-origin: 50% 44%; }
-.canvas-board.running .studio-example-surface::after { animation: studioExampleGradientIn .9s cubic-bezier(.16,.72,.2,1) both; }
 @keyframes studioExampleIn { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
-@keyframes studioExampleGradientIn { 0% { opacity: .98; transform: scale(.16); } 38% { opacity: .78; } 72% { opacity: .34; } 100% { opacity: 0; transform: scale(1.8); } }
-@media (prefers-reduced-motion: reduce) { .studio-example-root, .studio-example-surface::after { animation: none !important; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .studio-example-root { animation: none !important; transition: none; } }
 .el-body { position: absolute; inset: 0; pointer-events: none; }
 .el.selected > .el-body { outline: none; }
 .el-children { position: absolute; inset: 0; pointer-events: none; }

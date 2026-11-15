@@ -21,13 +21,27 @@ export function renderScene(doc, inputs, options = {}) {
     fragment = document.createDocumentFragment(),
     nodes = new Map();
   let gradientSeq = 0;
-  const gradient = (defs, node, destination, p, path, w, h) => {
+  const gradient = (defs, node, destination, p, path, w, h, animateEntry = false) => {
     const grad = block(node, destination);
     if (!grad) return null;
     const gp = path + "." + destination,
       hp = path + ".hover." + destination,
       amount = options.hover?.get(node.id) || 0,
-      get = (k, d) => gradientValue(runtime, gp, hp, k, d, amount);
+      get = (k, d) => {
+        const value = gradientValue(runtime, gp, hp, k, d, amount);
+        if (
+          !animateEntry ||
+          !["startX", "startY", "endX", "endY"].includes(k)
+        )
+          return value;
+        const progress = Math.max(
+          0.001,
+          Math.min(1, Number(options.exampleEnterProgress ?? 1)),
+        );
+        const center = 0.5;
+        const edge = k.startsWith("start") ? -1 : 1;
+        return center + (value - center) * progress + edge * 0.001 * (1 - progress);
+      };
     if (!get("enabled", true)) return null;
     const id = "grad" + ++gradientSeq,
       radial = get("type", "linear") === "radial";
@@ -92,13 +106,7 @@ export function renderScene(doc, inputs, options = {}) {
     const exampleRootMotion = studioComponent && !parent;
     if (exampleRootMotion) el.classList.add("studio-example-root");
     el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${frame.stackZ};`;
-    if (exampleRootMotion) {
-      el.style.opacity = String(frame.alpha);
-      el.style.setProperty(
-        "--studio-accent",
-        cssColor(p.borderColor ?? p.background, "#5279fb"),
-      );
-    }
+    if (exampleRootMotion) el.style.opacity = String(frame.alpha);
     el.classList.toggle(
       "selected",
       !options.running && options.selection?.includes(node.id),
@@ -114,8 +122,7 @@ export function renderScene(doc, inputs, options = {}) {
       el.style.pointerEvents = "none";
     const body = document.createElement("div");
     body.className = "el-body";
-    if (exampleRootMotion) body.classList.add("studio-example-surface");
-    body.style.overflow = exampleRootMotion ? "hidden" : "visible";
+    body.style.overflow = "visible";
     body.style.borderRadius = (p.radius || 0) + "px";
     // Native ViewTree multiplies opacity into each paint primitive; applying
     // opacity to the DOM group would composite overlapping children differently.
@@ -142,7 +149,18 @@ export function renderScene(doc, inputs, options = {}) {
     surface.style.overflow = "visible";
     const defs = svg("defs");
     surface.append(defs);
-    const fillGrad = gradient(defs, node, "backgroundGradient", p, path, w, h),
+    const animateEntryGradient =
+        component?.name === "StudioCard" && !parent && options.running,
+      fillGrad = gradient(
+        defs,
+        node,
+        "backgroundGradient",
+        p,
+        path,
+        w,
+        h,
+        animateEntryGradient,
+      ),
       borderGrad = gradient(defs, node, "borderGradient", p, path, w, h);
     const hasFill = frame.hasFill;
     const fill = hasFill

@@ -41,10 +41,10 @@ StudioCard {
       hover { opacity: 0.72 }
     },
     Mark { type: "path", x: ${ui.Spacing.value}, y: 160, width: 42, height: 42, pathWidth: 100, pathHeight: 100, points: "8,50 38,80 92,16", closed: false, smooth: false, border: 3, borderColor: ${ui.Accent.value}, borderOnly: true },
-    DetailTitle { type: "text", x: ${ui.Spacing.value} + 58, y: 159, width: 200, height: 24, label: "Designed around you", textLiteral: true, textSize: 14, emphasized: true, color: rgb(255,255,255), align: "left" },
-    Detail { type: "text", x: ${ui.Spacing.value} + 58, y: 187, width: 210, height: 20, label: "颜色 · 变量 · 矢量路径", textLiteral: true, textSize: 11, color: rgb(255,255,255), opacity: 0.5, align: "left" },
-    Divider { type: "solid", x: ${ui.Spacing.value}, y: 230, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 1, background: rgb(255,255,255), opacity: 0.08 },
-    Caption { type: "text", x: ${ui.Spacing.value}, y: 249, width: 265, height: 48, label: ${state.expanded} ? "自由组合，实时响应。\n所有编辑，都可以从容撤销。" : "把想法放进画板，\n让个性化拥有更多可能。", textLiteral: true, textSize: 12, color: rgb(255,255,255), opacity: 0.65, align: "left" },
+    DetailTitle { type: "text", x: ${ui.Spacing.value} + 58, y: 159, width: 200, height: 24, label: "Designed around you", textLiteral: true, textSize: 14, emphasized: true, color: ${pogget.theme.white}, align: "left" },
+    Detail { type: "text", x: ${ui.Spacing.value} + 58, y: 187, width: 210, height: 20, label: "颜色 · 变量 · 矢量路径", textLiteral: true, textSize: 11, color: ${pogget.theme.white}, opacity: 0.5, align: "left" },
+    Divider { type: "solid", x: ${ui.Spacing.value}, y: 230, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 1, background: ${pogget.theme.white}, opacity: 0.08 },
+    Caption { type: "text", x: ${ui.Spacing.value}, y: 249, width: 265, height: 48, label: ${state.expanded} ? "自由组合，实时响应。\n所有编辑，都可以从容撤销。" : "把想法放进画板，\n让个性化拥有更多可能。", textLiteral: true, textSize: 12, color: ${pogget.theme.white}, opacity: 0.65, align: "left" },
     Explore {
       type: "button", x: ${ui.Spacing.value}, y: 324, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 42,
       radius: 10, background: ${ui.Accent.value}, label: ${state.expanded} ? "收起灵感  :\uf062:" : "探索更多  :\uf35d:", textLiteral: true,

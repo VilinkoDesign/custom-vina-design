@@ -78,6 +78,8 @@ const collapsed = new Set();
 const personalizationExpanded = new Map(), personalizationSearch = { value: "" };
 const hoverStates = new Map();
 let previewFrame = 0;
+let exampleEnterProgress = 1,
+  exampleEnterStart = 0;
 let hostState = "expanded",
   hostOverrides = {},
   lastHostPreset = false;
@@ -590,6 +592,7 @@ function renderCanvas() {
       hover: running
         ? new Map([...hoverStates].map(([id, s]) => [id, s.value]))
         : new Map(),
+      exampleEnterProgress: running ? exampleEnterProgress : 1,
       defaults: {
         ...FALLBACK,
         background: currentInputs["pogget.theme.midnight"],
@@ -673,6 +676,11 @@ function animatePreview(time) {
   previewFrame = 0;
   if (!running) return;
   let active = false;
+  if (exampleEnterProgress < 1) {
+    const linear = Math.min(1, Math.max(0, (time - exampleEnterStart) / 900));
+    exampleEnterProgress = 1 - Math.pow(1 - linear, 3);
+    active = linear < 1;
+  }
   for (const [id, s] of hoverStates) {
     const elapsed = s.duration
       ? Math.min(1, (time - s.start) / (s.duration * 1000))
@@ -3901,6 +3909,8 @@ function setRunning(on) {
   hoverStates.clear();
   running = on;
   runtimeOverrides = {};
+  exampleEnterProgress = on ? 0 : 1;
+  exampleEnterStart = on ? performance.now() : 0;
   if (!on) selection = lastSelection.filter((id) => idx().byId.has(id));
   $("runBtn").textContent = on ? "停止" : "运行";
   $("runBtn").classList.toggle("is-running", on);
@@ -3914,6 +3924,7 @@ function setRunning(on) {
   ])
     $(id).disabled = on;
   renderAll();
+  if (on) previewFrame = requestAnimationFrame(animatePreview);
   status(on ? "交互预览 · 状态不写入工程" : "编辑模式");
 }
 let spaceHeld = false,
