@@ -1095,9 +1095,10 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .canvas-board.host-preview.running { outline-color: var(--accent-line); }
 #overlays { position: absolute; inset: 0; pointer-events: none; z-index: 2147483647; }
 .el { touch-action: none; }
-.studio-example-root { transform-origin: center; transition: opacity .24s ease, transform .24s cubic-bezier(.2,.8,.2,1); animation: studioExampleIn .32s cubic-bezier(.2,.8,.2,1); }
+.studio-example-root { transform-origin: center; transition: opacity .24s ease, transform .24s cubic-bezier(.2,.8,.2,1); }
+.canvas-board.running .studio-example-root { animation: studioExampleIn .32s cubic-bezier(.2,.8,.2,1); }
 @keyframes studioExampleIn { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .studio-example-root { animation: none; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .studio-example-root { animation: none !important; transition: none; } }
 .el-body { position: absolute; inset: 0; pointer-events: none; }
 .el.selected > .el-body { outline: none; }
 .el-children { position: absolute; inset: 0; pointer-events: none; }
