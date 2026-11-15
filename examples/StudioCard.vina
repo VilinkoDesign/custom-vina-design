@@ -39,7 +39,7 @@ StudioCard {
     Caption { type: "text", x: ${ui.Spacing.value}, y: 249, width: 265, height: 48, label: ${state.expanded} ? "自由组合，实时响应。\n所有编辑，都可以从容撤销。" : "把想法放进画板，\n让个性化拥有更多可能。", textLiteral: true, textSize: 12, color: ${pogget.theme.white}, opacity: 0.65, align: "left" },
     Explore {
       type: "button", x: ${ui.Spacing.value}, y: 324, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 42,
-      radius: 10, background: ${ui.Accent.value}, label: ${state.expanded} ? "收起灵感  " : "探索更多  ", textLiteral: true,
+      radius: 10, background: ${ui.Accent.value}, label: ${state.expanded} ? "收起灵感  :\uf062:" : "探索更多  :\uf35d:", textLiteral: true,
       textSize: 12, color: rgb(255,255,255), toggle: "state.expanded", transition: 160ms, unhoverTransition: 220ms,
       hover { opacity: 0.8 }
     }

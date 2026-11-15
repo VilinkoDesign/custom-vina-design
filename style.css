@@ -608,7 +608,14 @@ body.is-crashed{ overflow: hidden; }
   color: var(--ink-faint);
   text-align: center;
   padding: 24px;
+  opacity: 0;
+  transform: translateY(8px) scale(.985);
+  transition: opacity .18s ease, transform .22s cubic-bezier(.2,.8,.2,1);
 }
+.board-empty.is-visible { opacity: 1; transform: none; }
+.example-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: min(360px, 100%); padding: 28px 34px 24px; border: 1px solid var(--line-soft); border-radius: 16px; background: color-mix(in srgb, var(--panel) 92%, transparent); box-shadow: var(--board-shadow); }
+.example-close { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; padding: 0; border-radius: 50%; color: var(--ink-faint); background: transparent; }
+.example-close:hover { color: var(--ink); background: var(--accent-soft); }
 .board-empty .be-icon{ font-size: 26px; opacity: .5; }
 .board-empty p{ margin: 0; font-size: 12.5px; }
 .board-empty .be-sub{ font-size: 11.5px; opacity: .8; }
@@ -1101,8 +1108,20 @@ button:disabled { opacity: .38; cursor: default; transform: none; }
 .el-children > .el { pointer-events: auto; }
 .el.inherited { cursor: default; }
 .surface { display: block; position: absolute; inset: 0; }
-.paint-text { position: absolute; inset: 0; display: flex; align-items: center; overflow: hidden; line-height: 1.2; }
-.vina-fa-glyph { font-family: "Font Awesome 6 Free Solid"; font-style: normal; font-weight: 900; }
+.paint-text { position: absolute; inset: 0; display: block; overflow: hidden; line-height: 1.2; }
+.vina-fa-glyph { display: inline-block; font-family: "Font Awesome 6 Free Solid"; font-style: normal; font-weight: 900; vertical-align: -0.08em; }
+.vina-fa-token { cursor: pointer; }
+.vina-fa-token:hover { color: var(--accent); }
+.icon-text-host { position: relative; min-width: 0; }
+.icon-text-host > .icon-text-preview { position: absolute; right: 7px; top: 50%; z-index: 1; display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; transform: translateY(-50%); color: var(--ink-dim); pointer-events: none; }
+.icon-text-host > .icon-text-preview:not(:empty) { pointer-events: auto; cursor: pointer; }
+.icon-text-host > input.ctl.icon-text-input:not([type="color"]), .icon-text-host > textarea.source-editor { padding-right: 30px; }
+.icon-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; max-height: min(52dvh, 420px); overflow: auto; padding: 2px; }
+.icon-picker-item { min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 4px; border: 1px solid var(--line-soft); border-radius: var(--radius-xs); background: var(--panel-soft); color: var(--ink); cursor: pointer; }
+.icon-picker-item:hover, .icon-picker-item:focus-visible { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent); outline: none; }
+.icon-picker-item .vina-fa-glyph { font-size: 18px; }
+.icon-picker-item small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-faint); font-size: 9px; }
+.icon-picker-search { margin-bottom: 8px; }
 .el-body > img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .group-outline { outline: 1px dashed var(--line-mid); outline-offset: -1px; }
 .glass-preview { background-image: linear-gradient(135deg, rgba(255,255,255,.15), transparent); }

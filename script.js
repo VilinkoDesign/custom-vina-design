@@ -17,7 +17,14 @@ import {
   propertyGroups,
 } from "./vina-editor.js";
 import { pickScene, hasVisiblePaint } from "./vina-canvas.js";
-import { icon, COMPONENT_ICONS } from "./icons.js";
+import {
+  icon,
+  COMPONENT_ICONS,
+  FA6_ICONS,
+  fa6Token,
+  fa6Tokens,
+  renderFa6Text,
+} from "./icons.js";
 import {
   isHostPreset,
   previewInputs,
@@ -27,6 +34,7 @@ const $ = (id) => document.getElementById(id);
 const STORAGE = "customvina.project.v2",
   RECOVERY = "customvina.recovery.v2",
   RECENT = "customvina.recent.v1",
+  EXAMPLE_DISMISSED = "customvina.example.dismissed.v1",
   RECENT_LIMIT = 5;
 const NAMES = {
   rect: "矩形",
@@ -70,6 +78,7 @@ const collapsed = new Set();
 const personalizationExpanded = new Map(), personalizationSearch = { value: "" };
 const hoverStates = new Map();
 let previewFrame = 0;
+let exampleDismissed = false;
 let hostState = "expanded",
   hostOverrides = {},
   lastHostPreset = false;
@@ -93,6 +102,96 @@ function iconButton(name, handler, className, label) {
   n.setAttribute("aria-label", label);
   n.append(icon(name));
   return n;
+}
+
+function iconTokenAt(control, position = control.selectionStart ?? 0) {
+  const value = String(control.value ?? "");
+  return fa6Tokens(value).find((token) => position >= token.start && position < token.end) || null;
+}
+
+function replaceIconToken(control, glyph, token = null) {
+  const value = String(control.value ?? "");
+  const start = token?.start ?? control.selectionStart ?? value.length;
+  const end = token?.end ?? control.selectionEnd ?? start;
+  const next = control.dataset.iconProperty === "true" ? glyph : fa6Token(glyph);
+  if (typeof control.setRangeText === "function") control.setRangeText(next, start, end, "end");
+  else control.value = value.slice(0, start) + next + value.slice(end);
+  control.dispatchEvent(new Event("input", { bubbles: true }));
+  control.dispatchEvent(new Event("change", { bubbles: true }));
+  control.focus?.();
+}
+
+function openIconPicker(control, token = null) {
+  if (!control) return;
+  let search;
+  dialog(
+    "选择 Font Awesome 6 图标",
+    (body) => {
+      search = textControl("", () => {});
+      search.classList.add("icon-picker-search");
+      search.placeholder = "搜索图标名称或中文…";
+      search.setAttribute("aria-label", "搜索 Font Awesome 6 图标");
+      const grid = element("div", "icon-picker-grid");
+      const render = () => {
+        const query = search.value.trim().toLowerCase();
+        grid.replaceChildren();
+        for (const [name, glyph, label] of FA6_ICONS) {
+          if (query && !`${name} ${label}`.toLowerCase().includes(query)) continue;
+          const item = button("", () => {
+            replaceIconToken(control, glyph, token || iconTokenAt(control));
+            closeDialog($("editDialog"));
+          }, "icon-picker-item", `${label} · ${name}`);
+          item.dataset.iconName = name;
+          item.setAttribute("aria-label", `${label} · ${name}`);
+          const preview = element("span");
+          renderFa6Text(preview, glyph);
+          item.append(preview, element("small", "", label));
+          grid.append(item);
+        }
+      };
+      search.addEventListener("input", render);
+      body.append(search, grid);
+      render();
+    },
+    [],
+  );
+}
+
+function iconPreviewHost(control) {
+  if (!control || control.dataset.iconPreviewReady === "true") return;
+  control.dataset.iconPreviewReady = "true";
+  control.classList.add("icon-text-input");
+  const refresh = () => {
+    const host = control.parentElement;
+    if (!host) return;
+    host.classList.add("icon-text-host");
+    let preview = host.querySelector(":scope > .icon-text-preview");
+    if (!preview) {
+      preview = element("span", "icon-text-preview");
+      preview.setAttribute("aria-label", "图标预览；点击图标可选择");
+      host.append(preview);
+      preview.addEventListener("click", (event) => {
+        const target = event.target.closest(".vina-fa-token");
+        openIconPicker(control, target ? {
+          start: Number(target.dataset.tokenStart),
+          end: Number(target.dataset.tokenEnd),
+        } : iconTokenAt(control));
+      });
+    }
+    renderFa6Text(preview, control.value);
+    preview.hidden = !preview.querySelector(".vina-fa-glyph");
+  };
+  control.addEventListener("input", refresh);
+  control.addEventListener("change", refresh);
+  control.addEventListener("click", () => {
+    const token = iconTokenAt(control);
+    if (token) openIconPicker(control, token);
+  });
+  control.addEventListener("pointerup", () => {
+    const token = iconTokenAt(control);
+    if (token) control.title = "点击 :图标: 内容可选择 FA6 图标";
+  });
+  queueMicrotask(refresh);
 }
 function toast(message) {
   const n = element("div", "toast", message);
@@ -478,12 +577,23 @@ function renderCanvas() {
     } else $("scene").replaceChildren(next.fragment);
     scene = next;
     const empty = ![...scene.frames.values()].some((f) => f.rendered);
-    $("boardEmpty").style.display = empty ? "flex" : "none";
+    setBoardEmptyVisible(empty && !exampleDismissed);
     renderOverlays();
     syncHistory();
   } catch (error) {
     status(error.message, true);
-    $("boardEmpty").style.display = scene?.nodes.size ? "none" : "flex";
+    setBoardEmptyVisible(!scene?.nodes.size && !exampleDismissed);
+  }
+}
+function setBoardEmptyVisible(visible) {
+  const empty = $("boardEmpty");
+  if (!empty) return;
+  if (visible) {
+    empty.style.display = "flex";
+    requestAnimationFrame(() => empty.classList.add("is-visible"));
+  } else {
+    empty.classList.remove("is-visible");
+    empty.style.display = "none";
   }
 }
 function syncZoomSelect() {
@@ -957,7 +1067,7 @@ function textControl(value, change, type = "text") {
       if (stepped) n.dispatchEvent(new Event("change", { bubbles: true }));
     });
     n.title = "方向键或聚焦后滚轮微调；Shift ×10，Alt ÷10";
-  }
+  } else if (type === "text") iconPreviewHost(n);
   return n;
 }
 const LABELS = {
@@ -1249,6 +1359,7 @@ function propertyField(node, key, target = $("inspBody")) {
     }
   }
   control.dataset.prop = key;
+  if (key === "icon") control.dataset.iconProperty = "true";
   control.title =
     (raw ?? "使用默认值") +
     (control.type === "number"
@@ -1262,7 +1373,10 @@ function propertyField(node, key, target = $("inspBody")) {
     "绑定变量或编辑表达式",
   );
   fx.dataset.bind = key;
-  wrap.append(control, fx);
+  wrap.append(control);
+  if (key === "icon" || key === "label" || key === "text")
+    wrap.append(iconButton("icons", () => openIconPicker(control), "binding-btn", "选择 FA6 图标"));
+  wrap.append(fx);
   field(LABELS[key] || key, wrap, key, target);
 }
 function renderInspector() {
@@ -2542,6 +2656,7 @@ function textarea(value) {
       n.setRangeText("  ", start, n.selectionEnd, "end");
     }
   });
+  iconPreviewHost(n);
   return n;
 }
 function sourceDialog() {
@@ -3948,6 +4063,7 @@ function importLocationHash() {
     if (running) setRunning(false);
     const hadRecentId = !!project.recentId;
     ensureProjectIdentity(project);
+    try { exampleDismissed = localStorage.getItem(EXAMPLE_DISMISSED) === "1"; } catch {}
     if (!hadRecentId) save();
     rememberCurrentProject();
     ++importRevision; // Cancel any file import that was still reading.
@@ -4029,7 +4145,18 @@ async function init() {
       "btn-ghost",
     );
     example.style.pointerEvents = "auto";
-    $("boardEmpty").append(example);
+    $("exampleCard").insertBefore(example, $("exampleClose"));
+    $("exampleClose").addEventListener("click", () => {
+      exampleDismissed = true;
+      try { localStorage.setItem(EXAMPLE_DISMISSED, "1"); } catch {}
+      const empty = $("boardEmpty");
+      empty.classList.remove("is-visible");
+      empty.classList.add("is-closing");
+      setTimeout(() => {
+        empty.classList.remove("is-closing");
+        empty.style.display = "none";
+      }, 220);
+    });
     for (const type of [
       "rect",
       "text",

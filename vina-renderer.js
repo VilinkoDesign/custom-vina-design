@@ -1,6 +1,7 @@
 import { block, parsePoints, pathData, colorHex } from "./vina-core.js";
 import { gradientValue } from "./vina-preview.js";
 import { resolveScene } from "./vina-scene.js";
+import { renderFa6Text } from "./icons.js";
 const NS = "http://www.w3.org/2000/svg";
 const svg = (tag, attributes = {}) => {
   const n = document.createElementNS(NS, tag);
@@ -264,15 +265,7 @@ export function renderScene(doc, inputs, options = {}) {
       const text = document.createElement("div");
       text.className = "paint-text";
       const label = String(p.icon || p.label || p.text || "");
-      for (const character of label) {
-        const code = character.codePointAt(0);
-        if (code >= 0xe000 && code <= 0xf8ff) {
-          const glyph = document.createElement("span");
-          glyph.className = "vina-fa-glyph";
-          glyph.textContent = character;
-          text.append(glyph);
-        } else text.append(document.createTextNode(character));
-      }
+      renderFa6Text(text, label);
       text.style.color = cssColor(
         p.color ?? inputs["pogget.theme.white"],
         "#ffffff",
@@ -280,14 +273,10 @@ export function renderScene(doc, inputs, options = {}) {
       text.style.fontSize = (p.textSize ?? 14) + "px";
       text.style.fontFamily = JSON.stringify(p.font || "Segoe UI");
       text.style.fontWeight = p.emphasized ? "600" : "400";
-      text.style.alignItems = "flex-start";
-      text.style.lineHeight = "normal";
-      text.style.justifyContent =
-        p.textRenderer === "glyph" || p.align === "left"
-          ? "flex-start"
-          : p.align === "right"
-            ? "flex-end"
-            : "center";
+      text.style.display = "block";
+      text.style.lineHeight = "1.2";
+      text.style.textAlign =
+        p.align === "right" ? "right" : p.align === "left" ? "left" : "center";
       text.style.left = p.textX + "px";
       text.style.top = p.textY + "px";
       text.style.right = "auto";
