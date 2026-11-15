@@ -30,9 +30,9 @@ StudioCard {
         }
       }
     },
-    Eyebrow { type: "text", x: ${ui.Spacing.value}, y: 22, width: 220, height: 18, label: "V I N A   /   E X A M P L E", textLiteral: true, textSize: 10, color: ${pogget.theme.white}, opacity: 0.7, align: "left" },
-    Title { type: "text", x: ${ui.Spacing.value}, y: 49, width: 260, height: 36, label: "Make it yours.", textLiteral: true, textSize: 28, emphasized: true, color: ${pogget.theme.white}, align: "left" },
-    Subtitle { type: "text", x: ${ui.Spacing.value}, y: 91, width: 260, height: 20, label: "每一处细节，都由你定义。", textLiteral: true, textSize: 12, color: ${pogget.theme.white}, opacity: 0.8, align: "left" },
+    Eyebrow { type: "text", x: ${ui.Spacing.value}, y: 22, width: 220, height: 18, label: "V I N A   /   E X A M P L E", textLiteral: true, textSize: 10, color: rgb(255,255,255), opacity: 0.7, align: "left" },
+    Title { type: "text", x: ${ui.Spacing.value}, y: 49, width: 260, height: 36, label: "Make it yours.", textLiteral: true, textSize: 28, emphasized: true, color: rgb(255,255,255), align: "left" },
+    Subtitle { type: "text", x: ${ui.Spacing.value}, y: 91, width: 260, height: 20, label: "每一处细节，都由你定义。", textLiteral: true, textSize: 12, color: rgb(255,255,255), opacity: 0.8, align: "left" },
     Close {
       type: "text", x: ${parent.width} - 48, y: 16, width: 28, height: 28,
       label: ":\uf00d:", textLiteral: true, textSize: 12,
@@ -48,7 +48,7 @@ StudioCard {
     Explore {
       type: "button", x: ${ui.Spacing.value}, y: 324, width: ${parent.width} - ${ui.Spacing.value} * 2, height: 42,
       radius: 10, background: ${ui.Accent.value}, label: ${state.expanded} ? "收起灵感  :\uf062:" : "探索更多  :\uf35d:", textLiteral: true,
-      textSize: 12, color: ${pogget.theme.white}, toggle: "state.expanded", transition: 160ms, unhoverTransition: 220ms,
+      textSize: 12, color: rgb(255,255,255), toggle: "state.expanded", transition: 160ms, unhoverTransition: 220ms,
       hover { opacity: 0.8 }
     }
   }
