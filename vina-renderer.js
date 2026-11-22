@@ -16,6 +16,10 @@ const cssColor = (n, fallback = "#000000") => {
     return fallback;
   }
 };
+const cssRgba = (n, alpha) => {
+  const hex = cssColor(n), value = Number.parseInt(hex.slice(1), 16);
+  return `rgba(${value & 255}, ${(value >> 8) & 255}, ${(value >> 16) & 255}, ${Math.max(0, Math.min(1, Number(alpha) || 0))})`;
+};
 export function renderScene(doc, inputs, options = {}) {
   const { runtime, frames, instances = [...frames.values()] } = resolveScene(doc, inputs, options),
     fragment = document.createDocumentFragment(),
@@ -205,7 +209,13 @@ export function renderScene(doc, inputs, options = {}) {
         "stroke-dasharray",
         `${strokeWidth * 3} ${strokeWidth * 2}`,
       );
-    if (p.shadowOpacity > 0) {
+    const nativeBackgroundShadow = type === "pogget.native.Background" && p.shadowOpacity > 0;
+    if (nativeBackgroundShadow) {
+      // The editor viewport clips at the board edge. Layered shadow rects then
+      // become opaque dark corner blocks when they extend beyond a rounded
+      // native background. A shape-aware shadow keeps the blur outside it.
+      shape.style.filter = `drop-shadow(${p.shadowX || 0}px ${(p.shadowY ?? 4) + 3}px ${p.shadowBlur ?? 16}px ${cssRgba(p.shadowColor, p.shadowOpacity)})`;
+    } else if (p.shadowOpacity > 0) {
       // VertexUI's quick shadow is a fixed stack of expanded rounded rects,
       // not a Gaussian blur/drop-shadow. Keep its +3 DIP vertical offset.
       const quality = p.shadowQuality ?? 4;
@@ -321,7 +331,7 @@ export function renderScene(doc, inputs, options = {}) {
       text.style.top = p.textY + "px";
       text.style.right = "auto";
       text.style.bottom = "auto";
-      text.style.width = w + "px";
+      text.style.width = (p.textLayoutWidth ?? w) + "px";
       text.style.height = h + "px";
       text.style.overflow = p.textClip || p.textNoWrap || type === "text" ? "hidden" : "visible";
       if (p.textClip) text.style.textOverflow = "ellipsis";

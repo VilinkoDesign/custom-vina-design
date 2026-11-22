@@ -51,7 +51,7 @@ test("host title text uses native display units and never escapes its measured t
   });
   const scene = resolveScene(M.effectiveProject(project, standard), hostInputs, { host: true });
   const text = scene.instances.find((f) => f.path === "TitleTag.view.Text.Current");
-  assert.equal(text.p.label, "😀😀😀...");
+  assert.equal(text.p.label, "😀...");
   assert.equal(text.p.textNoWrap, true);
   assert.equal(text.p.textClip, true);
 });

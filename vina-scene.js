@@ -207,10 +207,21 @@ export function resolveScene(doc, inputs, options = {}) {
     }
     p.borderOnly = raw.borderOnly ?? (type === "path" && !property(node, "background") && !hasFillGradient);
     const slot = raw.slot || parentFrame?.slot || "";
+    // TitleTag text starts at vars.textX inside the tag. Reserve only the
+    // remaining visible width before applying native display-unit omission.
+    if (slot === "titleTag" && type === "text") {
+      let tagFrame = parentFrame;
+      while (tagFrame && tagFrame.path !== "TitleTag.view") tagFrame = tagFrame.parentFrame;
+      if (tagFrame) {
+        const frameX = x + (parentFrame?.x || 0);
+        p.textLayoutWidth = Math.max(1, tagFrame.x + tagFrame.w - frameX - 1);
+      }
+    }
     if (typeof p.label === "string") {
       const explicitOmit = Number(p.textOmitUnits) || 0;
       const titleTagText = slot === "titleTag" && p.textSize === 14;
-      const titleUnits = titleTagText ? Math.max(1, Math.floor(Math.max(1, w - 14) / 7)) : 0;
+      const titleWidth = Number(p.textLayoutWidth ?? w);
+      const titleUnits = titleTagText ? Math.max(1, Math.floor(titleWidth / 7)) : 0;
       const retained = explicitOmit > 0 ? explicitOmit : titleUnits;
       if (retained > 0 && displayUnits(p.label) > retained) {
         p.label = omitDisplayUnits(p.label, Math.max(1, retained - (explicitOmit > 0 ? 0 : 3)));
