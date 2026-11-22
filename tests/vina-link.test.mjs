@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { projectFromLink, LINK_LIMIT } from "../vina-link.js";
 import * as M from "../vina-model.js";
 import * as V from "../vina-core.js";
-import { previewInputs } from "../vina-scene.js";
+import { previewInputs, resolveScene } from "../vina-scene.js";
 
 const standardSource = readFileSync(new URL("../data/Pogget_Std.vina", import.meta.url), "utf8");
 const standard = V.parse(standardSource);
@@ -28,6 +28,17 @@ test("Pogget_Std and dependent presets use the existing validation rules", () =>
   assert.equal(M.projectSource(from(hash(standardSource))), standardSource);
   assert.ok(from(hash('Preset { dependsOn: "Pogget_Std" } Card { view { width: 120 } }')));
   assert.ok(from(hash('Preset { dependsOn: "MyBase" } Card { view { width: 120 } }')));
+});
+test("the current native Pogget_Std renders with semantic theme inputs on a vertical board", () => {
+  const project = M.projectFromVina(standardSource);
+  assert.deepEqual(project.board, { w: 360, h: 480 });
+  const hostInputs = previewInputs(defaults, project.board, false, true);
+  assert.equal(hostInputs["pogget.theme.bgSubtle"], hostInputs["pogget.theme.midnight"]);
+  assert.equal(hostInputs["pogget.theme.text"], hostInputs["pogget.theme.white"]);
+  assert.doesNotThrow(() => {
+    M.validate(project, standard, hostInputs, schema);
+    resolveScene(M.effectiveProject(project, standard), hostInputs, { host: true });
+  });
 });
 test("invalid envelopes, UTF-8, syntax and semantic values are rejected", () => {
   assert.equal(from(""), null);

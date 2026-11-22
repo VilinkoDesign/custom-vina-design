@@ -1024,7 +1024,7 @@ export function projectFromVina(source, previous) {
     version: 2,
     board: clone(
       isHostPreset(doc) && !isHostPreset(previous?.doc || { roots: [] })
-        ? { w: 480, h: 360 }
+        ? { w: 360, h: 480 }
         : previous?.board || { w: 360, h: 480 },
     ),
     doc,
