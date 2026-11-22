@@ -2,6 +2,34 @@ import { Runtime, viewNodes, block, property, META } from "./vina-core.js";
 import { resolveHover } from "./vina-preview.js";
 import { poggetTheme } from "./vina-theme.js";
 
+function displayUnits(text) {
+  let units = 0;
+  for (const character of String(text || "")) {
+    const code = character.codePointAt(0);
+    units += (code >= 0x3000 && code <= 0x30ff) ||
+      (code >= 0x3400 && code <= 0x4dbf) ||
+      (code >= 0x4e00 && code <= 0x9fff) ||
+      (code >= 0xac00 && code <= 0xd7af) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xff00 && code <= 0xffef) ? 2 : 1;
+  }
+  return units;
+}
+function omitDisplayUnits(text, retained) {
+  const source = String(text || "");
+  if (!source || retained <= 0 || displayUnits(source) <= retained) return source;
+  const ellipsis = "...";
+  if (retained <= displayUnits(ellipsis)) return ellipsis.slice(0, retained);
+  const budget = retained - displayUnits(ellipsis);
+  let used = 0, head = "";
+  for (const character of source) {
+    const units = displayUnits(character);
+    if (used + units > budget) break;
+    head += character; used += units;
+  }
+  return head + ellipsis;
+}
+
 const HOST_COMPONENTS = new Set([
   "Background",
   "Tag",
@@ -162,6 +190,17 @@ export function resolveScene(doc, inputs, options = {}) {
     }
     p.borderOnly = raw.borderOnly ?? (type === "path" && !property(node, "background") && !hasFillGradient);
     const slot = raw.slot || parentFrame?.slot || "";
+    if (typeof p.label === "string") {
+      const explicitOmit = Number(p.textOmitUnits) || 0;
+      const titleTagText = slot === "titleTag" && p.textSize === 14;
+      const titleUnits = titleTagText ? Math.max(1, Math.floor(Math.max(1, w - 14) / 7)) : 0;
+      const retained = explicitOmit > 0 ? explicitOmit : titleUnits;
+      if (retained > 0 && displayUnits(p.label) > retained) {
+        p.label = omitDisplayUnits(p.label, Math.max(1, retained - (explicitOmit > 0 ? 0 : 3)));
+        p.textNoWrap = true;
+        p.textClip = true;
+      }
+    }
     const frame = { node, parent, component, path, p, w, h, x: x + (parentFrame?.x || 0), y: y + (parentFrame?.y || 0),
       parentId: parent?.id, parentFrame, sourceId: node.id, repeated, slot,
       interaction: raw.interaction || raw.role || parentFrame?.interaction || "",

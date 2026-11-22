@@ -323,7 +323,7 @@ export function renderScene(doc, inputs, options = {}) {
       text.style.bottom = "auto";
       text.style.width = w + "px";
       text.style.height = h + "px";
-      text.style.overflow = p.textClip || p.textNoWrap ? "hidden" : "visible";
+      text.style.overflow = p.textClip || p.textNoWrap || type === "text" ? "hidden" : "visible";
       if (p.textClip) text.style.textOverflow = "ellipsis";
       text.style.whiteSpace = p.textNoWrap ? "nowrap" : "pre-wrap";
       if (p.textShadowOpacity > 0)
