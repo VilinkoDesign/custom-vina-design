@@ -28,7 +28,9 @@ import { isHostPreset } from "./vina-scene.js";
 export function effectiveProject(project, standard) {
   const dependency = project.doc.roots.find((n) => n.name === "Preset");
   const name = dependency
-    ? evaluateExpression(expressionOf(property(dependency, "dependsOn")))
+    ? property(dependency, "dependsOn")
+      ? evaluateExpression(expressionOf(property(dependency, "dependsOn")))
+      : ""
     : "";
   const base = name
     ? project.base && project.baseName?.toLowerCase() === name.toLowerCase()
@@ -41,7 +43,20 @@ export function effectiveProject(project, standard) {
 }
 export function validate(project, standard, inputs = {}, schema = {}) {
   // Reparse also verifies JSON projects and mutations against grammar/limits.
-  parse(serialize(project.doc));
+  const parsed = parse(serialize(project.doc));
+  const declaration = parsed.roots.find((n) => n.name === "Preset");
+  if (declaration) {
+    for (const member of declaration.members)
+      if (member.kind !== "property" || !["dependsOn", "display_name", "displayName"].includes(member.name))
+        throw new Error("Preset 只能声明 dependsOn 或 display_name");
+    for (const key of ["display_name", "displayName"]) {
+      const display = property(declaration, key);
+      if (display) {
+        const value = parseExpression(display.raw);
+        if (typeof value.value !== "string" || !value.value.trim()) throw new Error("display_name 必须为非空字符串");
+      }
+    }
+  }
   if (
     !project.board ||
     !Number.isFinite(project.board.w) ||
@@ -66,7 +81,7 @@ export function validate(project, standard, inputs = {}, schema = {}) {
         ? "group"
         : "text",
     );
-    if (!TYPES.includes(type)) throw new Error(`${path}：不支持 ${type}`);
+    if (!TYPES.includes(type) && !type.startsWith("pogget.native.")) throw new Error(`${path}：不支持 ${type}`);
     const hover = block(node, "hover");
     for (const p of [
       ...node.members.filter((m) => m.kind === "property"),
@@ -164,9 +179,38 @@ export function validate(project, standard, inputs = {}, schema = {}) {
       throw new Error(`${path}：玻璃指针坐标必须成对声明`);
     const repeat = block(node, "repeat");
     if (repeat) {
-      const count = runtime.get(path + ".repeat.count", 0);
-      if (!Number.isInteger(count) || count < 0 || count > 256)
-        throw new Error(`${path}.repeat.count：范围为 0..256 的整数`);
+      const allowed = new Set(["count", "columns", "rows", "stepX", "stepY", "originX", "originY", "stagger"]);
+      if (repeat.members.some((m) => m.kind !== "property" || !allowed.has(m.name)))
+        throw new Error(`${path}.repeat：存在未知属性`);
+      const hasCount = Boolean(property(repeat, "count"));
+      const grid = ["columns", "rows", "stepX", "stepY"].some((key) => property(repeat, key));
+      if (hasCount === grid || (hasCount && repeat.members.length !== 1))
+        throw new Error(`${path}.repeat：count 与网格属性不能混用`);
+      const number = (key, fallback = 0) => runtime.get(path + ".repeat." + key, fallback);
+      const integer = (key, max) => {
+        const value = number(key);
+        if (!Number.isInteger(value) || value < 0 || value > max) throw new Error(`${path}.repeat.${key}：必须为有界非负整数`);
+        return value;
+      };
+      if (hasCount) {
+        const count = integer("count", 256);
+        if (count > 256) throw new Error(`${path}.repeat.count：范围为 0..256 的整数`);
+      } else {
+        for (const key of ["columns", "rows", "stepX", "stepY"])
+          if (!property(repeat, key)) throw new Error(`${path}.repeat：网格缺少 ${key}`);
+        const columns = integer("columns", 4096), rows = integer("rows", 4096);
+        if (columns && rows > Math.floor(4096 / columns)) throw new Error(`${path}.repeat：网格最多 4096 次`);
+        for (const key of ["stepX", "stepY"]) {
+          const value = number(key);
+          if (!Number.isFinite(value) || value <= 0 || value > 32768) throw new Error(`${path}.repeat.${key}：范围无效`);
+        }
+        for (const key of ["originX", "originY"]) {
+          const value = number(key);
+          if (!Number.isFinite(value) || Math.abs(value) > 32768) throw new Error(`${path}.repeat.${key}：范围无效`);
+        }
+        const stagger = number("stagger");
+        if (!Number.isFinite(stagger) || stagger < 0 || stagger > 1) throw new Error(`${path}.repeat.stagger：范围为 0..1`);
+      }
     }
     for (const destination of ["backgroundGradient", "borderGradient"]) {
       const gradient = block(node, destination);

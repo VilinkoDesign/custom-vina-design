@@ -17,6 +17,8 @@ export const META = new Set([
   "hoverRegion",
   "backgroundGradient",
   "borderGradient",
+  "tooltip",
+  "backgroundDecoration",
 ]);
 export const TYPES = [
   "rect",
@@ -56,6 +58,7 @@ const ARITY = {
   green: 1,
   blue: 1,
   average: 1,
+  random: [0, 3],
 };
 let sequence = 0;
 export const uid = () => "n" + ++sequence;
@@ -181,12 +184,19 @@ class Reader {
       else if (name === "pi") left = { value: Math.PI };
       else if (this.take("(")) {
         if (!Object.hasOwn(ARITY, name)) this.fail(`未知函数 ${name}`);
-        const args = [];
-        for (let i = 0; i < ARITY[name]; i++) {
-          if (i) this.require(",");
-          args.push(this.expression(depth + 1));
+        const spec = Array.isArray(ARITY[name]) ? ARITY[name] : [ARITY[name], ARITY[name]],
+          args = [];
+        this.space();
+        if (!this.take(")")) {
+          for (;;) {
+            args.push(this.expression(depth + 1));
+            this.space();
+            if (this.take(")")) break;
+            this.require(",");
+            if (args.length >= spec[1]) this.fail(`函数 ${name} 参数过多`);
+          }
         }
-        this.require(")");
+        if (args.length < spec[0]) this.fail(`函数 ${name} 参数不足`);
         left = { op: name, args };
       } else left = { value: name };
     }
@@ -384,9 +394,20 @@ export function resolveReference(ref, owner) {
 export function compose(doc, base) {
   const directive = doc.roots.find((r) => r.name === "Preset");
   if (!directive) return doc;
-  if (directive.members.length !== 1 || !property(directive, "dependsOn"))
-    throw new Error("Preset 只能声明 dependsOn");
-  const dependency = parseExpression(property(directive, "dependsOn").raw);
+  const dependencyProperty = property(directive, "dependsOn");
+  for (const member of directive.members) {
+    if (member.kind !== "property" || !["dependsOn", "display_name", "displayName"].includes(member.name))
+      throw new Error("Preset 只能声明 dependsOn 或 display_name");
+  }
+  for (const key of ["display_name", "displayName"]) {
+    const display = property(directive, key);
+    if (display) {
+      const value = parseExpression(display.raw);
+      if (typeof value.value !== "string" || !value.value.trim()) throw new Error("display_name 必须为非空字符串");
+    }
+  }
+  if (!dependencyProperty) return doc;
+  const dependency = parseExpression(dependencyProperty.raw);
   if (typeof dependency.value !== "string" || !dependency.value.trim())
     throw new Error("dependsOn 必须为非空字符串");
   if (!base)
@@ -463,16 +484,29 @@ function nativeText(value) {
     (bits >> 63n ? "-" : "") + digits.slice(0, -6) + "." + digits.slice(-6);
   return text.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
 }
+function hashString(value) {
+  let hash = 2166136261 >>> 0;
+  for (let i = 0; i < value.length; i++) hash = Math.imul(hash ^ value.charCodeAt(i), 16777619) >>> 0;
+  return hash;
+}
+function randomUnit(seed) {
+  let x = (Number(seed) >>> 0) || 0x9e3779b9;
+  x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+  return (x >>> 0) / 0x100000000;
+}
 export function evaluateExpression(
   expr,
   reference = () => {
     throw new Error("变量不可用");
   },
+  random = () => {
+    throw new Error("random 不可用");
+  },
 ) {
   if ("value" in expr) return expr.value;
   if ("ref" in expr) return reference(expr.ref);
   // Native Vina evaluates both branches and both logical operands eagerly.
-  const args = expr.args.map((a) => evaluateExpression(a, reference));
+  const args = expr.args.map((a) => evaluateExpression(a, reference, random));
   const [a, b, c] = args;
   switch (expr.op) {
     case "?:":
@@ -565,6 +599,8 @@ export function evaluateExpression(
         0,
       );
     }
+    case "random":
+      return random(args);
     default:
       throw new Error(`不支持的运算 ${expr.op}`);
   }
@@ -587,11 +623,21 @@ export class Runtime {
     this.cache = new Map();
     this.active = new Set();
     this.aliases = new Map();
+    this.repeatItem = { index: 0, column: 0, row: 0, x: 0, y: 0, key: 0 };
     for (const [path, p] of this.idx.byPath)
       if (p.kind === "property" && /\.ui\..+\.default$/.test(path))
         this.aliases.set(path.replace(/\.default$/, ".value"), path);
   }
   get(path, fallback) {
+    const repeat = {
+      "pogget.repeat.index": this.repeatItem.index,
+      "item.index": this.repeatItem.index,
+      "item.column": this.repeatItem.column,
+      "item.row": this.repeatItem.row,
+      "item.x": this.repeatItem.x,
+      "item.y": this.repeatItem.y,
+    };
+    if (Object.hasOwn(repeat, path)) return repeat[path];
     if (Object.hasOwn(this.inputs, path)) return this.inputs[path];
     path = this.aliases.get(path) || path;
     if (this.cache.has(path)) return this.cache.get(path);
@@ -606,8 +652,20 @@ export class Runtime {
     if (this.active.size > 64) throw new Error("变量引用超过 64 层");
     this.active.add(path);
     try {
-      const result = evaluateExpression(expressionOf(p), (ref) =>
-        this.get(resolveReference(ref, path)),
+      let randomCall = 0;
+      const result = evaluateExpression(
+        expressionOf(p),
+        (ref) => this.get(resolveReference(ref, path)),
+        (args) => {
+          const seed = args.length === 1 || args.length === 3
+            ? Number(args.at(-1))
+            : hashString(`${path}|${this.repeatItem.key}|${randomCall++}`);
+          const unit = randomUnit(seed);
+          if (args.length < 2) return unit;
+          const low = Number(args[0]), high = Number(args[1]);
+          if (!Number.isFinite(low) || !Number.isFinite(high) || low > high) throw new Error("random 范围无效");
+          return low + (high - low) * unit;
+        },
       );
       this.cache.set(path, result);
       return result;
@@ -638,6 +696,7 @@ export class Runtime {
         if (
           !this.idx.byPath.has(target) &&
           !resolved.startsWith("pogget.") &&
+          !["item.index", "item.column", "item.row", "item.x", "item.y"].includes(resolved) &&
           !(
             /\.(hovered|hoverProgress)$/.test(resolved) &&
             this.idx.byPath.has(resolved.slice(0, resolved.lastIndexOf(".")))
@@ -665,6 +724,10 @@ export class Runtime {
           throw new Error("state 默认值必须为字面量");
       }
     }
+  }
+  setRepeatItem(item) {
+    this.repeatItem = { ...this.repeatItem, ...item };
+    this.cache.clear();
   }
 }
 export function viewNodes(doc) {

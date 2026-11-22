@@ -17,9 +17,10 @@ const cssColor = (n, fallback = "#000000") => {
   }
 };
 export function renderScene(doc, inputs, options = {}) {
-  const { runtime, frames } = resolveScene(doc, inputs, options),
+  const { runtime, frames, instances = [...frames.values()] } = resolveScene(doc, inputs, options),
     fragment = document.createDocumentFragment(),
-    nodes = new Map();
+    nodes = new Map(),
+    elements = new Map();
   let gradientSeq = 0;
   const gradient = (defs, node, destination, p, path, w, h, animateEntry = false) => {
     const grad = block(node, destination);
@@ -85,10 +86,10 @@ export function renderScene(doc, inputs, options = {}) {
     defs.append(n);
     return `url(#${id})`;
   };
-  for (const frame of frames.values()) {
-    const { node, parent, component, path, p, w, h } = frame,
+  for (const frame of instances) {
+    const { node, component, path, p, w, h } = frame,
       type = p.type,
-      parentFrame = parent ? frames.get(parent.id) : null;
+      parentFrame = frame.parentFrame || null;
     const x = frame.paintX - (parentFrame?.paintX || 0),
       y = frame.paintY - (parentFrame?.paintY || 0);
     const editable = options.editable?.has(node.id) ?? true;
@@ -99,11 +100,12 @@ export function renderScene(doc, inputs, options = {}) {
     const el = document.createElement("div");
     el.className = "el";
     el.dataset.id = node.id;
+    if (frame.repeated) el.dataset.repeat = "true";
     el.dataset.path = path;
     el.dataset.type = type;
     el.dataset.component = component?.name || "";
     const studioComponent = component?.name === "StudioCard";
-    const exampleRootMotion = studioComponent && !parent;
+    const exampleRootMotion = studioComponent && !parentFrame;
     if (exampleRootMotion) el.classList.add("studio-example-root");
     el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${frame.stackZ};`;
     if (exampleRootMotion) el.style.opacity = String(frame.alpha);
@@ -130,7 +132,7 @@ export function renderScene(doc, inputs, options = {}) {
       ? exampleRootMotion
         ? "1"
         : String(p.opacity ?? 1)
-      : String(frame.alpha);
+      : String(p.opacity ?? 1);
     frame.paintVisible =
       frame.visible && frame.active && w > 0 && h > 0 && frame.alpha > 0.001;
     // Keep the StudioCard subtree mounted while its close state animates. The
@@ -150,7 +152,7 @@ export function renderScene(doc, inputs, options = {}) {
     const defs = svg("defs");
     surface.append(defs);
     const animateEntryGradient =
-        component?.name === "StudioCard" && !parent && options.running,
+        component?.name === "StudioCard" && !parentFrame && options.running,
       fillGrad = gradient(
         defs,
         node,
@@ -321,7 +323,8 @@ export function renderScene(doc, inputs, options = {}) {
       text.style.bottom = "auto";
       text.style.width = w + "px";
       text.style.height = h + "px";
-      text.style.overflow = p.textClip ? "hidden" : "visible";
+      text.style.overflow = p.textClip || p.textNoWrap ? "hidden" : "visible";
+      if (p.textClip) text.style.textOverflow = "ellipsis";
       text.style.whiteSpace = p.textNoWrap ? "nowrap" : "pre-wrap";
       if (p.textShadowOpacity > 0)
         text.style.textShadow = `${p.textShadowX || 0}px ${p.textShadowY ?? 1}px ${p.textShadowBlur ?? 2}px ${cssColor(p.textShadowColor)}`;
@@ -351,7 +354,7 @@ export function renderScene(doc, inputs, options = {}) {
         body.append(hint);
       }
     }
-    if (type === "content" || type.startsWith("pogget.native.")) {
+    if (type === "content" || (type.startsWith("pogget.native.") && type !== "pogget.native.Background")) {
       body.classList.add("native-preview");
       const hint = document.createElement("span");
       hint.className = "resource-hint";
@@ -369,10 +372,11 @@ export function renderScene(doc, inputs, options = {}) {
     }
     el.append(container);
     el._children = container;
-    if (parent && nodes.has(parent.id))
-      nodes.get(parent.id)._children.append(el);
+    if (parentFrame && elements.has(parentFrame))
+      elements.get(parentFrame)._children.append(el);
     else fragment.append(el);
-    nodes.set(node.id, el);
+    if (!nodes.has(node.id)) nodes.set(node.id, el);
+    elements.set(frame, el);
     if (options.running && block(node, "hover")) {
       el.addEventListener("pointerenter", (event) => {
         event.stopPropagation();

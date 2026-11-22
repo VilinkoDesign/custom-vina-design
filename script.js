@@ -1479,6 +1479,27 @@ function renderInspector() {
           ),
       ),
     );
+    const displayName = dependency && (V.property(dependency, "display_name") || V.property(dependency, "displayName"));
+    field(
+      "显示名称",
+      textControl(
+        displayName ? V.evaluateExpression(V.expressionOf(displayName)) : "",
+        (name) => mutate("修改预设显示名称", (next) => {
+          let declaration = next.doc.roots.find((n) => n.name === "Preset");
+          if (!declaration) {
+            if (!name.trim()) return;
+            declaration = V.makeBlock("Preset", { display_name: name.trim() });
+            next.doc.roots.unshift(declaration);
+            return;
+          }
+          const existing = V.property(declaration, "display_name") || V.property(declaration, "displayName");
+          if (existing) {
+            if (name.trim()) V.setValue(declaration, existing.name, name.trim());
+            else declaration.members = declaration.members.filter((m) => m !== existing);
+          } else if (name.trim()) declaration.members.unshift({ kind: "property", id: V.uid(), name: "display_name", raw: V.literal(name.trim()), leading: " " });
+        }, { allowMissingBase: true }),
+      ),
+    );
     body.append(
       button(
         "导入基础预设文件",
