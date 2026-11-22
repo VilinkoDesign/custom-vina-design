@@ -6,28 +6,45 @@ function displayUnits(text) {
   let units = 0;
   for (const character of String(text || "")) {
     const code = character.codePointAt(0);
-    units += (code >= 0x3000 && code <= 0x30ff) ||
-      (code >= 0x3400 && code <= 0x4dbf) ||
-      (code >= 0x4e00 && code <= 0x9fff) ||
+    const zeroWidth = code === 0x200d ||
+      (code >= 0x0300 && code <= 0x036f) ||
+      (code >= 0x1ab0 && code <= 0x1aff) ||
+      (code >= 0x1dc0 && code <= 0x1dff) ||
+      (code >= 0x20d0 && code <= 0x20ff) ||
+      (code >= 0xfe00 && code <= 0xfe0f) ||
+      (code >= 0xfe20 && code <= 0xfe2f) ||
+      (code >= 0xe0100 && code <= 0xe01ef);
+    if (zeroWidth) continue;
+    const wide = (code >= 0x1100 && code <= 0x115f) ||
+      (code >= 0x2329 && code <= 0x232a) ||
+      (code >= 0x2e80 && code <= 0xa4cf) ||
       (code >= 0xac00 && code <= 0xd7af) ||
       (code >= 0xf900 && code <= 0xfaff) ||
-      (code >= 0xff00 && code <= 0xffef) ? 2 : 1;
+      (code >= 0xfe10 && code <= 0xfe19) ||
+      (code >= 0xfe30 && code <= 0xfe6f) ||
+      (code >= 0xff00 && code <= 0xff60) ||
+      (code >= 0xffe0 && code <= 0xffe6) ||
+      (code >= 0x1f1e6 && code <= 0x1f1ff) ||
+      (code >= 0x1f300 && code <= 0x1faff) ||
+      (code >= 0x20000 && code <= 0x3fffd);
+    units += wide ? 2 : 1;
   }
   return units;
 }
 function omitDisplayUnits(text, retained) {
   const source = String(text || "");
-  if (!source || retained <= 0 || displayUnits(source) <= retained) return source;
-  const ellipsis = "...";
-  if (retained <= displayUnits(ellipsis)) return ellipsis.slice(0, retained);
-  const budget = retained - displayUnits(ellipsis);
-  let used = 0, head = "";
+  if (!source) return source;
+  if (retained <= 0) return "...";
+  let used = 0, keepLength = 0;
   for (const character of source) {
     const units = displayUnits(character);
-    if (used + units > budget) break;
-    head += character; used += units;
+    if (used + units > retained) break;
+    used += units;
+    keepLength += character.length;
   }
-  return head + ellipsis;
+  if (keepLength >= source.length) return source;
+  if (!keepLength) return "...";
+  return source.slice(0, keepLength) + "...";
 }
 
 const HOST_COMPONENTS = new Set([

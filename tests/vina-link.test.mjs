@@ -40,6 +40,21 @@ test("the current native Pogget_Std renders with semantic theme inputs on a vert
     resolveScene(M.effectiveProject(project, standard), hostInputs, { host: true });
   });
 });
+test("host title text uses native display units and never escapes its measured tag", () => {
+  const project = M.projectFromVina(standardSource);
+  const hostInputs = previewInputs(defaults, project.board, false, true, "expanded", {
+    "pogget.tag.text": "😀😀😀😀😀😀",
+    "pogget.tag.oldText": "😀😀😀😀😀😀",
+    "pogget.title": "😀😀😀😀😀😀",
+    "pogget.titleTextWidth": 50,
+    "pogget.tag.measuredWidth": 50,
+  });
+  const scene = resolveScene(M.effectiveProject(project, standard), hostInputs, { host: true });
+  const text = scene.instances.find((f) => f.path === "TitleTag.view.Text.Current");
+  assert.equal(text.p.label, "😀😀😀...");
+  assert.equal(text.p.textNoWrap, true);
+  assert.equal(text.p.textClip, true);
+});
 test("invalid envelopes, UTF-8, syntax and semantic values are rejected", () => {
   assert.equal(from(""), null);
   assert.equal(from("#other=value"), null);
