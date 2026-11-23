@@ -196,7 +196,14 @@ export function resolveScene(doc, inputs, options = {}) {
         ? (inputs["pogget.containerFrame.background"] ?? inputs["pogget.theme.midnight"] ?? 0)
         : (inputs["pogget.theme.midnight"] ?? 0));
       p.fillOpacity = Number(raw.backgroundAlpha ?? 1);
-      p.radius = Number(raw.cornerRad ?? inputs["pogget.cornerRadius"] ?? 0);
+      const mode = Number(inputs["pogget.mode"] ?? 0);
+      const frame = Number(inputs["pogget.frame"] ?? raw.TransparentFrameMode ?? 0);
+      const dwmCorner = Number(raw.DwmCornerPreference ?? 0);
+      const customRadius = Number(raw.cornerRad ?? inputs["pogget.cornerRadius"] ?? 0);
+      // Windows DWM exposes two system corner preferences for the opaque
+      // window layers: ROUNDSMALL is 4 DIP and ROUND is 8 DIP. Custom radii
+      // apply only to the transparent/extended layers that expose CornerRadius.
+      p.radius = mode <= 2 ? (dwmCorner === 1 ? 8 : 4) : (mode === 3 && frame === 2 ? 0 : customRadius);
       p.shadowOpacity = Number(raw.shadowAlpha ?? 0);
       p.shadowBlur = Number(raw.shadowBlur ?? 16);
       p.shadowX = Number(raw.shadowOffsetX ?? 0);

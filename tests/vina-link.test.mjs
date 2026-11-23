@@ -55,6 +55,17 @@ test("host title text uses native display units and never escapes its measured t
   assert.equal(text.p.textNoWrap, true);
   assert.equal(text.p.textClip, true);
 });
+test("host background follows Windows small and normal DWM corner preferences", () => {
+  const project = M.projectFromVina(standardSource), doc = M.effectiveProject(project, standard);
+  const small = resolveScene(doc, previewInputs(defaults, project.board, false, true, "expanded", {
+    "Background.ui.DwmCorner.value": 0,
+  }), { host: true });
+  const normal = resolveScene(doc, previewInputs(defaults, project.board, false, true, "expanded", {
+    "Background.ui.DwmCorner.value": 1,
+  }), { host: true });
+  assert.equal(small.frames.get(V.index(doc).byPath.get("Background.view").id).p.radius, 4);
+  assert.equal(normal.frames.get(V.index(doc).byPath.get("Background.view").id).p.radius, 8);
+});
 test("invalid envelopes, UTF-8, syntax and semantic values are rejected", () => {
   assert.equal(from(""), null);
   assert.equal(from("#other=value"), null);
