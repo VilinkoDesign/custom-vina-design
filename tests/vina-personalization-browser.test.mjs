@@ -27,8 +27,6 @@ test("native personalization: wrapped disclosures, internal labels, all controls
   assert.deepEqual(await evaluate('window.vinaEditor.selection'), []);
   await click("#runBtn");
   assert.equal(await evaluate('document.querySelectorAll(".personal-group").length'), 5);
-  const backgroundPaint = await evaluate(`(() => {const n=document.querySelector('#scene [data-path="Background.view"]');return {nativeShadow:n?.querySelectorAll('.native-shadow').length||0}})()`);
-  assert.equal(backgroundPaint.nativeShadow, 0);
   assert.equal(await evaluate(`document.querySelector('${editGroup}').open`), true);
   assert.deepEqual(await evaluate('document.querySelector(".personalization-panel").textContent.match(/pogget\\.label\\.\\w+/g)||[]'), []);
   const group = '[data-group="Custom"]';

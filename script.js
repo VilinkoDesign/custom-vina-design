@@ -566,6 +566,7 @@ function renderCanvas() {
   $("previewState").hidden = !host;
   $("previewSettingsBtn").hidden = !host;
   $("board").classList.toggle("host-preview", host);
+  $("scene").classList.toggle("canvas-host-overflow", host);
   $("board").style.width = project.board.w + "px";
   $("board").style.height = project.board.h + "px";
   $("board").style.transform = `scale(${zoom})`;
