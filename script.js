@@ -622,6 +622,11 @@ function renderCanvas() {
       next.nodes = scene.nodes;
     } else $("scene").replaceChildren(next.fragment);
     scene = next;
+    const nativeBackground = [...next.frames.values()].find((f) => f.path === "Background.view");
+    const nativeRadius = host
+      ? Math.max(0, Number(nativeBackground?.p.radius ?? currentInputs["pogget.nativeCornerRadius"] ?? currentInputs["pogget.cornerRadius"] ?? 0))
+      : 0;
+    $("board").style.setProperty("--native-window-radius", nativeRadius + "px");
     const empty = ![...scene.frames.values()].some((f) => f.rendered);
     setBoardEmptyVisible(empty);
     renderOverlays();
